@@ -17,3 +17,9 @@ RECURSOS:
 
 IMPORTANTE:
 Depois que a tabela de usuários já existir, alterar ADMIN_PASSWORD no Render não troca automaticamente a senha do administrador. A senha passa a ser controlada pelo banco e pode ser redefinida na aba Usuários.
+
+
+Atualização de identidade visual:
+- cores alinhadas à marca Saci Casa & Construção
+- logomarca aplicada no cabeçalho e login
+- favicon configurado com a marca da empresa

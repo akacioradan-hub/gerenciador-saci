@@ -17,21 +17,21 @@ function renderGraficos(d){
   destroyChart('carteira');
   charts.carteira=new Chart(document.getElementById('chartCarteira'),{
     type:'doughnut',
-    data:{labels:['Recebido','Falta receber'],datasets:[{data:[d.total_recebido,d.saldo_devedor],backgroundColor:['#16855b','#d8a029'],borderWidth:0,hoverOffset:4}]},
+    data:{labels:['Recebido','Falta receber'],datasets:[{data:[d.total_recebido,d.saldo_devedor],backgroundColor:['#202024','#ff8f89'],borderWidth:0,hoverOffset:4}]},
     options:{...chartBase(),cutout:'68%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}}}
   });
 
   destroyChart('recebimentos');
   charts.recebimentos=new Chart(document.getElementById('chartRecebimentos'),{
     type:'bar',
-    data:{labels:d.recebimentos_mensais.map(x=>mesLabel(x.mes)),datasets:[{label:'Recebido',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#24618f',borderRadius:7,maxBarThickness:46}]},
+    data:{labels:d.recebimentos_mensais.map(x=>mesLabel(x.mes)),datasets:[{label:'Recebido',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#e10600',borderRadius:7,maxBarThickness:46}]},
     options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#edf1f5'},ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
 
   destroyChart('previsao');
   charts.previsao=new Chart(document.getElementById('chartPrevisao'),{
     type:'bar',
-    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão de recebimento',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#6659c6',borderRadius:7,maxBarThickness:52}]},
+    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão de recebimento',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#2a2a2e',borderRadius:7,maxBarThickness:52}]},
     options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#edf1f5'},ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
 }

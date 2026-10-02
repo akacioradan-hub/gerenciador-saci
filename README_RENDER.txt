@@ -46,3 +46,9 @@ SEGURANÇA
 BACKUP
 ------
 Depois de entrar no sistema, use a função de backup disponível no painel regularmente.
+
+
+Atualização de identidade visual:
+- cores alinhadas à marca Saci Casa & Construção
+- logomarca aplicada no cabeçalho e login
+- favicon configurado com a marca da empresa

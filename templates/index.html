@@ -4,14 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Administrator Saci — Clientes e Recebimentos</title>
+<meta name="theme-color" content="#e10600">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header>
-  <div>
-    <div class="brand-kicker">ADMINISTRATOR SACI</div>
-    <h1>Painel Financeiro de Clientes</h1>
-    <p>Controle centralizado de recebimentos, saldos e previsões.</p>
+<header class="main-header">
+  <div class="brand-wrap">
+    <div class="brand-logo-box">
+      <img class="brand-logo" src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção">
+    </div>
+    <div>
+      <div class="brand-kicker">SACI CASA & CONSTRUÇÃO</div>
+      <h1>Administrator Saci</h1>
+      <p>Painel centralizado para clientes, pagamentos e previsões de recebimentos.</p>
+    </div>
   </div>
   <div class="header-actions">
     <a class="ghost" href="/api/exportar/clientes.csv">Exportar CSV</a>
@@ -33,7 +42,7 @@
   <section id="dashboard" class="tab active">
     <div class="dashboard-title">
       <div><span class="eyebrow">VISÃO GERAL</span><h2>Resumo financeiro</h2></div>
-      <span class="updated">Atualizado com os dados do banco central</span>
+      <span class="updated">Painel com identidade visual da Saci Casa & Construção</span>
     </div>
 
     <div class="grid kpis">

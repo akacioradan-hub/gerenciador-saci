@@ -3,21 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Entrar — Controle de Clientes</title>
+<title>Entrar — Administrator Saci</title>
+<meta name="theme-color" content="#e10600">
+<link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+<link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
+<link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f7fb;color:#1f2937;min-height:100vh;display:grid;place-items:center}.box{width:min(420px,92vw);background:#fff;border:1px solid #dbe3ec;border-radius:16px;padding:28px;box-shadow:0 12px 35px rgba(15,23,42,.10)}h1{margin:0 0 8px;color:#0b1f33}p{color:#6b7a8c;margin:0 0 22px}.field{margin-bottom:14px}label{display:block;font-size:12px;font-weight:700;color:#41566d;margin-bottom:6px}input{width:100%;padding:12px;border:1px solid #cfd8e3;border-radius:9px;font-size:15px}button{width:100%;border:0;background:#163a5f;color:#fff;padding:12px;border-radius:9px;font-weight:700;cursor:pointer}.erro{background:#fee2e2;color:#991b1b;padding:10px;border-radius:8px;margin-bottom:14px;font-size:14px}.nota{margin-top:16px;font-size:12px;color:#6b7a8c}
+:root{--bg:#f5f5f6;--card:#fff;--red:#e10600;--red-dark:#b40e0a;--text:#1d1d1f;--muted:#64646f;--border:#e7e7ec}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Arial,Helvetica,sans-serif;background:radial-gradient(circle at top,#fff 0,#f1f1f3 60%,#ededf0 100%);color:var(--text);min-height:100vh;display:grid;place-items:center;padding:18px}
+.box{width:min(470px,94vw);background:var(--card);border:1px solid var(--border);border-radius:24px;padding:30px;box-shadow:0 18px 40px rgba(0,0,0,.10)}
+.logo-wrap{display:flex;justify-content:center;margin-bottom:16px}.logo{width:118px;height:118px;object-fit:contain;border-radius:24px;box-shadow:0 10px 24px rgba(225,6,0,.18)}
+.kicker{text-align:center;font-size:11px;font-weight:900;letter-spacing:1.6px;color:var(--red);margin-bottom:6px}
+h1{margin:0 0 8px;text-align:center;color:var(--text);font-size:28px}p{text-align:center;color:var(--muted);margin:0 0 22px}.field{margin-bottom:14px}label{display:block;font-size:12px;font-weight:800;color:#3d3d47;margin-bottom:6px}input{width:100%;padding:13px;border:1px solid #d7d7df;border-radius:12px;font-size:15px;background:#fff}input:focus{outline:none;border-color:var(--red);box-shadow:0 0 0 4px rgba(225,6,0,.10)}button{width:100%;border:0;background:linear-gradient(135deg,var(--red),var(--red-dark));color:#fff;padding:13px;border-radius:12px;font-weight:800;cursor:pointer;font-size:15px;box-shadow:0 12px 22px rgba(225,6,0,.18)}button:hover{filter:brightness(1.02)}.erro{background:#fee2e2;color:#991b1b;padding:11px 12px;border-radius:10px;margin-bottom:14px;font-size:14px;border:1px solid #fecaca}.nota{margin-top:16px;font-size:12px;color:#6b7280;text-align:center}
 </style>
 </head>
 <body>
 <div class="box">
-  <h1>Controle de Clientes</h1>
-  <p>Acesso ao sistema central.</p>
+  <div class="logo-wrap"><img class="logo" src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção"></div>
+  <div class="kicker">SACI CASA & CONSTRUÇÃO</div>
+  <h1>Administrator Saci</h1>
+  <p>Acesso ao sistema central de clientes e recebimentos.</p>
   {% if erro %}<div class="erro">{{ erro }}</div>{% endif %}
   <form method="post">
     <div class="field"><label>Usuário</label><input name="username" autocomplete="username" required></div>
     <div class="field"><label>Senha</label><input name="password" type="password" autocomplete="current-password" required></div>
     <button type="submit">Entrar</button>
   </form>
+  <div class="nota">A identidade visual do sistema segue a marca Saci Casa & Construção.</div>
 </div>
 </body>
 </html>
