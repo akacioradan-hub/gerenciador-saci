@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dashboard de Clientes e Pagamentos</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div>
+    <h1>Dashboard de Clientes e Pagamentos</h1>
+    <p>Banco central compartilhado entre os computadores da rede.</p>
+  </div>
+  <div class="header-actions">
+    <a class="ghost" href="/api/exportar/clientes.csv">Exportar CSV</a>
+    <a class="ghost" href="/api/backup">Backup JSON</a>
+  </div>
+<a class="ghost" href="/logout" style="margin-left:auto">Sair</a>
+</header>
+
+<div class="container">
+  <div id="mensagem" class="mensagem"></div>
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
+    <button class="tab-btn" data-tab="clientes">Clientes</button>
+    <button class="tab-btn" data-tab="pagamentos">Pagamentos</button>
+  </div>
+
+  <section id="dashboard" class="tab active">
+    <div class="grid kpis">
+      <div class="card"><span>Total a receber</span><strong id="kpiReceber">R$ 0,00</strong></div>
+      <div class="card"><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong></div>
+      <div class="card"><span>Saldo devedor</span><strong id="kpiSaldo">R$ 0,00</strong></div>
+      <div class="card"><span>Clientes em atraso</span><strong id="kpiAtraso">0</strong></div>
+    </div>
+
+    <div class="two-col mt">
+      <div class="card">
+        <h3>Próximos vencimentos e saldos</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Cliente</th><th>Previsão</th><th>Saldo</th><th>Status</th></tr></thead>
+          <tbody id="dashClientes"></tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h3>Resumo por status</h3>
+        <div id="statusResumo" class="status-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="clientes" class="tab">
+    <div class="card">
+      <h3 id="tituloCliente">Cadastrar cliente</h3>
+      <form id="clienteForm">
+        <input type="hidden" id="clienteId">
+        <label>Nome do cliente<input id="nomeCliente" required></label>
+        <label>Valor inicial da dívida<input id="valorDivida" type="number" min="0" step="0.01" required></label>
+        <label>Previsão de pagamento<input id="previsaoPagamento" type="date"></label>
+        <div class="form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar</button></div>
+      </form>
+    </div>
+
+    <div class="card mt">
+      <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar cliente..."></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>ID</th><th>Cliente</th><th>Dívida inicial</th><th>Previsão</th><th>Total pago</th><th>Saldo</th><th>Último pagamento</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="clientesBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+
+  <section id="pagamentos" class="tab">
+    <div class="card">
+      <h3>Registrar pagamento</h3>
+      <form id="pagamentoForm">
+        <label>Cliente<select id="pagCliente" required></select></label>
+        <label>Data do pagamento<input id="pagData" type="date" required></label>
+        <label>Valor pago<input id="pagValor" type="number" min="0.01" step="0.01" required></label>
+        <label>Observação<input id="pagObs" placeholder="Opcional"></label>
+        <div class="form-actions"><button class="primary" type="submit">Registrar pagamento</button></div>
+      </form>
+    </div>
+
+    <div class="card mt">
+      <h3>Histórico de pagamentos</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead>
+        <tbody id="pagamentosBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+</div>
+<script src="/static/app.js"></script>
+</body>
+</html>
