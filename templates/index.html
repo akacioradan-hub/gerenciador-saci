@@ -18,10 +18,10 @@
       <div><strong>Administrator</strong><span>Saci Casa & Construção</span></div>
     </div>
     <nav class="side-nav">
-      <button class="tab-btn active" data-tab="dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></button>
-      <button class="tab-btn" data-tab="clientes"><span class="nav-icon">👤</span><span>Clientes</span></button>
-      <button class="tab-btn" data-tab="pagamentos"><span class="nav-icon">R$</span><span>Pagamentos</span></button>
-      {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span class="nav-icon">⚙</span><span>Usuários</span></button>{% endif %}
+      <button class="tab-btn active" data-tab="dashboard"><span>Dashboard</span></button>
+      <button class="tab-btn" data-tab="clientes"><span>Clientes</span></button>
+      <button class="tab-btn" data-tab="pagamentos"><span>Pagamentos</span></button>
+      {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span>Usuários</span></button>{% endif %}
     </nav>
     <div class="sidebar-footer">
       <div class="mini-user"><span class="avatar">{{ nome_usuario[:1]|upper }}</span><div><strong>{{ nome_usuario }}</strong><span>{% if is_admin %}Administrador{% else %}Usuário{% endif %}</span></div></div>
