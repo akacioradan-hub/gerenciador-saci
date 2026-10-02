@@ -50,8 +50,8 @@
       <div id="mensagem" class="mensagem"></div>
 
       <section id="dashboard" class="tab active">
-        <div class="page-head">
-          <div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Recebimentos, saldos e vencimentos em um único lugar.</p></div>
+        <div class="page-head dashboard-main-head">
+          <div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Informações separadas entre clientes e órgãos públicos.</p></div>
           <div class="date-chip" id="dataHoje"></div>
         </div>
 
@@ -61,7 +61,12 @@
           <button id="openDueAlerts" type="button">Ver avisos</button>
         </div>
 
-        <div class="grid kpis">
+        <div class="dashboard-section-head">
+          <div><span class="section-dot client-dot"></span><div><span class="eyebrow">CLIENTES</span><h3>Carteira de clientes</h3></div></div>
+          <span class="section-hint">Recebimentos, saldo e previsão</span>
+        </div>
+
+        <div class="grid kpis dashboard-client-kpis">
           <div class="card kpi-card"><div class="kpi-accent red"></div><span>Total em carteira</span><strong id="kpiReceber">R$ 0,00</strong><small>Valor total cadastrado</small></div>
           <div class="card kpi-card"><div class="kpi-accent dark"></div><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong><small id="kpiPercentual">0% da carteira</small></div>
           <div class="card kpi-card"><div class="kpi-accent orange"></div><span>Falta receber</span><strong id="kpiSaldo">R$ 0,00</strong><small>Saldo devedor atual</small></div>
@@ -92,6 +97,35 @@
           <div class="card">
             <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Resumo por status</h3></div></div>
             <div id="statusResumo" class="status-list"></div>
+          </div>
+        </div>
+
+        <div class="dashboard-divider"></div>
+
+        <div class="dashboard-section-head org-section-head">
+          <div><span class="section-dot org-dot"></span><div><span class="eyebrow">ÓRGÃOS PÚBLICOS</span><h3>Débitos de prefeituras e câmaras</h3></div></div>
+          <button class="section-link" type="button" data-go-tab="orgaos">Abrir controle completo</button>
+        </div>
+
+        <div class="grid kpis org-dashboard-kpis">
+          <div class="card kpi-card org-kpi"><div class="kpi-accent red"></div><span>Total de débitos</span><strong id="orgDashTotal">R$ 0,00</strong><small>Valor registrado</small></div>
+          <div class="card kpi-card org-kpi"><div class="kpi-accent dark"></div><span>Total pago</span><strong id="orgDashPago">R$ 0,00</strong><small id="orgDashPagoQtd">0 registros pagos</small></div>
+          <div class="card kpi-card org-kpi"><div class="kpi-accent overdue"></div><span>Não pago</span><strong id="orgDashAberto">R$ 0,00</strong><small id="orgDashAbertoQtd">0 registros em aberto</small></div>
+          <div class="card kpi-card org-kpi"><div class="kpi-accent orange"></div><span>Registros</span><strong id="orgDashQtd">0</strong><small>Notas / débitos cadastrados</small></div>
+        </div>
+
+        <div class="org-dashboard-grid mt">
+          <div class="card compact-card">
+            <div class="card-head"><div><span class="eyebrow">SITUAÇÃO</span><h3>Pago x não pago</h3></div></div>
+            <div class="chart-box org-mini-donut"><canvas id="chartOrgaosStatus"></canvas></div>
+          </div>
+          <div class="card compact-card">
+            <div class="card-head"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Débitos por ano</h3></div><span class="chart-note">Até 6 anos</span></div>
+            <div class="chart-box org-mini-chart"><canvas id="chartOrgaosAno"></canvas></div>
+          </div>
+          <div class="card compact-card">
+            <div class="card-head"><div><span class="eyebrow">MAIORES SALDOS</span><h3>Órgãos com valores não pagos</h3></div></div>
+            <div class="chart-box org-mini-chart"><canvas id="chartOrgaosTop"></canvas></div>
           </div>
         </div>
       </section>
@@ -191,6 +225,7 @@
             <label>Data do débito *<input id="orgaoData" type="date" required></label>
             <label>Valor do débito *<input id="orgaoValor" type="number" min="0" step="0.01" required></label>
             <label>Nº da nota fiscal *<input id="orgaoNota" required placeholder="Ex.: NF 1234"></label>
+            <label>Nº da ordem de compra / serviço<input id="orgaoOrdem" placeholder="Ex.: OC 245/2026 ou OS 078/2026"></label>
             <label>Situação<select id="orgaoPago"><option value="false">Não pago</option><option value="true">Pago</option></select></label>
             <div class="form-actions"><button class="primary" type="submit">Salvar débito</button><button id="cancelarOrgao" class="secondary hidden" type="button">Cancelar</button></div>
           </form>
@@ -198,15 +233,15 @@
 
         <div class="card mt">
           <div class="gov-toolbar">
-            <div><h3>Débitos cadastrados</h3><p>Consulte por órgão, nota fiscal, ano ou situação.</p></div>
+            <div><h3>Débitos cadastrados</h3><p>Consulte por órgão, nota fiscal, ordem de compra/serviço, ano ou situação.</p></div>
             <div class="gov-filters">
-              <input id="buscaOrgao" placeholder="Órgão ou nota fiscal...">
+              <input id="buscaOrgao" placeholder="Órgão, nota fiscal ou ordem...">
               <input id="filtroAnoOrgao" type="number" min="2000" max="2100" placeholder="Ano">
               <select id="filtroStatusOrgao"><option value="">Todos</option><option value="pago">Pago</option><option value="nao-pago">Não pago</option></select>
               <a class="secondary gov-export" href="/api/exportar/orgaos-publicos.csv">Exportar CSV</a>
             </div>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Órgão devedor</th><th>Tipo</th><th>Dia</th><th>Mês</th><th>Ano</th><th>Valor do débito</th><th>Situação</th><th>Nota fiscal</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Órgão devedor</th><th>Tipo</th><th>Dia</th><th>Mês</th><th>Ano</th><th>Valor do débito</th><th>Situação</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
         </div>
       </section>
 

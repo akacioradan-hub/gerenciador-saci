@@ -9,10 +9,11 @@ CAMPOS:
 - Valor do débito
 - Situação: Pago ou Não pago
 - Número da nota fiscal
+- Número da ordem de compra ou ordem de serviço
 
 RECURSOS:
 - Cadastro, edição e exclusão
-- Filtro por nome/nota fiscal
+- Filtro por nome/nota fiscal/ordem de compra ou serviço
 - Filtro por ano
 - Filtro por situação
 - Resumo com quantidade, total, total pago e total não pago

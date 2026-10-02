@@ -96,6 +96,7 @@ class DebitoOrgaoPublico(db.Model):
     valor_debito = db.Column(db.Numeric(14, 2), nullable=False, default=0)
     pago = db.Column(db.Boolean, nullable=False, default=False, index=True)
     numero_nota_fiscal = db.Column(db.String(80), nullable=False, index=True)
+    numero_ordem = db.Column(db.String(100), nullable=True, index=True)
     criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
 
@@ -112,6 +113,7 @@ def debito_orgao_dict(registro):
         "pago": bool(registro.pago),
         "status": "PAGO" if registro.pago else "NÃO PAGO",
         "numero_nota_fiscal": registro.numero_nota_fiscal,
+        "numero_ordem": registro.numero_ordem,
         "criado_em": registro.criado_em.isoformat() if registro.criado_em else None,
     }
 
@@ -146,11 +148,24 @@ def migrar_campos_cliente():
         app.logger.info("Campos adicionais do cadastro de clientes criados com sucesso.")
 
 
+def migrar_campos_orgaos_publicos():
+    """Adiciona novos campos aos débitos de órgãos públicos sem apagar registros existentes."""
+    insp = inspect(db.engine)
+    if "debitos_orgaos_publicos" not in insp.get_table_names():
+        return
+    colunas = {c["name"] for c in insp.get_columns("debitos_orgaos_publicos")}
+    if "numero_ordem" not in colunas:
+        db.session.execute(db.text("ALTER TABLE debitos_orgaos_publicos ADD COLUMN numero_ordem VARCHAR(100)"))
+        db.session.commit()
+        app.logger.info("Campo numero_ordem criado em debitos_orgaos_publicos com sucesso.")
+
+
 def init_db():
     with app.app_context():
         try:
             db.create_all()
             migrar_campos_cliente()
+            migrar_campos_orgaos_publicos()
             # Cria o administrador inicial somente se ainda não existir nenhum usuário.
             if db.session.execute(db.select(func.count(Usuario.id))).scalar_one() == 0:
                 username = (os.getenv("ADMIN_USER", "admin") or "admin").strip()
@@ -522,8 +537,10 @@ def add_months(year, month, offset):
 def dashboard():
     clientes = db.session.execute(db.select(Cliente)).scalars().all()
     pagamentos = db.session.execute(db.select(Pagamento)).scalars().all()
+    orgaos = db.session.execute(db.select(DebitoOrgaoPublico)).scalars().all()
     itens = [cliente_dict(c) for c in clientes]
 
+    # ---- Clientes ----
     total_receber = sum(i["divida"] for i in itens)
     total_recebido = sum(i["total_pago"] for i in itens)
     saldo = sum(i["saldo"] for i in itens)
@@ -568,13 +585,40 @@ def dashboard():
         for item in itens:
             if item["saldo"] <= 0 or not item["previsao"]:
                 continue
-            p = date.fromisoformat(item["previsao"])
-            if p.year == ano and p.month == mes and p >= hoje:
+            pprev = date.fromisoformat(item["previsao"])
+            if pprev.year == ano and pprev.month == mes and pprev >= hoje:
                 valor += item["saldo"]
         previsao_mensal.append({"mes": f"{ano:04d}-{mes:02d}", "valor": valor})
 
     total_previsto_futuro = sum(x["valor"] for x in previsao_mensal)
     proximos = sorted(itens, key=lambda x: (x["previsao"] is None, x["previsao"] or "9999-12-31", x["nome"].lower()))[:12]
+
+    # ---- Órgãos públicos ----
+    org_total = sum(float(r.valor_debito or 0) for r in orgaos)
+    org_pago = sum(float(r.valor_debito or 0) for r in orgaos if r.pago)
+    org_nao_pago = sum(float(r.valor_debito or 0) for r in orgaos if not r.pago)
+    org_qtd = len(orgaos)
+    org_qtd_pago = sum(1 for r in orgaos if r.pago)
+    org_qtd_nao_pago = sum(1 for r in orgaos if not r.pago)
+
+    anos = sorted({r.data_debito.year for r in orgaos if r.data_debito})
+    org_por_ano = []
+    for ano in anos[-6:]:
+        total_ano = sum(float(r.valor_debito or 0) for r in orgaos if r.data_debito and r.data_debito.year == ano)
+        pago_ano = sum(float(r.valor_debito or 0) for r in orgaos if r.data_debito and r.data_debito.year == ano and r.pago)
+        aberto_ano = total_ano - pago_ano
+        org_por_ano.append({"ano": str(ano), "total": total_ano, "pago": pago_ano, "nao_pago": aberto_ano})
+
+    por_orgao = {}
+    for r in orgaos:
+        if r.pago:
+            continue
+        nome = r.nome_orgao.strip()
+        por_orgao[nome] = por_orgao.get(nome, 0.0) + float(r.valor_debito or 0)
+    org_top_devedores = [
+        {"nome": nome, "valor": valor}
+        for nome, valor in sorted(por_orgao.items(), key=lambda kv: kv[1], reverse=True)[:6]
+    ]
 
     return jsonify({
         "total_receber": total_receber,
@@ -590,6 +634,16 @@ def dashboard():
         "previsao_mensal": previsao_mensal,
         "status": status,
         "proximos": proximos,
+        "orgaos": {
+            "total": org_total,
+            "total_pago": org_pago,
+            "total_nao_pago": org_nao_pago,
+            "quantidade": org_qtd,
+            "quantidade_pago": org_qtd_pago,
+            "quantidade_nao_pago": org_qtd_nao_pago,
+            "por_ano": org_por_ano,
+            "top_devedores": org_top_devedores,
+        },
     })
 
 
@@ -604,6 +658,7 @@ def listar_debitos_orgaos_publicos():
         stmt = stmt.where(or_(
             DebitoOrgaoPublico.nome_orgao.ilike(f"%{q}%"),
             DebitoOrgaoPublico.numero_nota_fiscal.ilike(f"%{q}%"),
+            DebitoOrgaoPublico.numero_ordem.ilike(f"%{q}%"),
             DebitoOrgaoPublico.tipo_orgao.ilike(f"%{q}%"),
         ))
     if ano:
@@ -634,6 +689,7 @@ def validar_debito_orgao_payload(data):
     nome_orgao = (data.get("nome_orgao") or "").strip()
     tipo_orgao = (data.get("tipo_orgao") or "Prefeitura").strip()
     numero_nota_fiscal = (data.get("numero_nota_fiscal") or "").strip()
+    numero_ordem = (data.get("numero_ordem") or "").strip()
     try:
         data_debito = date.fromisoformat(data.get("data_debito") or "")
     except ValueError:
@@ -655,6 +711,7 @@ def validar_debito_orgao_payload(data):
         "valor_debito": valor_debito,
         "pago": bool(data.get("pago", False)),
         "numero_nota_fiscal": numero_nota_fiscal,
+        "numero_ordem": numero_ordem or None,
     }, None
 
 
@@ -702,9 +759,9 @@ def exportar_orgaos_publicos():
     registros = db.session.execute(db.select(DebitoOrgaoPublico).order_by(DebitoOrgaoPublico.data_debito.desc())).scalars().all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal"])
+    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal", "Ordem de compra / serviço"])
     for r in registros:
-        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "NÃO PAGO", r.numero_nota_fiscal])
+        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "NÃO PAGO", r.numero_nota_fiscal, r.numero_ordem or ""])
     mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="debitos_orgaos_publicos.csv")
 

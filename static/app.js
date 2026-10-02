@@ -17,22 +17,47 @@ function renderGraficos(d){
   destroyChart('carteira');
   charts.carteira=new Chart(document.getElementById('chartCarteira'),{
     type:'doughnut',
-    data:{labels:['Recebido','Falta receber'],datasets:[{data:[d.total_recebido,d.saldo_devedor],backgroundColor:['#2d2d31','#f3a19d'],borderWidth:0,hoverOffset:4}]},
-    options:{...chartBase(),cutout:'68%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}}}
+    data:{labels:['Recebido','Falta receber'],datasets:[{data:[d.total_recebido,d.saldo_devedor],backgroundColor:['#202024','#ff8f89'],borderWidth:0,hoverOffset:3}]},
+    options:{...chartBase(),cutout:'72%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:10}}}}}
   });
 
   destroyChart('recebimentos');
   charts.recebimentos=new Chart(document.getElementById('chartRecebimentos'),{
     type:'bar',
-    data:{labels:d.recebimentos_mensais.map(x=>mesLabel(x.mes)),datasets:[{label:'Recebido',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#e10600',borderRadius:7,maxBarThickness:46}]},
-    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#edf1f5'},ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
+    data:{labels:d.recebimentos_mensais.map(x=>mesLabel(x.mes)),datasets:[{label:'Recebido',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#e10600',borderRadius:5,maxBarThickness:32}]},
+    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
 
   destroyChart('previsao');
   charts.previsao=new Chart(document.getElementById('chartPrevisao'),{
     type:'bar',
-    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão de recebimento',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#5a5a60',borderRadius:7,maxBarThickness:52}]},
-    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#edf1f5'},ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
+    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#2a2a2e',borderRadius:5,maxBarThickness:32}]},
+    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
+  });
+
+  const o=d.orgaos||{};
+  destroyChart('orgaosStatus');
+  charts.orgaosStatus=new Chart(document.getElementById('chartOrgaosStatus'),{
+    type:'doughnut',
+    data:{labels:['Pago','Não pago'],datasets:[{data:[o.total_pago||0,o.total_nao_pago||0],backgroundColor:['#202024','#e10600'],borderWidth:0,hoverOffset:3}]},
+    options:{...chartBase(),cutout:'72%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:10}}}}}
+  });
+
+  destroyChart('orgaosAno');
+  charts.orgaosAno=new Chart(document.getElementById('chartOrgaosAno'),{
+    type:'bar',
+    data:{labels:(o.por_ano||[]).map(x=>x.ano),datasets:[
+      {label:'Pago',data:(o.por_ano||[]).map(x=>x.pago),backgroundColor:'#2a2a2e',borderRadius:4,maxBarThickness:28},
+      {label:'Não pago',data:(o.por_ano||[]).map(x=>x.nao_pago),backgroundColor:'#e10600',borderRadius:4,maxBarThickness:28}
+    ]},
+    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:9}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
+  });
+
+  destroyChart('orgaosTop');
+  charts.orgaosTop=new Chart(document.getElementById('chartOrgaosTop'),{
+    type:'bar',
+    data:{labels:(o.top_devedores||[]).map(x=>x.nome),datasets:[{label:'Não pago',data:(o.top_devedores||[]).map(x=>x.valor),backgroundColor:'#b73a35',borderRadius:4,maxBarThickness:25}]},
+    options:{...chartBase(),indexAxis:'y',plugins:{...chartBase().plugins,legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
 }
 
@@ -49,47 +74,18 @@ async function carregarDashboard(){
   document.getElementById('statusResumo').innerHTML=Object.entries(d.status).map(([k,v])=>`<div class="status-row"><span>${k}</span><strong>${v}</strong></div>`).join('');
   document.getElementById('dashClientes').innerHTML=d.proximos.length?d.proximos.map(c=>`<tr><td>${c.nome}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nenhum cliente cadastrado.</td></tr>';
   const aviso=document.getElementById('previsaoAviso');
-  if(d.valor_atrasado>0){aviso.textContent=`${moeda(d.valor_atrasado)} em saldos vencidos.`;aviso.classList.remove('hidden')}else{aviso.classList.add('hidden')}
-  atualizarAvisos(d);
+  if(d.valor_atrasado>0){aviso.textContent=`Além da previsão futura, existem ${moeda(d.valor_atrasado)} em saldos vencidos.`;aviso.classList.remove('hidden')}else{aviso.classList.add('hidden')}
+
+  const o=d.orgaos||{};
+  document.getElementById('orgDashTotal').textContent=moeda(o.total||0);
+  document.getElementById('orgDashPago').textContent=moeda(o.total_pago||0);
+  document.getElementById('orgDashAberto').textContent=moeda(o.total_nao_pago||0);
+  document.getElementById('orgDashQtd').textContent=o.quantidade||0;
+  document.getElementById('orgDashPagoQtd').textContent=`${o.quantidade_pago||0} registros pagos`;
+  document.getElementById('orgDashAbertoQtd').textContent=`${o.quantidade_nao_pago||0} registros em aberto`;
   renderGraficos(d);
 }
 
-function atualizarAvisos(d){
-  const badge=document.getElementById('alertBadge');
-  const total=Number(d.total_alertas||0);
-  badge.textContent=total>99?'99+':total;
-  badge.classList.toggle('hidden',total===0);
-
-  const banner=document.getElementById('dueTodayBanner');
-  const hoje=d.vencem_hoje||[];
-  if(hoje.length){
-    const valor=hoje.reduce((s,x)=>s+Number(x.saldo||0),0);
-    document.getElementById('dueTodayTitle').textContent=hoje.length===1?'1 cliente com pagamento previsto para hoje':`${hoje.length} clientes com pagamento previsto para hoje`;
-    document.getElementById('dueTodayText').textContent=`Total previsto para hoje: ${moeda(valor)}.`;
-    banner.classList.remove('hidden');
-  }else banner.classList.add('hidden');
-
-  const body=document.getElementById('alertPanelBody');
-  let html='';
-  if(hoje.length){
-    html+='<div class="alert-section-title">Vencem hoje</div>';
-    html+=hoje.map(x=>`<div class="alert-item today"><strong>${x.nome}</strong><span>Previsão: hoje</span><span class="alert-value">Saldo: ${moeda(x.saldo)}</span></div>`).join('');
-  }
-  const atrasados=d.atrasados||[];
-  if(atrasados.length){
-    html+='<div class="alert-section-title">Em atraso</div>';
-    html+=atrasados.map(x=>`<div class="alert-item overdue"><strong>${x.nome}</strong><span>Venceu em ${dataBR(x.previsao)}</span><span class="alert-value">Saldo: ${moeda(x.saldo)}</span></div>`).join('');
-  }
-  body.innerHTML=html||'<div class="empty">Nenhum vencimento pendente.</div>';
-}
-
-function documentoFormatado(v){
-  const d=String(v||'').replace(/\D/g,'');
-  if(d.length===11)return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
-  if(d.length===14)return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
-  return v||'-';
-}
-function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
 function renderClientes(){const body=document.getElementById('clientesBody');body.innerHTML=clientes.length?clientes.map(c=>`<tr><td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td><td>${documentoFormatado(c.cpf_cnpj)}</td><td>${c.whatsapp||c.telefone||'-'}</td><td>${localCliente(c)}</td><td>${moeda(c.divida)}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td><td><div class="acoes"><button class="view" onclick="mostrarCliente(${c.id})">Ver</button><button class="edit" onclick="editarCliente(${c.id})">Editar</button><button class="danger" onclick="excluirCliente(${c.id})">Excluir</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum cliente cadastrado.</td></tr>'}
 function preencherClientes(){const sel=document.getElementById('pagCliente');const atual=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');sel.value=atual}
 async function atualizarTudo(){await Promise.all([carregarClientes(),carregarPagamentos(),carregarDashboard()])}
@@ -125,6 +121,15 @@ document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.p
 async function excluirPagamento(id){if(!confirm('Excluir este pagamento?'))return;try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento excluído.');await atualizarTudo()}catch(err){msg(err.message,'erro')}}
 
 document.getElementById('buscaCliente').addEventListener('input',()=>{clearTimeout(window._b);window._b=setTimeout(carregarClientes,250)})
+
+// Atalhos internos do dashboard
+document.querySelectorAll('[data-go-tab]').forEach(btn=>btn.addEventListener('click',()=>{
+  const target=btn.dataset.goTab;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===target));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id===target));
+  if(target==='orgaos' && typeof carregarOrgaosPublicos==='function') carregarOrgaosPublicos();
+  window.scrollTo({top:0,behavior:'smooth'});
+}));
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active');if(btn.dataset.tab==='dashboard')setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),80)}))
 document.getElementById('pagData').valueAsDate=new Date();
 atualizarTudo().catch(err=>msg(err.message,'erro'));
@@ -221,7 +226,7 @@ function limparOrgaoPublico(){
 }
 function editarOrgaoPublico(id){
   const r=orgaosPublicos.find(x=>x.id===id);if(!r)return;
-  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoPago').value=String(r.pago);document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').value=String(r.pago);document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function excluirOrgaoPublico(id){
   if(!confirm('Excluir este débito de órgão público?'))return;
@@ -229,7 +234,7 @@ async function excluirOrgaoPublico(id){
 }
 const orgaoForm=document.getElementById('orgaoForm');
 if(orgaoForm){
-  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),pago:document.getElementById('orgaoPago').value==='true'};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}});
+  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),numero_ordem:document.getElementById('orgaoOrdem').value.trim(),pago:document.getElementById('orgaoPago').value==='true'};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}});
   document.getElementById('cancelarOrgao').addEventListener('click',limparOrgaoPublico);
   ['buscaOrgao','filtroAnoOrgao','filtroStatusOrgao'].forEach(id=>document.getElementById(id)?.addEventListener(id==='buscaOrgao'?'input':'change',()=>{clearTimeout(window._org);window._org=setTimeout(()=>carregarOrgaosPublicos().catch(err=>msg(err.message,'erro')),220)}));
   carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'));
