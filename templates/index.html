@@ -95,20 +95,60 @@
       </section>
 
       <section id="clientes" class="tab">
-        <div class="page-head"><div><span class="eyebrow">CADASTRO</span><h2>Clientes</h2><p>Gerencie os clientes e as datas previstas de recebimento.</p></div></div>
-        <div class="card">
-          <h3 id="tituloCliente">Cadastrar cliente</h3>
-          <form id="clienteForm">
+        <div class="page-head"><div><span class="eyebrow">CADASTRO</span><h2>Clientes</h2><p>Cadastre os dados de identificação, contato, endereço e informações financeiras do cliente.</p></div></div>
+        <div class="card client-card">
+          <div class="form-title-row"><div><span class="eyebrow">FICHA CADASTRAL</span><h3 id="tituloCliente">Cadastrar cliente</h3></div><span class="required-note">* Campos obrigatórios</span></div>
+          <form id="clienteForm" class="client-form">
             <input type="hidden" id="clienteId">
-            <label>Nome do cliente<input id="nomeCliente" required></label>
-            <label>Valor inicial da dívida<input id="valorDivida" type="number" min="0" step="0.01" required></label>
-            <label>Previsão de pagamento<input id="previsaoPagamento" type="date"></label>
-            <div class="form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar</button></div>
+
+            <div class="form-section">
+              <div class="section-label">Dados do cliente</div>
+              <div class="form-grid">
+                <label class="span-2">Nome completo / Razão social *<input id="nomeCliente" required maxlength="180" autocomplete="name" placeholder="Nome completo do cliente"></label>
+                <label>Tipo de pessoa<select id="tipoPessoa"><option value="PF">Pessoa Física</option><option value="PJ">Pessoa Jurídica</option></select></label>
+                <label>CPF / CNPJ<input id="cpfCnpj" inputmode="numeric" maxlength="18" placeholder="000.000.000-00"></label>
+                <label>RG / Inscrição Estadual<input id="rgIe" maxlength="30" placeholder="Opcional"></label>
+                <label>Data de nascimento / Fundação<input id="dataNascimento" type="date"></label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-label">Contato</div>
+              <div class="form-grid">
+                <label>Telefone<input id="telefoneCliente" inputmode="tel" maxlength="25" placeholder="(84) 0000-0000"></label>
+                <label>WhatsApp<input id="whatsappCliente" inputmode="tel" maxlength="25" placeholder="(84) 90000-0000"></label>
+                <label class="span-2">E-mail<input id="emailCliente" type="email" maxlength="160" autocomplete="email" placeholder="cliente@email.com"></label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-label">Endereço</div>
+              <div class="form-grid">
+                <label>CEP<input id="cepCliente" inputmode="numeric" maxlength="10" placeholder="00000-000"></label>
+                <label class="span-2">Rua / Avenida / Logradouro<input id="logradouroCliente" maxlength="180" autocomplete="street-address"></label>
+                <label>Número<input id="numeroCliente" maxlength="30"></label>
+                <label>Complemento<input id="complementoCliente" maxlength="120" placeholder="Casa, apto., loja..."></label>
+                <label>Bairro<input id="bairroCliente" maxlength="100"></label>
+                <label>Cidade<input id="cidadeCliente" maxlength="100"></label>
+                <label>UF<input id="ufCliente" maxlength="2" placeholder="RN"></label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <div class="section-label">Financeiro e observações</div>
+              <div class="form-grid">
+                <label>Valor inicial da dívida *<input id="valorDivida" type="number" min="0" step="0.01" required></label>
+                <label>Previsão de pagamento<input id="previsaoPagamento" type="date"></label>
+                <label class="span-2">Observações<textarea id="observacoesCliente" rows="3" maxlength="1000" placeholder="Informações adicionais sobre o cliente"></textarea></label>
+              </div>
+            </div>
+
+            <div class="client-form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar edição</button></div>
           </form>
         </div>
         <div class="card mt">
-          <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar cliente..."></div>
-          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Dívida inicial</th><th>Previsão</th><th>Total pago</th><th>Saldo</th><th>Último pagamento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
+          <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
+          <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Telefone</th><th>Cidade/UF</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
         </div>
       </section>
 
@@ -154,6 +194,12 @@
       {% endif %}
     </div>
   </main>
+</div>
+
+<div id="clienteModalOverlay" class="modal-overlay hidden"></div>
+<div id="clienteModal" class="client-modal hidden" role="dialog" aria-modal="true" aria-labelledby="clienteModalNome">
+  <div class="client-modal-head"><div><span class="eyebrow">FICHA DO CLIENTE</span><h3 id="clienteModalNome">Cliente</h3></div><button id="fecharClienteModal" type="button">×</button></div>
+  <div id="clienteModalBody" class="client-modal-body"></div>
 </div>
 
 <div id="alertOverlay" class="alert-overlay hidden"></div>

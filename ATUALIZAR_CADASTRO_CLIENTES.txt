@@ -1,0 +1,31 @@
+ATUALIZAÇÃO — CADASTRO COMPLETO DE CLIENTES
+
+Novos campos incluídos:
+- Pessoa Física / Pessoa Jurídica
+- Nome completo / Razão social
+- CPF / CNPJ
+- RG / Inscrição Estadual
+- Data de nascimento / Fundação
+- Telefone
+- WhatsApp
+- E-mail
+- CEP
+- Logradouro
+- Número
+- Complemento
+- Bairro
+- Cidade
+- UF
+- Observações
+- Dívida inicial
+- Previsão de pagamento
+
+O sistema adiciona automaticamente os novos campos à tabela clientes do PostgreSQL no primeiro deploy, sem apagar os clientes, pagamentos ou usuários já existentes.
+
+A listagem de clientes ganhou busca por nome, CPF/CNPJ, telefone, WhatsApp e e-mail e um botão Ver para abrir a ficha cadastral completa.
+
+PARA ATUALIZAR NO RENDER
+1. Substitua os arquivos do repositório GitHub pelos arquivos deste pacote.
+2. Faça Commit / Push.
+3. No Render, execute Manual Deploy > Deploy latest commit, se o deploy automático não iniciar.
+4. Abra /ready para confirmar a conexão do banco.

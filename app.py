@@ -6,7 +6,7 @@ from datetime import date
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func
+from sqlalchemy import func, inspect, or_
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -53,6 +53,21 @@ class Cliente(db.Model):
     __tablename__ = "clientes"
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(180), nullable=False, index=True)
+    tipo_pessoa = db.Column(db.String(2), nullable=True, default="PF")
+    cpf_cnpj = db.Column(db.String(18), nullable=True, index=True)
+    rg_ie = db.Column(db.String(30), nullable=True)
+    data_nascimento = db.Column(db.Date, nullable=True)
+    telefone = db.Column(db.String(25), nullable=True)
+    whatsapp = db.Column(db.String(25), nullable=True)
+    email = db.Column(db.String(160), nullable=True)
+    cep = db.Column(db.String(10), nullable=True)
+    logradouro = db.Column(db.String(180), nullable=True)
+    numero = db.Column(db.String(30), nullable=True)
+    complemento = db.Column(db.String(120), nullable=True)
+    bairro = db.Column(db.String(100), nullable=True)
+    cidade = db.Column(db.String(100), nullable=True)
+    uf = db.Column(db.String(2), nullable=True)
+    observacoes = db.Column(db.Text, nullable=True)
     divida = db.Column(db.Numeric(12, 2), nullable=False, default=0)
     previsao = db.Column(db.Date, nullable=True, index=True)
     criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
@@ -70,10 +85,41 @@ class Pagamento(db.Model):
     cliente = db.relationship("Cliente", back_populates="pagamentos")
 
 
+def migrar_campos_cliente():
+    """Adiciona novos campos de cadastro sem apagar registros existentes."""
+    colunas = {c["name"] for c in inspect(db.engine).get_columns("clientes")}
+    novos_campos = {
+        "tipo_pessoa": "VARCHAR(2)",
+        "cpf_cnpj": "VARCHAR(18)",
+        "rg_ie": "VARCHAR(30)",
+        "data_nascimento": "DATE",
+        "telefone": "VARCHAR(25)",
+        "whatsapp": "VARCHAR(25)",
+        "email": "VARCHAR(160)",
+        "cep": "VARCHAR(10)",
+        "logradouro": "VARCHAR(180)",
+        "numero": "VARCHAR(30)",
+        "complemento": "VARCHAR(120)",
+        "bairro": "VARCHAR(100)",
+        "cidade": "VARCHAR(100)",
+        "uf": "VARCHAR(2)",
+        "observacoes": "TEXT",
+    }
+    alterou = False
+    for nome, tipo in novos_campos.items():
+        if nome not in colunas:
+            db.session.execute(db.text(f"ALTER TABLE clientes ADD COLUMN {nome} {tipo}"))
+            alterou = True
+    if alterou:
+        db.session.commit()
+        app.logger.info("Campos adicionais do cadastro de clientes criados com sucesso.")
+
+
 def init_db():
     with app.app_context():
         try:
             db.create_all()
+            migrar_campos_cliente()
             # Cria o administrador inicial somente se ainda não existir nenhum usuário.
             if db.session.execute(db.select(func.count(Usuario.id))).scalar_one() == 0:
                 username = (os.getenv("ADMIN_USER", "admin") or "admin").strip()
@@ -170,6 +216,21 @@ def cliente_dict(cliente):
     return {
         "id": cliente.id,
         "nome": cliente.nome,
+        "tipo_pessoa": cliente.tipo_pessoa or "PF",
+        "cpf_cnpj": cliente.cpf_cnpj or "",
+        "rg_ie": cliente.rg_ie or "",
+        "data_nascimento": cliente.data_nascimento.isoformat() if cliente.data_nascimento else None,
+        "telefone": cliente.telefone or "",
+        "whatsapp": cliente.whatsapp or "",
+        "email": cliente.email or "",
+        "cep": cliente.cep or "",
+        "logradouro": cliente.logradouro or "",
+        "numero": cliente.numero or "",
+        "complemento": cliente.complemento or "",
+        "bairro": cliente.bairro or "",
+        "cidade": cliente.cidade or "",
+        "uf": cliente.uf or "",
+        "observacoes": cliente.observacoes or "",
         "divida": divida,
         "previsao": cliente.previsao.isoformat() if cliente.previsao else None,
         "total_pago": pago,
@@ -207,32 +268,103 @@ def listar_clientes():
     busca = (request.args.get("q") or "").strip()
     stmt = db.select(Cliente)
     if busca:
-        stmt = stmt.where(Cliente.nome.ilike(f"%{busca}%"))
+        termo = f"%{busca}%"
+        stmt = stmt.where(or_(
+            Cliente.nome.ilike(termo),
+            Cliente.cpf_cnpj.ilike(termo),
+            Cliente.telefone.ilike(termo),
+            Cliente.whatsapp.ilike(termo),
+            Cliente.email.ilike(termo),
+        ))
     stmt = stmt.order_by(Cliente.nome.asc())
     clientes = db.session.execute(stmt).scalars().all()
     return jsonify([cliente_dict(c) for c in clientes])
+
+
+def limpar_documento(valor):
+    return "".join(ch for ch in str(valor or "") if ch.isdigit())
+
+
+def dados_cliente_payload(data, cliente=None):
+    nome = (data.get("nome") or "").strip()
+    if not nome:
+        return None, "Informe o nome completo do cliente."
+
+    tipo_pessoa = data.get("tipo_pessoa") if data.get("tipo_pessoa") in ("PF", "PJ") else "PF"
+    documento = limpar_documento(data.get("cpf_cnpj"))
+    if documento and len(documento) not in (11, 14):
+        return None, "CPF/CNPJ deve conter 11 ou 14 números."
+
+    try:
+        divida = float(data.get("divida", 0) or 0)
+    except (TypeError, ValueError):
+        return None, "Valor da dívida inválido."
+    if divida < 0:
+        return None, "A dívida não pode ser negativa."
+
+    def data_iso(campo, rotulo):
+        valor = data.get(campo)
+        if not valor:
+            return None, None
+        try:
+            return date.fromisoformat(valor), None
+        except ValueError:
+            return None, f"{rotulo} inválida."
+
+    nascimento, erro = data_iso("data_nascimento", "Data de nascimento")
+    if erro:
+        return None, erro
+    previsao, erro = data_iso("previsao", "Data de previsão")
+    if erro:
+        return None, erro
+
+    email = (data.get("email") or "").strip().lower()
+    if email and ("@" not in email or "." not in email.split("@")[-1]):
+        return None, "Informe um e-mail válido."
+
+    uf = (data.get("uf") or "").strip().upper()[:2]
+    payload = {
+        "nome": nome,
+        "tipo_pessoa": tipo_pessoa,
+        "cpf_cnpj": documento or None,
+        "rg_ie": (data.get("rg_ie") or "").strip() or None,
+        "data_nascimento": nascimento,
+        "telefone": (data.get("telefone") or "").strip() or None,
+        "whatsapp": (data.get("whatsapp") or "").strip() or None,
+        "email": email or None,
+        "cep": (data.get("cep") or "").strip() or None,
+        "logradouro": (data.get("logradouro") or "").strip() or None,
+        "numero": (data.get("numero") or "").strip() or None,
+        "complemento": (data.get("complemento") or "").strip() or None,
+        "bairro": (data.get("bairro") or "").strip() or None,
+        "cidade": (data.get("cidade") or "").strip() or None,
+        "uf": uf or None,
+        "observacoes": (data.get("observacoes") or "").strip() or None,
+        "divida": divida,
+        "previsao": previsao,
+    }
+    return payload, None
+
+
+def documento_duplicado(documento, ignorar_id=None):
+    if not documento:
+        return False
+    stmt = db.select(Cliente).where(Cliente.cpf_cnpj == documento)
+    if ignorar_id:
+        stmt = stmt.where(Cliente.id != ignorar_id)
+    return db.session.execute(stmt).scalar_one_or_none() is not None
 
 
 @app.post("/api/clientes")
 @login_required
 def criar_cliente():
     data = request.get_json(silent=True) or {}
-    nome = (data.get("nome") or "").strip()
-    try:
-        divida = float(data.get("divida", 0))
-    except (TypeError, ValueError):
-        return jsonify({"erro": "Valor da dívida inválido."}), 400
-    if not nome:
-        return jsonify({"erro": "Informe o nome do cliente."}), 400
-    if divida < 0:
-        return jsonify({"erro": "A dívida não pode ser negativa."}), 400
-    previsao = None
-    if data.get("previsao"):
-        try:
-            previsao = date.fromisoformat(data["previsao"])
-        except ValueError:
-            return jsonify({"erro": "Data de previsão inválida."}), 400
-    cliente = Cliente(nome=nome, divida=divida, previsao=previsao)
+    payload, erro = dados_cliente_payload(data)
+    if erro:
+        return jsonify({"erro": erro}), 400
+    if documento_duplicado(payload["cpf_cnpj"]):
+        return jsonify({"erro": "Já existe um cliente cadastrado com este CPF/CNPJ."}), 409
+    cliente = Cliente(**payload)
     db.session.add(cliente)
     db.session.commit()
     return jsonify({"id": cliente.id}), 201
@@ -245,24 +377,13 @@ def atualizar_cliente(cliente_id):
     if not cliente:
         return jsonify({"erro": "Cliente não encontrado."}), 404
     data = request.get_json(silent=True) or {}
-    nome = (data.get("nome") or "").strip()
-    try:
-        divida = float(data.get("divida", 0))
-    except (TypeError, ValueError):
-        return jsonify({"erro": "Valor da dívida inválido."}), 400
-    if not nome:
-        return jsonify({"erro": "Informe o nome do cliente."}), 400
-    if divida < 0:
-        return jsonify({"erro": "A dívida não pode ser negativa."}), 400
-    previsao = None
-    if data.get("previsao"):
-        try:
-            previsao = date.fromisoformat(data["previsao"])
-        except ValueError:
-            return jsonify({"erro": "Data de previsão inválida."}), 400
-    cliente.nome = nome
-    cliente.divida = divida
-    cliente.previsao = previsao
+    payload, erro = dados_cliente_payload(data, cliente)
+    if erro:
+        return jsonify({"erro": erro}), 400
+    if documento_duplicado(payload["cpf_cnpj"], ignorar_id=cliente_id):
+        return jsonify({"erro": "Já existe outro cliente cadastrado com este CPF/CNPJ."}), 409
+    for campo, valor in payload.items():
+        setattr(cliente, campo, valor)
     db.session.commit()
     return jsonify({"ok": True})
 
@@ -493,10 +614,10 @@ def exportar_clientes():
     clientes = db.session.execute(db.select(Cliente).order_by(Cliente.nome.asc())).scalars().all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["ID","Cliente","Dívida inicial","Previsão","Total pago","Saldo","Último pagamento","Status"])
+    writer.writerow(["ID","Nome completo/Razão social","Tipo","CPF/CNPJ","RG/IE","Nascimento","Telefone","WhatsApp","E-mail","CEP","Endereço","Número","Complemento","Bairro","Cidade","UF","Dívida inicial","Previsão","Total pago","Saldo","Último pagamento","Status","Observações"])
     for c in clientes:
         d = cliente_dict(c)
-        writer.writerow([d["id"], d["nome"], f'{d["divida"]:.2f}', d["previsao"] or "", f'{d["total_pago"]:.2f}', f'{d["saldo"]:.2f}', d["ultimo_pagamento"] or "", d["status"]])
+        writer.writerow([d["id"],d["nome"],d["tipo_pessoa"],d["cpf_cnpj"],d["rg_ie"],d["data_nascimento"] or "",d["telefone"],d["whatsapp"],d["email"],d["cep"],d["logradouro"],d["numero"],d["complemento"],d["bairro"],d["cidade"],d["uf"],f'{d["divida"]:.2f}',d["previsao"] or "",f'{d["total_pago"]:.2f}',f'{d["saldo"]:.2f}',d["ultimo_pagamento"] or "",d["status"],d["observacoes"]])
     mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="clientes.csv")
 
@@ -508,10 +629,7 @@ def backup_banco():
     pagamentos = db.session.execute(db.select(Pagamento)).scalars().all()
     payload = {
         "clientes": [{
-            "id": c.id,
-            "nome": c.nome,
-            "divida": float(c.divida),
-            "previsao": c.previsao.isoformat() if c.previsao else None,
+            **cliente_dict(c),
             "criado_em": c.criado_em.isoformat() if c.criado_em else None,
         } for c in clientes],
         "pagamentos": [{
