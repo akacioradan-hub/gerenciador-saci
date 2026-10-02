@@ -21,6 +21,7 @@
       <button class="tab-btn active" data-tab="dashboard"><span>Dashboard</span></button>
       <button class="tab-btn" data-tab="clientes"><span>Clientes</span></button>
       <button class="tab-btn" data-tab="pagamentos"><span>Pagamentos</span></button>
+      <button class="tab-btn" data-tab="orgaos"><span>Órgãos Públicos</span></button>
       {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span>Usuários</span></button>{% endif %}
     </nav>
     <div class="sidebar-footer">
@@ -168,6 +169,44 @@
         <div class="card mt">
           <h3>Histórico de pagamentos</h3>
           <div class="table-wrap"><table><thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
+        </div>
+      </section>
+
+      <section id="orgaos" class="tab">
+        <div class="page-head"><div><span class="eyebrow">SETOR PÚBLICO</span><h2>Débitos de órgãos públicos</h2><p>Controle de valores devidos por prefeituras, câmaras municipais e outros órgãos públicos.</p></div></div>
+
+        <div class="gov-summary-grid">
+          <div class="card gov-kpi"><span>Registros</span><strong id="govQtd">0</strong><small>débitos cadastrados</small></div>
+          <div class="card gov-kpi"><span>Valor total</span><strong id="govTotal">R$ 0,00</strong><small>total dos débitos</small></div>
+          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="govPago">R$ 0,00</strong><small>débitos quitados</small></div>
+          <div class="card gov-kpi gov-open"><span>Não pago</span><strong id="govNaoPago">R$ 0,00</strong><small>saldo pendente</small></div>
+        </div>
+
+        <div class="card mt">
+          <div class="card-head"><div><span class="eyebrow">NOVO REGISTRO</span><h3 id="tituloOrgao">Cadastrar débito de órgão público</h3></div></div>
+          <form id="orgaoForm" class="gov-form">
+            <input type="hidden" id="orgaoId">
+            <label>Nome do órgão devedor *<input id="orgaoNome" required placeholder="Ex.: Prefeitura Municipal de Angicos"></label>
+            <label>Tipo do órgão<select id="orgaoTipo"><option>Prefeitura</option><option>Câmara Municipal</option><option>Outro</option></select></label>
+            <label>Data do débito *<input id="orgaoData" type="date" required></label>
+            <label>Valor do débito *<input id="orgaoValor" type="number" min="0" step="0.01" required></label>
+            <label>Nº da nota fiscal *<input id="orgaoNota" required placeholder="Ex.: NF 1234"></label>
+            <label>Situação<select id="orgaoPago"><option value="false">Não pago</option><option value="true">Pago</option></select></label>
+            <div class="form-actions"><button class="primary" type="submit">Salvar débito</button><button id="cancelarOrgao" class="secondary hidden" type="button">Cancelar</button></div>
+          </form>
+        </div>
+
+        <div class="card mt">
+          <div class="gov-toolbar">
+            <div><h3>Débitos cadastrados</h3><p>Consulte por órgão, nota fiscal, ano ou situação.</p></div>
+            <div class="gov-filters">
+              <input id="buscaOrgao" placeholder="Órgão ou nota fiscal...">
+              <input id="filtroAnoOrgao" type="number" min="2000" max="2100" placeholder="Ano">
+              <select id="filtroStatusOrgao"><option value="">Todos</option><option value="pago">Pago</option><option value="nao-pago">Não pago</option></select>
+              <a class="secondary gov-export" href="/api/exportar/orgaos-publicos.csv">Exportar CSV</a>
+            </div>
+          </div>
+          <div class="table-wrap"><table><thead><tr><th>Órgão devedor</th><th>Tipo</th><th>Dia</th><th>Mês</th><th>Ano</th><th>Valor do débito</th><th>Situação</th><th>Nota fiscal</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
         </div>
       </section>
 

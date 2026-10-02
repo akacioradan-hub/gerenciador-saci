@@ -87,6 +87,35 @@ class Pagamento(db.Model):
     cliente = db.relationship("Cliente", back_populates="pagamentos")
 
 
+class DebitoOrgaoPublico(db.Model):
+    __tablename__ = "debitos_orgaos_publicos"
+    id = db.Column(db.Integer, primary_key=True)
+    nome_orgao = db.Column(db.String(220), nullable=False, index=True)
+    tipo_orgao = db.Column(db.String(40), nullable=False, default="Prefeitura")
+    data_debito = db.Column(db.Date, nullable=False, index=True)
+    valor_debito = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    pago = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    numero_nota_fiscal = db.Column(db.String(80), nullable=False, index=True)
+    criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
+
+
+def debito_orgao_dict(registro):
+    return {
+        "id": registro.id,
+        "nome_orgao": registro.nome_orgao,
+        "tipo_orgao": registro.tipo_orgao,
+        "data_debito": registro.data_debito.isoformat(),
+        "dia": registro.data_debito.day,
+        "mes": registro.data_debito.month,
+        "ano": registro.data_debito.year,
+        "valor_debito": float(registro.valor_debito or 0),
+        "pago": bool(registro.pago),
+        "status": "PAGO" if registro.pago else "NÃO PAGO",
+        "numero_nota_fiscal": registro.numero_nota_fiscal,
+        "criado_em": registro.criado_em.isoformat() if registro.criado_em else None,
+    }
+
+
 def migrar_campos_cliente():
     """Adiciona novos campos de cadastro sem apagar registros existentes."""
     colunas = {c["name"] for c in inspect(db.engine).get_columns("clientes")}
@@ -564,6 +593,122 @@ def dashboard():
     })
 
 
+@app.get("/api/orgaos-publicos")
+@login_required
+def listar_debitos_orgaos_publicos():
+    q = (request.args.get("q") or "").strip()
+    ano = (request.args.get("ano") or "").strip()
+    status = (request.args.get("status") or "").strip().lower()
+    stmt = db.select(DebitoOrgaoPublico)
+    if q:
+        stmt = stmt.where(or_(
+            DebitoOrgaoPublico.nome_orgao.ilike(f"%{q}%"),
+            DebitoOrgaoPublico.numero_nota_fiscal.ilike(f"%{q}%"),
+            DebitoOrgaoPublico.tipo_orgao.ilike(f"%{q}%"),
+        ))
+    if ano:
+        try:
+            ano_int = int(ano)
+            stmt = stmt.where(func.extract("year", DebitoOrgaoPublico.data_debito) == ano_int)
+        except ValueError:
+            pass
+    if status == "pago":
+        stmt = stmt.where(DebitoOrgaoPublico.pago.is_(True))
+    elif status in {"nao-pago", "não-pago", "nao_pago", "não_pago"}:
+        stmt = stmt.where(DebitoOrgaoPublico.pago.is_(False))
+    stmt = stmt.order_by(DebitoOrgaoPublico.data_debito.desc(), DebitoOrgaoPublico.nome_orgao.asc())
+    registros = db.session.execute(stmt).scalars().all()
+    dados = [debito_orgao_dict(r) for r in registros]
+    return jsonify({
+        "registros": dados,
+        "resumo": {
+            "quantidade": len(dados),
+            "total": sum(r["valor_debito"] for r in dados),
+            "total_pago": sum(r["valor_debito"] for r in dados if r["pago"]),
+            "total_nao_pago": sum(r["valor_debito"] for r in dados if not r["pago"]),
+        }
+    })
+
+
+def validar_debito_orgao_payload(data):
+    nome_orgao = (data.get("nome_orgao") or "").strip()
+    tipo_orgao = (data.get("tipo_orgao") or "Prefeitura").strip()
+    numero_nota_fiscal = (data.get("numero_nota_fiscal") or "").strip()
+    try:
+        data_debito = date.fromisoformat(data.get("data_debito") or "")
+    except ValueError:
+        return None, "Informe uma data válida para o débito."
+    try:
+        valor_debito = float(data.get("valor_debito", 0))
+    except (TypeError, ValueError):
+        return None, "Informe um valor de débito válido."
+    if not nome_orgao:
+        return None, "Informe o nome do órgão devedor."
+    if not numero_nota_fiscal:
+        return None, "Informe o número da nota fiscal."
+    if valor_debito < 0:
+        return None, "O valor do débito não pode ser negativo."
+    return {
+        "nome_orgao": nome_orgao,
+        "tipo_orgao": tipo_orgao or "Outro",
+        "data_debito": data_debito,
+        "valor_debito": valor_debito,
+        "pago": bool(data.get("pago", False)),
+        "numero_nota_fiscal": numero_nota_fiscal,
+    }, None
+
+
+@app.post("/api/orgaos-publicos")
+@login_required
+def criar_debito_orgao_publico():
+    payload, erro = validar_debito_orgao_payload(request.get_json(silent=True) or {})
+    if erro:
+        return jsonify({"erro": erro}), 400
+    registro = DebitoOrgaoPublico(**payload)
+    db.session.add(registro)
+    db.session.commit()
+    return jsonify(debito_orgao_dict(registro)), 201
+
+
+@app.put("/api/orgaos-publicos/<int:registro_id>")
+@login_required
+def atualizar_debito_orgao_publico(registro_id):
+    registro = db.session.get(DebitoOrgaoPublico, registro_id)
+    if not registro:
+        return jsonify({"erro": "Registro não encontrado."}), 404
+    payload, erro = validar_debito_orgao_payload(request.get_json(silent=True) or {})
+    if erro:
+        return jsonify({"erro": erro}), 400
+    for campo, valor in payload.items():
+        setattr(registro, campo, valor)
+    db.session.commit()
+    return jsonify(debito_orgao_dict(registro))
+
+
+@app.delete("/api/orgaos-publicos/<int:registro_id>")
+@login_required
+def excluir_debito_orgao_publico(registro_id):
+    registro = db.session.get(DebitoOrgaoPublico, registro_id)
+    if not registro:
+        return jsonify({"erro": "Registro não encontrado."}), 404
+    db.session.delete(registro)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.get("/api/exportar/orgaos-publicos.csv")
+@login_required
+def exportar_orgaos_publicos():
+    registros = db.session.execute(db.select(DebitoOrgaoPublico).order_by(DebitoOrgaoPublico.data_debito.desc())).scalars().all()
+    output = io.StringIO()
+    writer = csv.writer(output, delimiter=";")
+    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal"])
+    for r in registros:
+        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "NÃO PAGO", r.numero_nota_fiscal])
+    mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
+    return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="debitos_orgaos_publicos.csv")
+
+
 @app.get("/api/usuarios")
 @login_required
 @admin_required
@@ -660,6 +805,7 @@ def exportar_clientes():
 def backup_banco():
     clientes = db.session.execute(db.select(Cliente)).scalars().all()
     pagamentos = db.session.execute(db.select(Pagamento)).scalars().all()
+    orgaos_publicos = db.session.execute(db.select(DebitoOrgaoPublico)).scalars().all()
     payload = {
         "clientes": [{
             **cliente_dict(c),
@@ -673,6 +819,7 @@ def backup_banco():
             "observacao": p.observacao,
             "criado_em": p.criado_em.isoformat() if p.criado_em else None,
         } for p in pagamentos],
+        "orgaos_publicos": [debito_orgao_dict(r) for r in orgaos_publicos],
     }
     mem = io.BytesIO(json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
     return send_file(mem, mimetype="application/json", as_attachment=True, download_name="backup_clientes.json")

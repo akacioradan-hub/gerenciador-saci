@@ -190,3 +190,47 @@ if(window.IS_ADMIN){
     carregarUsuarios().catch(err=>msg(err.message,'erro'));
   }
 }
+
+// Controle de débitos de órgãos públicos
+let orgaosPublicos=[];
+async function carregarOrgaosPublicos(){
+  const params=new URLSearchParams();
+  const q=document.getElementById('buscaOrgao')?.value.trim();
+  const ano=document.getElementById('filtroAnoOrgao')?.value.trim();
+  const status=document.getElementById('filtroStatusOrgao')?.value;
+  if(q)params.set('q',q);if(ano)params.set('ano',ano);if(status)params.set('status',status);
+  const d=await api('/api/orgaos-publicos'+(params.toString()?'?'+params.toString():''));
+  orgaosPublicos=d.registros||[];
+  const r=d.resumo||{};
+  if(document.getElementById('govQtd')) document.getElementById('govQtd').textContent=r.quantidade||0;
+  if(document.getElementById('govTotal')) document.getElementById('govTotal').textContent=moeda(r.total||0);
+  if(document.getElementById('govPago')) document.getElementById('govPago').textContent=moeda(r.total_pago||0);
+  if(document.getElementById('govNaoPago')) document.getElementById('govNaoPago').textContent=moeda(r.total_nao_pago||0);
+  renderOrgaosPublicos();
+}
+function renderOrgaosPublicos(){
+  const body=document.getElementById('orgaosBody');if(!body)return;
+  body.innerHTML=orgaosPublicos.length?orgaosPublicos.map(r=>`<tr>
+    <td><strong>${r.nome_orgao}</strong></td><td>${r.tipo_orgao}</td><td>${r.dia}</td><td>${String(r.mes).padStart(2,'0')}</td><td>${r.ano}</td>
+    <td>${moeda(r.valor_debito)}</td><td><span class="badge ${r.pago?'QUITADO':'ATRASADO'}">${r.pago?'PAGO':'NÃO PAGO'}</span></td><td>${r.numero_nota_fiscal}</td>
+    <td><div class="acoes"><button class="edit" onclick="editarOrgaoPublico(${r.id})">Editar</button><button class="danger" onclick="excluirOrgaoPublico(${r.id})">Excluir</button></div></td>
+  </tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum débito de órgão público cadastrado.</td></tr>';
+}
+function limparOrgaoPublico(){
+  const f=document.getElementById('orgaoForm');if(!f)return;f.reset();document.getElementById('orgaoId').value='';document.getElementById('orgaoPago').value='false';document.getElementById('tituloOrgao').textContent='Cadastrar débito de órgão público';document.getElementById('cancelarOrgao').classList.add('hidden');
+}
+function editarOrgaoPublico(id){
+  const r=orgaosPublicos.find(x=>x.id===id);if(!r)return;
+  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoPago').value=String(r.pago);document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+async function excluirOrgaoPublico(id){
+  if(!confirm('Excluir este débito de órgão público?'))return;
+  try{await api('/api/orgaos-publicos/'+id,{method:'DELETE'});msg('Débito excluído.');await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}
+}
+const orgaoForm=document.getElementById('orgaoForm');
+if(orgaoForm){
+  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),pago:document.getElementById('orgaoPago').value==='true'};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}});
+  document.getElementById('cancelarOrgao').addEventListener('click',limparOrgaoPublico);
+  ['buscaOrgao','filtroAnoOrgao','filtroStatusOrgao'].forEach(id=>document.getElementById(id)?.addEventListener(id==='buscaOrgao'?'input':'change',()=>{clearTimeout(window._org);window._org=setTimeout(()=>carregarOrgaosPublicos().catch(err=>msg(err.message,'erro')),220)}));
+  carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'));
+}

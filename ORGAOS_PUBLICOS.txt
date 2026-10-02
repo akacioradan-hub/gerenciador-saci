@@ -1,0 +1,28 @@
+NOVA ABA — ÓRGÃOS PÚBLICOS
+
+Foi adicionada ao sistema a aba "Órgãos Públicos" para controle de débitos de prefeituras, câmaras municipais e outros órgãos públicos.
+
+CAMPOS:
+- Nome do órgão devedor
+- Tipo do órgão: Prefeitura, Câmara Municipal ou Outro
+- Data do débito (dia, mês e ano)
+- Valor do débito
+- Situação: Pago ou Não pago
+- Número da nota fiscal
+
+RECURSOS:
+- Cadastro, edição e exclusão
+- Filtro por nome/nota fiscal
+- Filtro por ano
+- Filtro por situação
+- Resumo com quantidade, total, total pago e total não pago
+- Exportação CSV
+- Inclusão dos registros no backup JSON do sistema
+
+BANCO DE DADOS:
+O sistema cria automaticamente a tabela "debitos_orgaos_publicos" no PostgreSQL durante o deploy. Os clientes, pagamentos e usuários já existentes não são apagados.
+
+ATUALIZAÇÃO NO RENDER:
+1. Substitua os arquivos do repositório GitHub pelos arquivos deste pacote.
+2. Faça Commit/Push.
+3. No Render, use Manual Deploy -> Deploy latest commit, caso o deploy automático não esteja habilitado.
