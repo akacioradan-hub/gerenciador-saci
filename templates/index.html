@@ -38,6 +38,7 @@
       <div class="topbar-actions">
         <a class="top-action" href="/api/exportar/clientes.csv">Exportar</a>
         <a class="top-action" href="/api/backup">Backup</a>
+        {% if consulta_publica_url %}<a class="top-action public-consulta-link" href="{{ consulta_publica_url }}" target="_blank" rel="noopener">Consulta pública</a>{% endif %}
         <button id="alertButton" class="notification-btn" type="button" aria-label="Notificações">
           <span class="bell">●</span><span class="notification-label">Avisos</span><span id="alertBadge" class="alert-badge hidden">0</span>
         </button>

@@ -1,10 +1,11 @@
 import os
+import hmac
 import csv
 import io
 import json
 from datetime import date
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, inspect, or_
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -19,6 +20,7 @@ def normalize_database_url(url: str) -> str:
 
 
 DATABASE_URL = normalize_database_url(os.getenv("DATABASE_URL", "sqlite:///clientes.db"))
+CONSULTA_TOKEN = (os.getenv("CONSULTA_TOKEN") or "").strip()
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
@@ -244,7 +246,38 @@ def cliente_dict(cliente):
 @login_required
 def index():
     user = usuario_atual()
-    return render_template("index.html", username=user.username, nome_usuario=user.nome, is_admin=(user.role == "admin"))
+    consulta_publica_url = url_for("consulta_publica", token=CONSULTA_TOKEN) if CONSULTA_TOKEN else None
+    return render_template(
+        "index.html",
+        username=user.username,
+        nome_usuario=user.nome,
+        is_admin=(user.role == "admin"),
+        consulta_publica_url=consulta_publica_url,
+    )
+
+
+@app.get("/consulta/<token>")
+def consulta_publica(token):
+    # Página somente leitura. O token não dá acesso às APIs privadas nem à área administrativa.
+    if not CONSULTA_TOKEN or not hmac.compare_digest(token, CONSULTA_TOKEN):
+        abort(404)
+
+    stmt = db.select(Cliente).order_by(Cliente.nome.asc())
+    registros = db.session.execute(stmt).scalars().all()
+    clientes_publicos = []
+    for cliente in registros:
+        dados = cliente_dict(cliente)
+        clientes_publicos.append({
+            "nome": dados["nome"],
+            "previsao": dados["previsao"],
+            "status": dados["status"],
+        })
+
+    return render_template(
+        "consulta_publica.html",
+        clientes=clientes_publicos,
+        atualizado_em=date.today().strftime("%d/%m/%Y"),
+    )
 
 
 @app.get("/health")

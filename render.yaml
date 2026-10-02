@@ -19,6 +19,8 @@ services:
         value: admin
       - key: ADMIN_PASSWORD
         sync: false
+      - key: CONSULTA_TOKEN
+        sync: false
 
 databases:
   - name: saci-clientes-db

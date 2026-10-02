@@ -1,0 +1,27 @@
+CONSULTA PÚBLICA SOMENTE LEITURA
+================================
+
+Esta versão inclui uma página externa que NÃO exige login.
+Ela exibe somente:
+- nome do cliente
+- previsão de pagamento
+- status
+
+Não exibe CPF/CNPJ, endereço, telefone, e-mail, dívida, pagamentos ou saldo.
+
+COMO ATIVAR NO RENDER
+1. Atualize os arquivos no GitHub e faça o deploy.
+2. No Render, abra o serviço > Environment.
+3. Crie a variável CONSULTA_TOKEN.
+4. Use um código longo, por exemplo: saci-consulta-8f72c91e-2026
+5. Salve. O Render reiniciará o serviço.
+
+O link ficará no formato:
+https://administrator-saci.onrender.com/consulta/SEU_TOKEN
+
+No painel interno aparecerá o botão "Consulta pública" quando CONSULTA_TOKEN estiver configurado.
+
+IMPORTANTE
+- Quem possuir o link poderá ver a lista.
+- Para revogar o link, altere CONSULTA_TOKEN no Render. O endereço antigo deixa de funcionar imediatamente após o restart.
+- Não compartilhe o token em locais públicos se quiser limitar o acesso a pessoas específicas.
