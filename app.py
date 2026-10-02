@@ -12,9 +12,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 def normalize_database_url(url: str) -> str:
     if url.startswith("postgres://"):
-        return "postgresql+psycopg://" + url[len("postgres://"):]
+        return "postgresql+psycopg2://" + url[len("postgres://"):]
     if url.startswith("postgresql://"):
-        return "postgresql+psycopg://" + url[len("postgresql://"):]
+        return "postgresql+psycopg2://" + url[len("postgresql://"):]
     return url
 
 
@@ -55,7 +55,12 @@ class Pagamento(db.Model):
 
 def init_db():
     with app.app_context():
-        db.create_all()
+        try:
+            db.create_all()
+            app.logger.info("Banco de dados inicializado com sucesso.")
+        except Exception:
+            app.logger.exception("Erro ao inicializar o banco de dados.")
+            raise
 
 
 def admin_credentials_ok(username, password):
@@ -143,10 +148,16 @@ def index():
 
 @app.get("/health")
 def health():
+    return jsonify({"status": "ok"})
+
+
+@app.get("/ready")
+def ready():
     try:
-        db.session.execute(db.select(func.count(Cliente.id))).scalar()
+        db.session.execute(db.text("SELECT 1"))
         return jsonify({"status": "ok", "database": "connected"})
     except Exception as exc:
+        app.logger.exception("Falha de conexão com o banco")
         return jsonify({"status": "erro", "database": str(exc)}), 500
 
 
