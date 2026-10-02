@@ -1,0 +1,12 @@
+CORREÇÃO DA ABA CLIENTES
+
+A versão anterior tinha perdido as funções JavaScript documentoFormatado() e localCliente().
+Isso fazia o carregamento da tabela parar mesmo com os clientes existentes no PostgreSQL.
+
+Esta versão restaura as funções e não altera nem apaga o banco de dados.
+
+Atualização:
+1. Substitua os arquivos no GitHub por esta versão.
+2. Faça Commit changes.
+3. No Render, use Manual Deploy > Deploy latest commit, se o Auto-Deploy não estiver habilitado.
+4. Depois do deploy, atualize a página com Ctrl+F5 para limpar o JavaScript antigo do cache.

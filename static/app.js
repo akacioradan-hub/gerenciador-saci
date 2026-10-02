@@ -86,6 +86,14 @@ async function carregarDashboard(){
   renderGraficos(d);
 }
 
+function documentoFormatado(v){
+  const d=String(v||'').replace(/\D/g,'');
+  if(d.length===11)return d.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4');
+  if(d.length===14)return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/,'$1.$2.$3/$4-$5');
+  return v||'-';
+}
+function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
+
 function renderClientes(){const body=document.getElementById('clientesBody');body.innerHTML=clientes.length?clientes.map(c=>`<tr><td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td><td>${documentoFormatado(c.cpf_cnpj)}</td><td>${c.whatsapp||c.telefone||'-'}</td><td>${localCliente(c)}</td><td>${moeda(c.divida)}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td><td><div class="acoes"><button class="view" onclick="mostrarCliente(${c.id})">Ver</button><button class="edit" onclick="editarCliente(${c.id})">Editar</button><button class="danger" onclick="excluirCliente(${c.id})">Excluir</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum cliente cadastrado.</td></tr>'}
 function preencherClientes(){const sel=document.getElementById('pagCliente');const atual=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');sel.value=atual}
 async function atualizarTudo(){await Promise.all([carregarClientes(),carregarPagamentos(),carregarDashboard()])}
