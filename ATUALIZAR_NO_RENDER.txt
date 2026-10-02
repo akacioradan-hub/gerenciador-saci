@@ -24,3 +24,13 @@ Atualização de identidade visual:
 - cores alinhadas à marca Saci Casa & Construção
 - logomarca aplicada no cabeçalho e login
 - favicon configurado com a marca da empresa
+
+
+ATUALIZAÇÃO VISUAL E AVISOS
+- barra lateral administrativa fixa e responsiva
+- dashboard mais compacto e moderno
+- gráficos menores e discretos
+- sino de avisos com badge de vencimentos
+- alerta destacado para clientes com pagamento previsto para hoje
+- painel lateral com clientes vencendo hoje e clientes atrasados
+- não altera nem apaga os dados atuais do PostgreSQL

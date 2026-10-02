@@ -11,150 +11,157 @@
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<header class="main-header">
-  <div class="brand-wrap">
-    <div class="brand-logo-box">
-      <img class="brand-logo" src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção">
+<div class="app-shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <img src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção">
+      <div><strong>Administrator</strong><span>Saci Casa & Construção</span></div>
     </div>
-    <div>
-      <div class="brand-kicker">SACI CASA & CONSTRUÇÃO</div>
-      <h1>Administrator Saci</h1>
-      <p>Painel centralizado para clientes, pagamentos e previsões de recebimentos.</p>
+    <nav class="side-nav">
+      <button class="tab-btn active" data-tab="dashboard"><span class="nav-icon">⌂</span><span>Dashboard</span></button>
+      <button class="tab-btn" data-tab="clientes"><span class="nav-icon">👤</span><span>Clientes</span></button>
+      <button class="tab-btn" data-tab="pagamentos"><span class="nav-icon">R$</span><span>Pagamentos</span></button>
+      {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span class="nav-icon">⚙</span><span>Usuários</span></button>{% endif %}
+    </nav>
+    <div class="sidebar-footer">
+      <div class="mini-user"><span class="avatar">{{ nome_usuario[:1]|upper }}</span><div><strong>{{ nome_usuario }}</strong><span>{% if is_admin %}Administrador{% else %}Usuário{% endif %}</span></div></div>
+      <a href="/logout" class="side-logout">Sair do sistema</a>
     </div>
-  </div>
-  <div class="header-actions">
-    <a class="ghost" href="/api/exportar/clientes.csv">Exportar CSV</a>
-    <a class="ghost" href="/api/backup">Backup JSON</a>
-    <span class="user-pill">{{ nome_usuario }}{% if is_admin %} · Administrador{% endif %}</span>
-    <a class="ghost" href="/logout">Sair</a>
-  </div>
-</header>
+  </aside>
 
-<div class="container">
-  <div id="mensagem" class="mensagem"></div>
-  <div class="tabs">
-    <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
-    <button class="tab-btn" data-tab="clientes">Clientes</button>
-    <button class="tab-btn" data-tab="pagamentos">Pagamentos</button>
-    {% if is_admin %}<button class="tab-btn" data-tab="usuarios">Usuários</button>{% endif %}
-  </div>
-
-  <section id="dashboard" class="tab active">
-    <div class="dashboard-title">
-      <div><span class="eyebrow">VISÃO GERAL</span><h2>Resumo financeiro</h2></div>
-      <span class="updated">Painel com identidade visual da Saci Casa & Construção</span>
-    </div>
-
-    <div class="grid kpis">
-      <div class="card kpi-card kpi-total"><div class="kpi-icon">R$</div><div><span>Total em carteira</span><strong id="kpiReceber">R$ 0,00</strong><small>Valor total cadastrado</small></div></div>
-      <div class="card kpi-card kpi-recebido"><div class="kpi-icon">✓</div><div><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong><small id="kpiPercentual">0% da carteira</small></div></div>
-      <div class="card kpi-card kpi-saldo"><div class="kpi-icon">↓</div><div><span>Falta receber</span><strong id="kpiSaldo">R$ 0,00</strong><small>Saldo devedor atual</small></div></div>
-      <div class="card kpi-card kpi-atraso"><div class="kpi-icon">!</div><div><span>Clientes em atraso</span><strong id="kpiAtraso">0</strong><small id="kpiAtrasadoValor">R$ 0,00 em atraso</small></div></div>
-    </div>
-
-    <div class="charts-grid mt">
-      <div class="card chart-card">
-        <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Recebido x Falta receber</h3></div></div>
-        <div class="chart-box chart-donut"><canvas id="chartCarteira"></canvas></div>
+  <main class="main-area">
+    <header class="topbar">
+      <div class="topbar-left">
+        <button id="menuToggle" class="menu-toggle" aria-label="Abrir menu">☰</button>
+        <div><span class="topbar-kicker">SACI CASA & CONSTRUÇÃO</span><h1>Gestão de clientes e recebimentos</h1></div>
       </div>
-      <div class="card chart-card wide">
-        <div class="card-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Recebimentos por mês</h3></div><span class="chart-note">Últimos 6 meses</span></div>
-        <div class="chart-box"><canvas id="chartRecebimentos"></canvas></div>
+      <div class="topbar-actions">
+        <a class="top-action" href="/api/exportar/clientes.csv">Exportar</a>
+        <a class="top-action" href="/api/backup">Backup</a>
+        <button id="alertButton" class="notification-btn" type="button" aria-label="Notificações">
+          <span class="bell">●</span><span class="notification-label">Avisos</span><span id="alertBadge" class="alert-badge hidden">0</span>
+        </button>
       </div>
-    </div>
+    </header>
 
-    <div class="card chart-card mt">
-      <div class="card-head">
-        <div><span class="eyebrow">FLUXO PREVISTO</span><h3>Previsão de recebimentos</h3></div>
-        <div class="forecast-total"><span>Previsto nos próximos meses</span><strong id="kpiPrevisto">R$ 0,00</strong></div>
-      </div>
-      <div class="chart-box forecast"><canvas id="chartPrevisao"></canvas></div>
-      <div id="previsaoAviso" class="forecast-warning hidden"></div>
-    </div>
+    <div class="content">
+      <div id="mensagem" class="mensagem"></div>
 
-    <div class="two-col mt">
-      <div class="card">
-        <div class="card-head"><div><span class="eyebrow">AGENDA FINANCEIRA</span><h3>Próximos vencimentos e saldos</h3></div></div>
-        <div class="table-wrap"><table>
-          <thead><tr><th>Cliente</th><th>Previsão</th><th>Saldo</th><th>Status</th></tr></thead>
-          <tbody id="dashClientes"></tbody>
-        </table></div>
-      </div>
-      <div class="card">
-        <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Resumo por status</h3></div></div>
-        <div id="statusResumo" class="status-list"></div>
-      </div>
-    </div>
-  </section>
+      <section id="dashboard" class="tab active">
+        <div class="page-head">
+          <div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Recebimentos, saldos e vencimentos em um único lugar.</p></div>
+          <div class="date-chip" id="dataHoje"></div>
+        </div>
 
-  <section id="clientes" class="tab">
-    <div class="card">
-      <h3 id="tituloCliente">Cadastrar cliente</h3>
-      <form id="clienteForm">
-        <input type="hidden" id="clienteId">
-        <label>Nome do cliente<input id="nomeCliente" required></label>
-        <label>Valor inicial da dívida<input id="valorDivida" type="number" min="0" step="0.01" required></label>
-        <label>Previsão de pagamento<input id="previsaoPagamento" type="date"></label>
-        <div class="form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar</button></div>
-      </form>
-    </div>
+        <div id="dueTodayBanner" class="due-banner hidden">
+          <div class="due-banner-icon">!</div>
+          <div class="due-banner-text"><strong id="dueTodayTitle">Há pagamentos previstos para hoje</strong><span id="dueTodayText"></span></div>
+          <button id="openDueAlerts" type="button">Ver avisos</button>
+        </div>
 
-    <div class="card mt">
-      <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar cliente..."></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>ID</th><th>Cliente</th><th>Dívida inicial</th><th>Previsão</th><th>Total pago</th><th>Saldo</th><th>Último pagamento</th><th>Status</th><th>Ações</th></tr></thead>
-        <tbody id="clientesBody"></tbody>
-      </table></div>
-    </div>
-  </section>
+        <div class="grid kpis">
+          <div class="card kpi-card"><div class="kpi-accent red"></div><span>Total em carteira</span><strong id="kpiReceber">R$ 0,00</strong><small>Valor total cadastrado</small></div>
+          <div class="card kpi-card"><div class="kpi-accent dark"></div><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong><small id="kpiPercentual">0% da carteira</small></div>
+          <div class="card kpi-card"><div class="kpi-accent orange"></div><span>Falta receber</span><strong id="kpiSaldo">R$ 0,00</strong><small>Saldo devedor atual</small></div>
+          <div class="card kpi-card"><div class="kpi-accent danger"></div><span>Clientes em atraso</span><strong id="kpiAtraso">0</strong><small id="kpiAtrasadoValor">R$ 0,00 em atraso</small></div>
+        </div>
 
-  <section id="pagamentos" class="tab">
-    <div class="card">
-      <h3>Registrar pagamento</h3>
-      <form id="pagamentoForm">
-        <label>Cliente<select id="pagCliente" required></select></label>
-        <label>Data do pagamento<input id="pagData" type="date" required></label>
-        <label>Valor pago<input id="pagValor" type="number" min="0.01" step="0.01" required></label>
-        <label>Observação<input id="pagObs" placeholder="Opcional"></label>
-        <div class="form-actions"><button class="primary" type="submit">Registrar pagamento</button></div>
-      </form>
-    </div>
+        <div class="dashboard-grid mt">
+          <div class="card compact-card">
+            <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Recebido x saldo</h3></div></div>
+            <div class="chart-box compact-donut"><canvas id="chartCarteira"></canvas></div>
+          </div>
+          <div class="card compact-card">
+            <div class="card-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Recebimentos</h3></div><span class="chart-note">6 meses</span></div>
+            <div class="chart-box compact-chart"><canvas id="chartRecebimentos"></canvas></div>
+          </div>
+          <div class="card compact-card">
+            <div class="card-head"><div><span class="eyebrow">PREVISÃO</span><h3>Próximos recebimentos</h3></div><strong id="kpiPrevisto" class="forecast-number">R$ 0,00</strong></div>
+            <div class="chart-box compact-chart"><canvas id="chartPrevisao"></canvas></div>
+            <div id="previsaoAviso" class="forecast-warning hidden"></div>
+          </div>
+        </div>
 
-    <div class="card mt">
-      <h3>Histórico de pagamentos</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead>
-        <tbody id="pagamentosBody"></tbody>
-      </table></div>
-    </div>
-  </section>
-  {% if is_admin %}
-  <section id="usuarios" class="tab">
-    <div class="card">
-      <div class="card-head"><div><span class="eyebrow">ACESSO AO SISTEMA</span><h3 id="tituloUsuario">Criar novo usuário</h3></div></div>
-      <form id="usuarioForm">
-        <input type="hidden" id="usuarioId">
-        <label>Nome completo<input id="usuarioNome" required placeholder="Ex.: Maria da Silva"></label>
-        <label>Usuário<input id="usuarioLogin" required minlength="3" placeholder="Ex.: maria"></label>
-        <label>Senha<input id="usuarioSenha" type="password" minlength="6" placeholder="Mínimo 6 caracteres"></label>
-        <label>Perfil<select id="usuarioRole"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select></label>
-        <label class="check-label"><input id="usuarioAtivo" type="checkbox" checked> Usuário ativo</label>
-        <div class="form-actions"><button class="primary" type="submit">Salvar usuário</button><button id="cancelarUsuario" class="secondary hidden" type="button">Cancelar</button></div>
-      </form>
-      <p class="form-hint">Usuários comuns podem acessar clientes, pagamentos e dashboard. Administradores também podem gerenciar usuários.</p>
-    </div>
+        <div class="two-col mt">
+          <div class="card">
+            <div class="card-head"><div><span class="eyebrow">AGENDA FINANCEIRA</span><h3>Próximos vencimentos e saldos</h3></div></div>
+            <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Previsão</th><th>Saldo</th><th>Status</th></tr></thead><tbody id="dashClientes"></tbody></table></div>
+          </div>
+          <div class="card">
+            <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Resumo por status</h3></div></div>
+            <div id="statusResumo" class="status-list"></div>
+          </div>
+        </div>
+      </section>
 
-    <div class="card mt">
-      <div class="toolbar"><h3>Usuários cadastrados</h3></div>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
-        <tbody id="usuariosBody"></tbody>
-      </table></div>
-    </div>
-  </section>
-  {% endif %}
+      <section id="clientes" class="tab">
+        <div class="page-head"><div><span class="eyebrow">CADASTRO</span><h2>Clientes</h2><p>Gerencie os clientes e as datas previstas de recebimento.</p></div></div>
+        <div class="card">
+          <h3 id="tituloCliente">Cadastrar cliente</h3>
+          <form id="clienteForm">
+            <input type="hidden" id="clienteId">
+            <label>Nome do cliente<input id="nomeCliente" required></label>
+            <label>Valor inicial da dívida<input id="valorDivida" type="number" min="0" step="0.01" required></label>
+            <label>Previsão de pagamento<input id="previsaoPagamento" type="date"></label>
+            <div class="form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar</button></div>
+          </form>
+        </div>
+        <div class="card mt">
+          <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar cliente..."></div>
+          <div class="table-wrap"><table><thead><tr><th>ID</th><th>Cliente</th><th>Dívida inicial</th><th>Previsão</th><th>Total pago</th><th>Saldo</th><th>Último pagamento</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
+        </div>
+      </section>
 
+      <section id="pagamentos" class="tab">
+        <div class="page-head"><div><span class="eyebrow">MOVIMENTAÇÃO</span><h2>Pagamentos</h2><p>Registre recebimentos e acompanhe o histórico.</p></div></div>
+        <div class="card">
+          <h3>Registrar pagamento</h3>
+          <form id="pagamentoForm">
+            <label>Cliente<select id="pagCliente" required></select></label>
+            <label>Data do pagamento<input id="pagData" type="date" required></label>
+            <label>Valor pago<input id="pagValor" type="number" min="0.01" step="0.01" required></label>
+            <label>Observação<input id="pagObs" placeholder="Opcional"></label>
+            <div class="form-actions"><button class="primary" type="submit">Registrar pagamento</button></div>
+          </form>
+        </div>
+        <div class="card mt">
+          <h3>Histórico de pagamentos</h3>
+          <div class="table-wrap"><table><thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
+        </div>
+      </section>
+
+      {% if is_admin %}
+      <section id="usuarios" class="tab">
+        <div class="page-head"><div><span class="eyebrow">ADMINISTRAÇÃO</span><h2>Usuários</h2><p>Controle quem pode acessar o sistema.</p></div></div>
+        <div class="card">
+          <h3 id="tituloUsuario">Criar novo usuário</h3>
+          <form id="usuarioForm">
+            <input type="hidden" id="usuarioId">
+            <label>Nome completo<input id="usuarioNome" required placeholder="Ex.: Maria da Silva"></label>
+            <label>Usuário<input id="usuarioLogin" required minlength="3" placeholder="Ex.: maria"></label>
+            <label>Senha<input id="usuarioSenha" type="password" minlength="6" placeholder="Mínimo 6 caracteres"></label>
+            <label>Perfil<select id="usuarioRole"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select></label>
+            <label class="check-label"><input id="usuarioAtivo" type="checkbox" checked> Usuário ativo</label>
+            <div class="form-actions"><button class="primary" type="submit">Salvar usuário</button><button id="cancelarUsuario" class="secondary hidden" type="button">Cancelar</button></div>
+          </form>
+          <p class="form-hint">Usuários comuns acessam clientes, pagamentos e dashboard. Administradores também gerenciam usuários.</p>
+        </div>
+        <div class="card mt">
+          <div class="toolbar"><h3>Usuários cadastrados</h3></div>
+          <div class="table-wrap"><table><thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead><tbody id="usuariosBody"></tbody></table></div>
+        </div>
+      </section>
+      {% endif %}
+    </div>
+  </main>
 </div>
+
+<div id="alertOverlay" class="alert-overlay hidden"></div>
+<aside id="alertPanel" class="alert-panel">
+  <div class="alert-panel-head"><div><span class="eyebrow">CENTRO DE AVISOS</span><h3>Vencimentos</h3></div><button id="closeAlerts" type="button">×</button></div>
+  <div id="alertPanelBody" class="alert-panel-body"><div class="empty">Nenhum aviso.</div></div>
+</aside>
+
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js"></script>

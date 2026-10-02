@@ -351,6 +351,27 @@ def dashboard():
     hoje = date.today()
     valor_atrasado = sum(i["saldo"] for i in itens if i["status"] == "ATRASADO")
 
+    vencem_hoje = []
+    atrasados = []
+    for item in itens:
+        if item["saldo"] <= 0 or not item["previsao"]:
+            continue
+        data_prevista = date.fromisoformat(item["previsao"])
+        resumo = {
+            "id": item["id"],
+            "nome": item["nome"],
+            "previsao": item["previsao"],
+            "saldo": item["saldo"],
+            "status": item["status"],
+        }
+        if data_prevista == hoje:
+            vencem_hoje.append(resumo)
+        elif data_prevista < hoje:
+            atrasados.append(resumo)
+
+    vencem_hoje.sort(key=lambda x: x["nome"].lower())
+    atrasados.sort(key=lambda x: (x["previsao"], x["nome"].lower()))
+
     recebimentos_mensais = []
     for offset in range(-5, 1):
         ano, mes = add_months(hoje.year, hoje.month, offset)
@@ -378,6 +399,9 @@ def dashboard():
         "saldo_devedor": saldo,
         "clientes_atraso": status["ATRASADO"],
         "valor_atrasado": valor_atrasado,
+        "vencem_hoje": vencem_hoje,
+        "atrasados": atrasados[:20],
+        "total_alertas": len(vencem_hoje) + len(atrasados),
         "total_previsto_futuro": total_previsto_futuro,
         "recebimentos_mensais": recebimentos_mensais,
         "previsao_mensal": previsao_mensal,

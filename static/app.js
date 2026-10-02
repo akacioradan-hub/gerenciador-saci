@@ -17,7 +17,7 @@ function renderGraficos(d){
   destroyChart('carteira');
   charts.carteira=new Chart(document.getElementById('chartCarteira'),{
     type:'doughnut',
-    data:{labels:['Recebido','Falta receber'],datasets:[{data:[d.total_recebido,d.saldo_devedor],backgroundColor:['#202024','#ff8f89'],borderWidth:0,hoverOffset:4}]},
+    data:{labels:['Recebido','Falta receber'],datasets:[{data:[d.total_recebido,d.saldo_devedor],backgroundColor:['#2d2d31','#f3a19d'],borderWidth:0,hoverOffset:4}]},
     options:{...chartBase(),cutout:'68%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:8}}}}
   });
 
@@ -31,7 +31,7 @@ function renderGraficos(d){
   destroyChart('previsao');
   charts.previsao=new Chart(document.getElementById('chartPrevisao'),{
     type:'bar',
-    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão de recebimento',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#2a2a2e',borderRadius:7,maxBarThickness:52}]},
+    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão de recebimento',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#5a5a60',borderRadius:7,maxBarThickness:52}]},
     options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false}},y:{beginAtZero:true,grid:{color:'#edf1f5'},ticks:{callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
 }
@@ -49,8 +49,38 @@ async function carregarDashboard(){
   document.getElementById('statusResumo').innerHTML=Object.entries(d.status).map(([k,v])=>`<div class="status-row"><span>${k}</span><strong>${v}</strong></div>`).join('');
   document.getElementById('dashClientes').innerHTML=d.proximos.length?d.proximos.map(c=>`<tr><td>${c.nome}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nenhum cliente cadastrado.</td></tr>';
   const aviso=document.getElementById('previsaoAviso');
-  if(d.valor_atrasado>0){aviso.textContent=`Além da previsão futura, existem ${moeda(d.valor_atrasado)} em saldos vencidos que permanecem em atraso.`;aviso.classList.remove('hidden')}else{aviso.classList.add('hidden')}
+  if(d.valor_atrasado>0){aviso.textContent=`${moeda(d.valor_atrasado)} em saldos vencidos.`;aviso.classList.remove('hidden')}else{aviso.classList.add('hidden')}
+  atualizarAvisos(d);
   renderGraficos(d);
+}
+
+function atualizarAvisos(d){
+  const badge=document.getElementById('alertBadge');
+  const total=Number(d.total_alertas||0);
+  badge.textContent=total>99?'99+':total;
+  badge.classList.toggle('hidden',total===0);
+
+  const banner=document.getElementById('dueTodayBanner');
+  const hoje=d.vencem_hoje||[];
+  if(hoje.length){
+    const valor=hoje.reduce((s,x)=>s+Number(x.saldo||0),0);
+    document.getElementById('dueTodayTitle').textContent=hoje.length===1?'1 cliente com pagamento previsto para hoje':`${hoje.length} clientes com pagamento previsto para hoje`;
+    document.getElementById('dueTodayText').textContent=`Total previsto para hoje: ${moeda(valor)}.`;
+    banner.classList.remove('hidden');
+  }else banner.classList.add('hidden');
+
+  const body=document.getElementById('alertPanelBody');
+  let html='';
+  if(hoje.length){
+    html+='<div class="alert-section-title">Vencem hoje</div>';
+    html+=hoje.map(x=>`<div class="alert-item today"><strong>${x.nome}</strong><span>Previsão: hoje</span><span class="alert-value">Saldo: ${moeda(x.saldo)}</span></div>`).join('');
+  }
+  const atrasados=d.atrasados||[];
+  if(atrasados.length){
+    html+='<div class="alert-section-title">Em atraso</div>';
+    html+=atrasados.map(x=>`<div class="alert-item overdue"><strong>${x.nome}</strong><span>Venceu em ${dataBR(x.previsao)}</span><span class="alert-value">Saldo: ${moeda(x.saldo)}</span></div>`).join('');
+  }
+  body.innerHTML=html||'<div class="empty">Nenhum vencimento pendente.</div>';
 }
 
 function renderClientes(){const body=document.getElementById('clientesBody');body.innerHTML=clientes.length?clientes.map(c=>`<tr><td>${c.id}</td><td>${c.nome}</td><td>${moeda(c.divida)}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.total_pago)}</td><td>${moeda(c.saldo)}</td><td>${dataBR(c.ultimo_pagamento)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td><td><div class="acoes"><button class="edit" onclick="editarCliente(${c.id})">Editar</button><button class="danger" onclick="excluirCliente(${c.id})">Excluir</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum cliente cadastrado.</td></tr>'}
@@ -70,6 +100,21 @@ document.getElementById('buscaCliente').addEventListener('input',()=>{clearTimeo
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active');if(btn.dataset.tab==='dashboard')setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),80)}))
 document.getElementById('pagData').valueAsDate=new Date();
 atualizarTudo().catch(err=>msg(err.message,'erro'));
+
+
+// Interface administrativa moderna
+const hojeFormatado=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit',month:'long'}).format(new Date());
+const dataHoje=document.getElementById('dataHoje');if(dataHoje)dataHoje.textContent=hojeFormatado.charAt(0).toUpperCase()+hojeFormatado.slice(1);
+const sidebar=document.getElementById('sidebar');
+const menuToggle=document.getElementById('menuToggle');
+if(menuToggle)menuToggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{if(window.innerWidth<=820)sidebar.classList.remove('open')}));
+function abrirAvisos(){document.getElementById('alertPanel').classList.add('open');document.getElementById('alertOverlay').classList.remove('hidden')}
+function fecharAvisos(){document.getElementById('alertPanel').classList.remove('open');document.getElementById('alertOverlay').classList.add('hidden')}
+document.getElementById('alertButton')?.addEventListener('click',abrirAvisos);
+document.getElementById('openDueAlerts')?.addEventListener('click',abrirAvisos);
+document.getElementById('closeAlerts')?.addEventListener('click',fecharAvisos);
+document.getElementById('alertOverlay')?.addEventListener('click',fecharAvisos);
 
 // Gestão de usuários (somente administrador)
 let usuarios=[];
