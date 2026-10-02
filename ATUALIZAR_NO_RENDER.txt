@@ -1,0 +1,20 @@
+ATUALIZAÇÃO DO PAINEL — GRÁFICOS FINANCEIROS
+
+1. Substitua no seu repositório do GitHub os arquivos deste pacote pelos atuais.
+2. Faça Commit changes no GitHub.
+3. No Render, abra o serviço administrator-saci.
+4. Vá em Manual Deploy > Deploy latest commit.
+5. Aguarde o status Live e atualize a página.
+
+NOVO DASHBOARD
+- Total em carteira
+- Total recebido e percentual recebido
+- Falta receber
+- Clientes e valor em atraso
+- Gráfico Recebido x Falta receber
+- Gráfico de recebimentos dos últimos 6 meses
+- Gráfico de previsão de recebimentos dos próximos 6 meses
+- Aviso de valor vencido em atraso
+- Agenda de próximos vencimentos
+
+A previsão considera o saldo devedor ainda existente para cada cliente na data de previsão cadastrada.

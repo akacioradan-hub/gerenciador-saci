@@ -1,0 +1,19 @@
+ATUALIZAÇÃO — GESTÃO DE USUÁRIOS
+
+1. Substitua no GitHub os arquivos/pastas deste pacote.
+2. Faça commit das alterações.
+3. No Render: Manual Deploy > Deploy latest commit.
+4. O banco PostgreSQL existente será mantido. Na inicialização, a tabela "usuarios" será criada automaticamente.
+5. Se ainda não houver usuários no banco, o sistema cria o administrador inicial usando ADMIN_USER e ADMIN_PASSWORD do Render.
+
+RECURSOS:
+- Aba Usuários visível apenas para administradores.
+- Criação de usuários comuns ou administradores.
+- Senhas armazenadas com hash seguro (Werkzeug).
+- Ativar/inativar usuário.
+- Redefinir senha ao editar.
+- Impede excluir o próprio usuário conectado.
+- Usuário comum não pode gerenciar usuários.
+
+IMPORTANTE:
+Depois que a tabela de usuários já existir, alterar ADMIN_PASSWORD no Render não troca automaticamente a senha do administrador. A senha passa a ser controlada pelo banco e pode ser redefinida na aba Usuários.

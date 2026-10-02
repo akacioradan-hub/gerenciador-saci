@@ -32,6 +32,23 @@ if os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT"):
 db = SQLAlchemy(app)
 
 
+class Usuario(db.Model):
+    __tablename__ = "usuarios"
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), nullable=False, unique=True, index=True)
+    nome = db.Column(db.String(160), nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="usuario")
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
+    criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
+
+    def verificar_senha(self, senha):
+        return check_password_hash(self.password_hash, senha)
+
+    def definir_senha(self, senha):
+        self.password_hash = generate_password_hash(senha)
+
+
 class Cliente(db.Model):
     __tablename__ = "clientes"
     id = db.Column(db.Integer, primary_key=True)
@@ -57,25 +74,45 @@ def init_db():
     with app.app_context():
         try:
             db.create_all()
+            # Cria o administrador inicial somente se ainda não existir nenhum usuário.
+            if db.session.execute(db.select(func.count(Usuario.id))).scalar_one() == 0:
+                username = (os.getenv("ADMIN_USER", "admin") or "admin").strip()
+                senha = os.getenv("ADMIN_PASSWORD", "troque-esta-senha")
+                admin = Usuario(username=username, nome="Administrador", role="admin", ativo=True)
+                admin.definir_senha(senha)
+                db.session.add(admin)
+                db.session.commit()
+                app.logger.info("Usuário administrador inicial criado: %s", username)
             app.logger.info("Banco de dados inicializado com sucesso.")
         except Exception:
+            db.session.rollback()
             app.logger.exception("Erro ao inicializar o banco de dados.")
             raise
 
 
-def admin_credentials_ok(username, password):
-    expected_user = os.getenv("ADMIN_USER", "admin")
-    password_hash = os.getenv("ADMIN_PASSWORD_HASH")
-    if password_hash:
-        return username == expected_user and check_password_hash(password_hash, password)
-    expected_password = os.getenv("ADMIN_PASSWORD", "troque-esta-senha")
-    return username == expected_user and password == expected_password
+def usuario_atual():
+    uid = session.get("user_id")
+    return db.session.get(Usuario, uid) if uid else None
+
+
+def admin_required(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        user = usuario_atual()
+        if not user or not user.ativo or user.role != "admin":
+            if request.path.startswith("/api/"):
+                return jsonify({"erro": "Acesso restrito ao administrador."}), 403
+            return redirect(url_for("index"))
+        return fn(*args, **kwargs)
+    return wrapper
 
 
 def login_required(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        if not session.get("logged_in"):
+        user = usuario_atual()
+        if not user or not user.ativo:
+            session.clear()
             if request.path.startswith("/api/"):
                 return jsonify({"erro": "Sessão expirada. Faça login novamente."}), 401
             return redirect(url_for("login", next=request.path))
@@ -85,7 +122,7 @@ def login_required(fn):
 
 @app.get("/login")
 def login():
-    if session.get("logged_in"):
+    if usuario_atual():
         return redirect(url_for("index"))
     return render_template("login.html", erro=None)
 
@@ -94,11 +131,13 @@ def login():
 def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
-    if not admin_credentials_ok(username, password):
+    user = db.session.execute(db.select(Usuario).where(Usuario.username == username)).scalar_one_or_none()
+    if not user or not user.ativo or not user.verificar_senha(password):
         return render_template("login.html", erro="Usuário ou senha inválidos."), 401
     session.clear()
-    session["logged_in"] = True
-    session["username"] = username
+    session["user_id"] = user.id
+    session["username"] = user.username
+    session["role"] = user.role
     return redirect(request.args.get("next") or url_for("index"))
 
 
@@ -143,7 +182,8 @@ def cliente_dict(cliente):
 @app.get("/")
 @login_required
 def index():
-    return render_template("index.html", username=session.get("username"))
+    user = usuario_atual()
+    return render_template("index.html", username=user.username, nome_usuario=user.nome, is_admin=(user.role == "admin"))
 
 
 @app.get("/health")
@@ -289,26 +329,138 @@ def excluir_pagamento(pagamento_id):
     return jsonify({"ok": True})
 
 
+def add_months(year, month, offset):
+    idx = (year * 12 + (month - 1)) + offset
+    return idx // 12, idx % 12 + 1
+
+
 @app.get("/api/dashboard")
 @login_required
 def dashboard():
     clientes = db.session.execute(db.select(Cliente)).scalars().all()
+    pagamentos = db.session.execute(db.select(Pagamento)).scalars().all()
     itens = [cliente_dict(c) for c in clientes]
+
     total_receber = sum(i["divida"] for i in itens)
     total_recebido = sum(i["total_pago"] for i in itens)
     saldo = sum(i["saldo"] for i in itens)
     status = {k: 0 for k in ["QUITADO", "EM ABERTO", "ATRASADO", "SEM PREVISÃO"]}
     for item in itens:
         status[item["status"]] += 1
+
+    hoje = date.today()
+    valor_atrasado = sum(i["saldo"] for i in itens if i["status"] == "ATRASADO")
+
+    recebimentos_mensais = []
+    for offset in range(-5, 1):
+        ano, mes = add_months(hoje.year, hoje.month, offset)
+        valor = sum(float(p.valor or 0) for p in pagamentos if p.data and p.data.year == ano and p.data.month == mes)
+        recebimentos_mensais.append({"mes": f"{ano:04d}-{mes:02d}", "valor": valor})
+
+    previsao_mensal = []
+    for offset in range(0, 6):
+        ano, mes = add_months(hoje.year, hoje.month, offset)
+        valor = 0.0
+        for item in itens:
+            if item["saldo"] <= 0 or not item["previsao"]:
+                continue
+            p = date.fromisoformat(item["previsao"])
+            if p.year == ano and p.month == mes and p >= hoje:
+                valor += item["saldo"]
+        previsao_mensal.append({"mes": f"{ano:04d}-{mes:02d}", "valor": valor})
+
+    total_previsto_futuro = sum(x["valor"] for x in previsao_mensal)
     proximos = sorted(itens, key=lambda x: (x["previsao"] is None, x["previsao"] or "9999-12-31", x["nome"].lower()))[:12]
+
     return jsonify({
         "total_receber": total_receber,
         "total_recebido": total_recebido,
         "saldo_devedor": saldo,
         "clientes_atraso": status["ATRASADO"],
+        "valor_atrasado": valor_atrasado,
+        "total_previsto_futuro": total_previsto_futuro,
+        "recebimentos_mensais": recebimentos_mensais,
+        "previsao_mensal": previsao_mensal,
         "status": status,
         "proximos": proximos,
     })
+
+
+@app.get("/api/usuarios")
+@login_required
+@admin_required
+def listar_usuarios():
+    usuarios = db.session.execute(db.select(Usuario).order_by(Usuario.nome.asc())).scalars().all()
+    return jsonify([{
+        "id": u.id, "username": u.username, "nome": u.nome, "role": u.role,
+        "ativo": bool(u.ativo), "criado_em": u.criado_em.isoformat() if u.criado_em else None
+    } for u in usuarios])
+
+
+@app.post("/api/usuarios")
+@login_required
+@admin_required
+def criar_usuario():
+    data = request.get_json(silent=True) or {}
+    username = (data.get("username") or "").strip()
+    nome = (data.get("nome") or "").strip()
+    senha = data.get("senha") or ""
+    role = data.get("role") if data.get("role") in ("admin", "usuario") else "usuario"
+    if len(username) < 3:
+        return jsonify({"erro": "O usuário deve ter pelo menos 3 caracteres."}), 400
+    if not nome:
+        return jsonify({"erro": "Informe o nome do usuário."}), 400
+    if len(senha) < 6:
+        return jsonify({"erro": "A senha deve ter pelo menos 6 caracteres."}), 400
+    if db.session.execute(db.select(Usuario).where(Usuario.username == username)).scalar_one_or_none():
+        return jsonify({"erro": "Este nome de usuário já existe."}), 409
+    u = Usuario(username=username, nome=nome, role=role, ativo=True)
+    u.definir_senha(senha)
+    db.session.add(u)
+    db.session.commit()
+    return jsonify({"id": u.id}), 201
+
+
+@app.put("/api/usuarios/<int:usuario_id>")
+@login_required
+@admin_required
+def atualizar_usuario(usuario_id):
+    u = db.session.get(Usuario, usuario_id)
+    if not u:
+        return jsonify({"erro": "Usuário não encontrado."}), 404
+    data = request.get_json(silent=True) or {}
+    nome = (data.get("nome") or u.nome).strip()
+    role = data.get("role") if data.get("role") in ("admin", "usuario") else u.role
+    ativo = bool(data.get("ativo", u.ativo))
+    senha = data.get("senha") or ""
+    if not nome:
+        return jsonify({"erro": "Informe o nome do usuário."}), 400
+    atual = usuario_atual()
+    if u.id == atual.id and (role != "admin" or not ativo):
+        return jsonify({"erro": "Você não pode remover seu próprio acesso de administrador."}), 400
+    u.nome = nome
+    u.role = role
+    u.ativo = ativo
+    if senha:
+        if len(senha) < 6:
+            return jsonify({"erro": "A nova senha deve ter pelo menos 6 caracteres."}), 400
+        u.definir_senha(senha)
+    db.session.commit()
+    return jsonify({"ok": True})
+
+
+@app.delete("/api/usuarios/<int:usuario_id>")
+@login_required
+@admin_required
+def excluir_usuario(usuario_id):
+    u = db.session.get(Usuario, usuario_id)
+    if not u:
+        return jsonify({"erro": "Usuário não encontrado."}), 404
+    if u.id == usuario_atual().id:
+        return jsonify({"erro": "Você não pode excluir o usuário que está conectado."}), 400
+    db.session.delete(u)
+    db.session.commit()
+    return jsonify({"ok": True})
 
 
 @app.get("/api/exportar/clientes.csv")

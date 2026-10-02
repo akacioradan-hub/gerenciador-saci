@@ -3,20 +3,22 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Dashboard de Clientes e Pagamentos</title>
+<title>Administrator Saci — Clientes e Recebimentos</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header>
   <div>
-    <h1>Dashboard de Clientes e Pagamentos</h1>
-    <p>Banco central compartilhado entre os computadores da rede.</p>
+    <div class="brand-kicker">ADMINISTRATOR SACI</div>
+    <h1>Painel Financeiro de Clientes</h1>
+    <p>Controle centralizado de recebimentos, saldos e previsões.</p>
   </div>
   <div class="header-actions">
     <a class="ghost" href="/api/exportar/clientes.csv">Exportar CSV</a>
     <a class="ghost" href="/api/backup">Backup JSON</a>
+    <span class="user-pill">{{ nome_usuario }}{% if is_admin %} · Administrador{% endif %}</span>
+    <a class="ghost" href="/logout">Sair</a>
   </div>
-<a class="ghost" href="/logout" style="margin-left:auto">Sair</a>
 </header>
 
 <div class="container">
@@ -25,26 +27,52 @@
     <button class="tab-btn active" data-tab="dashboard">Dashboard</button>
     <button class="tab-btn" data-tab="clientes">Clientes</button>
     <button class="tab-btn" data-tab="pagamentos">Pagamentos</button>
+    {% if is_admin %}<button class="tab-btn" data-tab="usuarios">Usuários</button>{% endif %}
   </div>
 
   <section id="dashboard" class="tab active">
+    <div class="dashboard-title">
+      <div><span class="eyebrow">VISÃO GERAL</span><h2>Resumo financeiro</h2></div>
+      <span class="updated">Atualizado com os dados do banco central</span>
+    </div>
+
     <div class="grid kpis">
-      <div class="card"><span>Total a receber</span><strong id="kpiReceber">R$ 0,00</strong></div>
-      <div class="card"><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong></div>
-      <div class="card"><span>Saldo devedor</span><strong id="kpiSaldo">R$ 0,00</strong></div>
-      <div class="card"><span>Clientes em atraso</span><strong id="kpiAtraso">0</strong></div>
+      <div class="card kpi-card kpi-total"><div class="kpi-icon">R$</div><div><span>Total em carteira</span><strong id="kpiReceber">R$ 0,00</strong><small>Valor total cadastrado</small></div></div>
+      <div class="card kpi-card kpi-recebido"><div class="kpi-icon">✓</div><div><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong><small id="kpiPercentual">0% da carteira</small></div></div>
+      <div class="card kpi-card kpi-saldo"><div class="kpi-icon">↓</div><div><span>Falta receber</span><strong id="kpiSaldo">R$ 0,00</strong><small>Saldo devedor atual</small></div></div>
+      <div class="card kpi-card kpi-atraso"><div class="kpi-icon">!</div><div><span>Clientes em atraso</span><strong id="kpiAtraso">0</strong><small id="kpiAtrasadoValor">R$ 0,00 em atraso</small></div></div>
+    </div>
+
+    <div class="charts-grid mt">
+      <div class="card chart-card">
+        <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Recebido x Falta receber</h3></div></div>
+        <div class="chart-box chart-donut"><canvas id="chartCarteira"></canvas></div>
+      </div>
+      <div class="card chart-card wide">
+        <div class="card-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Recebimentos por mês</h3></div><span class="chart-note">Últimos 6 meses</span></div>
+        <div class="chart-box"><canvas id="chartRecebimentos"></canvas></div>
+      </div>
+    </div>
+
+    <div class="card chart-card mt">
+      <div class="card-head">
+        <div><span class="eyebrow">FLUXO PREVISTO</span><h3>Previsão de recebimentos</h3></div>
+        <div class="forecast-total"><span>Previsto nos próximos meses</span><strong id="kpiPrevisto">R$ 0,00</strong></div>
+      </div>
+      <div class="chart-box forecast"><canvas id="chartPrevisao"></canvas></div>
+      <div id="previsaoAviso" class="forecast-warning hidden"></div>
     </div>
 
     <div class="two-col mt">
       <div class="card">
-        <h3>Próximos vencimentos e saldos</h3>
+        <div class="card-head"><div><span class="eyebrow">AGENDA FINANCEIRA</span><h3>Próximos vencimentos e saldos</h3></div></div>
         <div class="table-wrap"><table>
           <thead><tr><th>Cliente</th><th>Previsão</th><th>Saldo</th><th>Status</th></tr></thead>
           <tbody id="dashClientes"></tbody>
         </table></div>
       </div>
       <div class="card">
-        <h3>Resumo por status</h3>
+        <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Resumo por status</h3></div></div>
         <div id="statusResumo" class="status-list"></div>
       </div>
     </div>
@@ -91,7 +119,35 @@
       </table></div>
     </div>
   </section>
+  {% if is_admin %}
+  <section id="usuarios" class="tab">
+    <div class="card">
+      <div class="card-head"><div><span class="eyebrow">ACESSO AO SISTEMA</span><h3 id="tituloUsuario">Criar novo usuário</h3></div></div>
+      <form id="usuarioForm">
+        <input type="hidden" id="usuarioId">
+        <label>Nome completo<input id="usuarioNome" required placeholder="Ex.: Maria da Silva"></label>
+        <label>Usuário<input id="usuarioLogin" required minlength="3" placeholder="Ex.: maria"></label>
+        <label>Senha<input id="usuarioSenha" type="password" minlength="6" placeholder="Mínimo 6 caracteres"></label>
+        <label>Perfil<select id="usuarioRole"><option value="usuario">Usuário</option><option value="admin">Administrador</option></select></label>
+        <label class="check-label"><input id="usuarioAtivo" type="checkbox" checked> Usuário ativo</label>
+        <div class="form-actions"><button class="primary" type="submit">Salvar usuário</button><button id="cancelarUsuario" class="secondary hidden" type="button">Cancelar</button></div>
+      </form>
+      <p class="form-hint">Usuários comuns podem acessar clientes, pagamentos e dashboard. Administradores também podem gerenciar usuários.</p>
+    </div>
+
+    <div class="card mt">
+      <div class="toolbar"><h3>Usuários cadastrados</h3></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Nome</th><th>Usuário</th><th>Perfil</th><th>Status</th><th>Criado em</th><th>Ações</th></tr></thead>
+        <tbody id="usuariosBody"></tbody>
+      </table></div>
+    </div>
+  </section>
+  {% endif %}
+
 </div>
+<script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js"></script>
 </body>
 </html>
