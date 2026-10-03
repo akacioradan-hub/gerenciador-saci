@@ -1,6 +1,7 @@
 const moeda=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dataBR=d=>d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'-';
 let clientes=[];
+let pagamentos=[];
 let charts={};
 
 function statusClass(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_')}
@@ -11,7 +12,7 @@ function destroyChart(nome){if(charts[nome]){charts[nome].destroy();delete chart
 function chartBase(){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{usePointStyle:true,boxWidth:8,font:{size:12}}},tooltip:{callbacks:{label:c=>`${c.dataset.label||c.label}: ${moeda(c.raw)}`}}}}}
 
 async function carregarClientes(){const q=document.getElementById('buscaCliente').value.trim();clientes=await api('/api/clientes'+(q?'?q='+encodeURIComponent(q):''));renderClientes();preencherClientes()}
-async function carregarPagamentos(){const pags=await api('/api/pagamentos');const body=document.getElementById('pagamentosBody');body.innerHTML=pags.length?pags.map((p,i)=>`<tr><td>${i+1}</td><td>${p.cliente_nome}</td><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${p.observacao||'-'}</td><td><button class="danger" onclick="excluirPagamento(${p.id})">Excluir</button></td></tr>`).join(''):'<tr><td colspan="6" class="empty">Nenhum pagamento registrado.</td></tr>'}
+async function carregarPagamentos(){pagamentos=await api('/api/pagamentos');renderFinanceiroCliente()}
 
 function renderGraficos(d){
   destroyChart('carteira');
@@ -94,8 +95,26 @@ function documentoFormatado(v){
 }
 function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
 
-function renderClientes(){const body=document.getElementById('clientesBody');body.innerHTML=clientes.length?clientes.map(c=>`<tr><td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td><td>${documentoFormatado(c.cpf_cnpj)}</td><td>${c.whatsapp||c.telefone||'-'}</td><td>${localCliente(c)}</td><td>${moeda(c.divida)}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td><td><div class="acoes"><button class="view" onclick="mostrarCliente(${c.id})">Ver</button><button class="edit" onclick="editarCliente(${c.id})">Editar</button><button class="danger" onclick="excluirCliente(${c.id})">Excluir</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum cliente cadastrado.</td></tr>'}
-function preencherClientes(){const sel=document.getElementById('pagCliente');const atual=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');sel.value=atual}
+function renderClientes(){const body=document.getElementById('clientesBody');body.innerHTML=clientes.length?clientes.map(c=>`<tr><td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td><td>${documentoFormatado(c.cpf_cnpj)}</td><td>${c.whatsapp||c.telefone||'-'}</td><td>${localCliente(c)}</td><td>${moeda(c.divida)}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td><td><div class="acoes"><button class="view" onclick="mostrarCliente(${c.id})">Ver</button><button class="finance" onclick="abrirFinanceiroCliente(${c.id})">Financeiro</button><button class="edit" onclick="editarCliente(${c.id})">Editar</button><button class="danger" onclick="excluirCliente(${c.id})">Excluir</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum cliente cadastrado.</td></tr>'}
+function preencherClientes(){const sel=document.getElementById('pagCliente');if(!sel)return;const atual=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');if(clientes.some(c=>String(c.id)===String(atual)))sel.value=atual;renderFinanceiroCliente()}
+function renderFinanceiroCliente(){
+  const sel=document.getElementById('pagCliente');if(!sel)return;
+  const id=Number(sel.value||0);
+  const c=clientes.find(x=>Number(x.id)===id);
+  document.getElementById('finDivida').textContent=c?moeda(c.divida):'R$ 0,00';
+  document.getElementById('finPago').textContent=c?moeda(c.total_pago):'R$ 0,00';
+  document.getElementById('finSaldo').textContent=c?moeda(c.saldo):'R$ 0,00';
+  document.getElementById('finPrevisao').textContent=c?dataBR(c.previsao):'—';
+  const body=document.getElementById('pagamentosBody');if(!body)return;
+  if(!c){body.innerHTML='<tr><td colspan="4" class="empty">Selecione um cliente para visualizar o histórico.</td></tr>';return}
+  const pags=pagamentos.filter(p=>Number(p.cliente_id)===id);
+  body.innerHTML=pags.length?pags.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${p.observacao||'-'}</td><td><button class="danger" onclick="excluirPagamento(${p.id})">Excluir</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Este cliente ainda não possui pagamentos registrados.</td></tr>';
+}
+function abrirFinanceiroCliente(id){
+  const sel=document.getElementById('pagCliente');if(!sel)return;
+  sel.value=String(id);renderFinanceiroCliente();
+  document.getElementById('clienteFinanceiro')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 async function atualizarTudo(){await Promise.all([carregarClientes(),carregarPagamentos(),carregarDashboard()])}
 
 function campo(id){return document.getElementById(id)?.value?.trim()||''}
@@ -125,8 +144,9 @@ function mascaraDocumento(e){let v=e.target.value.replace(/\D/g,'').slice(0,14);
 function mascaraCep(e){let v=e.target.value.replace(/\D/g,'').slice(0,8);if(v.length>5)v=v.slice(0,5)+'-'+v.slice(5);e.target.value=v}
 document.getElementById('cpfCnpj')?.addEventListener('input',mascaraDocumento);document.getElementById('cepCliente')?.addEventListener('input',mascaraCep);document.getElementById('ufCliente')?.addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2));
 
-document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:Number(document.getElementById('pagCliente').value),data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),observacao:document.getElementById('pagObs').value.trim()})});msg('Pagamento registrado.');e.target.reset();document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo()}catch(err){msg(err.message,'erro')}})
-async function excluirPagamento(id){if(!confirm('Excluir este pagamento?'))return;try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento excluído.');await atualizarTudo()}catch(err){msg(err.message,'erro')}}
+document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();const clienteId=Number(document.getElementById('pagCliente').value||0);if(!clienteId){msg('Selecione um cliente antes de registrar o pagamento.','erro');return}try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:clienteId,data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),observacao:document.getElementById('pagObs').value.trim()})});msg('Pagamento registrado.');document.getElementById('pagValor').value='';document.getElementById('pagObs').value='';if(document.getElementById('pagData'))document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo();document.getElementById('pagCliente').value=String(clienteId);renderFinanceiroCliente()}catch(err){msg(err.message,'erro')}})
+async function excluirPagamento(id){if(!confirm('Excluir este pagamento?'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento excluído.');await atualizarTudo();if(clienteId){document.getElementById('pagCliente').value=clienteId;renderFinanceiroCliente()}}catch(err){msg(err.message,'erro')}}
+document.getElementById('pagCliente')?.addEventListener('change',renderFinanceiroCliente);
 
 document.getElementById('buscaCliente').addEventListener('input',()=>{clearTimeout(window._b);window._b=setTimeout(carregarClientes,250)})
 

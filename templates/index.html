@@ -20,7 +20,6 @@
     <nav class="side-nav">
       <button class="tab-btn active" data-tab="dashboard"><span>Dashboard</span></button>
       <button class="tab-btn" data-tab="clientes"><span>Clientes</span></button>
-      <button class="tab-btn" data-tab="pagamentos"><span>Pagamentos</span></button>
       <button class="tab-btn" data-tab="orgaos"><span>Órgãos Públicos</span></button>
       {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span>Usuários</span></button>{% endif %}
     </nav>
@@ -186,23 +185,35 @@
           <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
           <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Telefone</th><th>Cidade/UF</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
         </div>
-      </section>
 
-      <section id="pagamentos" class="tab">
-        <div class="page-head"><div><span class="eyebrow">MOVIMENTAÇÃO</span><h2>Pagamentos</h2><p>Registre recebimentos e acompanhe o histórico.</p></div></div>
-        <div class="card">
-          <h3>Registrar pagamento</h3>
-          <form id="pagamentoForm">
-            <label>Cliente<select id="pagCliente" required></select></label>
-            <label>Data do pagamento<input id="pagData" type="date" required></label>
-            <label>Valor pago<input id="pagValor" type="number" min="0.01" step="0.01" required></label>
-            <label>Observação<input id="pagObs" placeholder="Opcional"></label>
-            <div class="form-actions"><button class="primary" type="submit">Registrar pagamento</button></div>
-          </form>
-        </div>
-        <div class="card mt">
-          <h3>Histórico de pagamentos</h3>
-          <div class="table-wrap"><table><thead><tr><th>#</th><th>Cliente</th><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
+        <div id="clienteFinanceiro" class="card mt client-finance-card">
+          <div class="card-head finance-head">
+            <div><span class="eyebrow">FINANCEIRO DO CLIENTE</span><h3>Pagamentos e movimentação</h3><p>Selecione o cliente para consultar o saldo, registrar recebimentos e visualizar o histórico.</p></div>
+            <label class="finance-client-select">Cliente<select id="pagCliente" required><option value="">Selecione...</option></select></label>
+          </div>
+
+          <div class="finance-summary-grid">
+            <div class="finance-mini-card"><span>Dívida inicial</span><strong id="finDivida">R$ 0,00</strong></div>
+            <div class="finance-mini-card paid"><span>Total pago</span><strong id="finPago">R$ 0,00</strong></div>
+            <div class="finance-mini-card open"><span>Saldo devedor</span><strong id="finSaldo">R$ 0,00</strong></div>
+            <div class="finance-mini-card"><span>Previsão</span><strong id="finPrevisao">—</strong></div>
+          </div>
+
+          <div class="finance-content-grid">
+            <div class="finance-entry">
+              <div class="section-label">Registrar novo pagamento</div>
+              <form id="pagamentoForm" class="payment-inline-form">
+                <label>Data do pagamento<input id="pagData" type="date" required></label>
+                <label>Valor pago<input id="pagValor" type="number" min="0.01" step="0.01" required></label>
+                <label class="span-2">Observação<input id="pagObs" placeholder="Opcional"></label>
+                <div class="form-actions"><button class="primary" type="submit">Registrar pagamento</button></div>
+              </form>
+            </div>
+            <div class="finance-history">
+              <div class="section-label">Histórico do cliente</div>
+              <div class="table-wrap"><table><thead><tr><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -259,7 +270,7 @@
             <label class="check-label"><input id="usuarioAtivo" type="checkbox" checked> Usuário ativo</label>
             <div class="form-actions"><button class="primary" type="submit">Salvar usuário</button><button id="cancelarUsuario" class="secondary hidden" type="button">Cancelar</button></div>
           </form>
-          <p class="form-hint">Usuários comuns acessam clientes, pagamentos e dashboard. Administradores também gerenciam usuários.</p>
+          <p class="form-hint">Usuários comuns acessam clientes, movimentações financeiras e dashboard. Administradores também gerenciam usuários.</p>
         </div>
         <div class="card mt">
           <div class="toolbar"><h3>Usuários cadastrados</h3></div>
