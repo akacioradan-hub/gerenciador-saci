@@ -3,7 +3,7 @@ import hmac
 import csv
 import io
 import json
-from datetime import date
+from datetime import date, datetime
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -85,6 +85,14 @@ class Pagamento(db.Model):
     observacao = db.Column(db.Text, nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
     cliente = db.relationship("Cliente", back_populates="pagamentos")
+
+
+
+class AvisoDispensado(db.Model):
+    __tablename__ = "avisos_dispensados"
+    id = db.Column(db.Integer, primary_key=True)
+    chave = db.Column(db.String(255), nullable=False, unique=True, index=True)
+    dispensado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
 
 class DebitoOrgaoPublico(db.Model):
@@ -339,6 +347,25 @@ def ready():
         return jsonify({"status": "erro", "database": str(exc)}), 500
 
 
+
+@app.post("/api/avisos/dispensar")
+@login_required
+def dispensar_aviso():
+    dados = request.get_json(silent=True) or {}
+    chave = (dados.get("chave") or "").strip()
+    if not chave:
+        return jsonify({"erro": "Aviso inválido."}), 400
+    if len(chave) > 255:
+        return jsonify({"erro": "Identificador do aviso inválido."}), 400
+    existente = db.session.execute(
+        db.select(AvisoDispensado).where(AvisoDispensado.chave == chave)
+    ).scalar_one_or_none()
+    if not existente:
+        db.session.add(AvisoDispensado(chave=chave))
+        db.session.commit()
+    return jsonify({"ok": True})
+
+
 @app.get("/api/clientes")
 @login_required
 def listar_clientes():
@@ -532,6 +559,15 @@ def add_months(year, month, offset):
     return idx // 12, idx % 12 + 1
 
 
+
+def chaves_avisos_dispensados():
+    return set(db.session.execute(db.select(AvisoDispensado.chave)).scalars().all())
+
+
+def aviso_esta_dispensado(chave, dispensados):
+    return chave in dispensados
+
+
 @app.get("/api/dashboard")
 @login_required
 def dashboard():
@@ -549,6 +585,7 @@ def dashboard():
         status[item["status"]] += 1
 
     hoje = date.today()
+    avisos_dispensados = chaves_avisos_dispensados()
     valor_atrasado = sum(i["saldo"] for i in itens if i["status"] == "ATRASADO")
 
     vencem_hoje = []
@@ -568,11 +605,20 @@ def dashboard():
             "dias_atraso": dias_atraso,
         }
         if data_prevista == hoje:
-            vencem_hoje.append(resumo)
+            chave = f"cliente_hoje:{item['id']}:{item['previsao']}"
+            resumo["aviso_chave"] = chave
+            if not aviso_esta_dispensado(chave, avisos_dispensados):
+                vencem_hoje.append(resumo)
         elif dias_atraso >= 60:
-            clientes_60_dias.append(resumo)
+            chave = f"cliente_60:{item['id']}:{item['previsao']}"
+            resumo["aviso_chave"] = chave
+            if not aviso_esta_dispensado(chave, avisos_dispensados):
+                clientes_60_dias.append(resumo)
         elif data_prevista < hoje:
-            atrasados.append(resumo)
+            chave = f"cliente_atraso:{item['id']}:{item['previsao']}"
+            resumo["aviso_chave"] = chave
+            if not aviso_esta_dispensado(chave, avisos_dispensados):
+                atrasados.append(resumo)
 
     vencem_hoje.sort(key=lambda x: x["nome"].lower())
     atrasados.sort(key=lambda x: (x["previsao"], x["nome"].lower()))
@@ -613,15 +659,18 @@ def dashboard():
             continue
         dias_atraso = (hoje - r.data_debito).days
         if dias_atraso >= 60:
-            orgaos_60_dias.append({
-                "id": r.id,
-                "nome_orgao": r.nome_orgao,
-                "data_debito": r.data_debito.isoformat(),
-                "valor_debito": float(r.valor_debito or 0),
-                "numero_nota_fiscal": r.numero_nota_fiscal,
-                "numero_ordem": r.numero_ordem,
-                "dias_atraso": dias_atraso,
-            })
+            chave = f"orgao_60:{r.id}:{r.data_debito.isoformat()}"
+            if not aviso_esta_dispensado(chave, avisos_dispensados):
+                orgaos_60_dias.append({
+                    "id": r.id,
+                    "nome_orgao": r.nome_orgao,
+                    "data_debito": r.data_debito.isoformat(),
+                    "valor_debito": float(r.valor_debito or 0),
+                    "numero_nota_fiscal": r.numero_nota_fiscal,
+                    "numero_ordem": r.numero_ordem,
+                    "dias_atraso": dias_atraso,
+                    "aviso_chave": chave,
+                })
     orgaos_60_dias.sort(key=lambda x: (-x["dias_atraso"], x["nome_orgao"].lower()))
 
     anos = sorted({r.data_debito.year for r in orgaos if r.data_debito})
