@@ -150,7 +150,16 @@ function trocarCadastroDespesa(tipo,abrir=false){
   renderCadastrosDespesas();
 }
 function renderCadastrosDespesas(){
-  despEl('despCadBody').innerHTML=despCadastros[despTipoCadastro].length?despCadastros[despTipoCadastro].map(r=>`<tr><td>${escaparFinanceiro(r.nome)}</td><td>${escaparFinanceiro([r.cargo,r.data_nascimento?dataBR(r.data_nascimento):null,r.endereco,r.servico,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td><td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nenhum cadastro.</td></tr>';
+  const funcionarios=despTipoCadastro==='funcionarios';
+  const colunas=funcionarios?['Nome','Cargo','Data de nascimento','Endereço','Telefone','Ações']:['Nome','Informações','Ações'];
+  despEl('despCadHead').innerHTML='<tr>'+colunas.map(c=>`<th scope="col">${c}</th>`).join('')+'</tr>';
+  const registros=despCadastros[despTipoCadastro];
+  despEl('despCadBody').innerHTML=registros.length?registros.map(r=>{
+    const informacoes=funcionarios?
+      `<td>${escaparFinanceiro(r.cargo||'—')}</td><td>${dataBR(r.data_nascimento)}</td><td>${escaparFinanceiro(r.endereco||'—')}</td><td>${escaparFinanceiro(r.telefone||'—')}</td>`:
+      `<td>${escaparFinanceiro([r.servico,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td>`;
+    return `<tr><td>${escaparFinanceiro(r.nome)}</td>${informacoes}<td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`;
+  }).join(''):`<tr><td colspan="${colunas.length}" class="empty">Nenhum cadastro.</td></tr>`;
 }
 function editarCadastroDespesa(id){
   const r=despCadastros[despTipoCadastro].find(x=>x.id===id);if(!r)return;

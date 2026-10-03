@@ -1,0 +1,3 @@
+Funcionários cadastrados: tabela agora separa Nome, Cargo, Data de nascimento, Endereço e Telefone, além de Ações. Data de nascimento exibida em dd/mm/aaaa. Demais cadastros mantêm a tabela anterior.
+
+Atualize templates/index.html e static/despesas.js no GitHub. Faça deploy no Render e pressione Ctrl + F5. Não há alterações no banco.
