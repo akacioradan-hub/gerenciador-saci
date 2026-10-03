@@ -278,7 +278,7 @@
           <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="despAtrasado">R$ 0,00</strong></div>
         </div>
         <div class="desp-group-summary mt" id="despGrupos"></div>
-        <div class="card mt hidden" id="despCadastro"><h3 id="despTitulo">Cadastrar despesa</h3>
+        <div class="card mt" id="despCadastro"><h3 id="despTitulo">Cadastrar despesa</h3>
           <form id="despForm" class="gov-form">
             <input id="despId" type="hidden">
             <label>Descrição *<input id="despDescricao" maxlength="220" required placeholder="Ex.: Salário de outubro / compra de mercadorias"></label>
@@ -296,11 +296,8 @@
             <label class="check-label"><input id="despPago" type="checkbox"> Pago</label>
             <label>Data do pagamento<input id="despDataPagamento" type="date"></label>
             <label>Observações<input id="despObservacoes" maxlength="5000" placeholder="Ex.: km do veículo, parcela ou período do adiantamento"></label>
-            <div class="form-actions"><button type="submit" class="primary">Salvar despesa</button><button type="button" class="secondary" id="despCancelar">Fechar ficha</button></div>
+            <div class="form-actions"><button type="submit" class="primary">Salvar despesa</button><button type="button" class="secondary" id="despCancelar">Limpar / cancelar edição</button></div>
           </form>
-        </div>
-        <div class="card mt"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
-          <div class="table-wrap"><table><thead><tr><th>Descrição / categoria</th><th>Vínculos</th><th>Prioridade</th><th>Vencimento</th><th>Valor</th><th>Situação / pagamento</th><th>Ações</th></tr></thead><tbody id="despesasBody"></tbody></table></div>
         </div>
         <div class="card mt"><h3>Cadastros vinculados</h3><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros acima para consultar as despesas de cada um.</p>
           <div class="desp-catalog-nav"><button type="button" class="secondary" data-desp-catalog="funcionarios">Funcionários</button><button type="button" class="secondary" data-desp-catalog="veiculos">Veículos</button><button type="button" class="secondary" data-desp-catalog="fornecedores">Fornecedores</button><button type="button" class="secondary" data-desp-catalog="terceirizados">Terceirizados</button></div>
@@ -318,6 +315,9 @@
             <div class="form-actions"><button class="primary" type="submit">Salvar cadastro</button><button class="secondary" id="despCadCancelar" type="button">Limpar</button></div>
           </form>
           <div class="table-wrap mt"><table><thead><tr><th>Nome</th><th>Informações</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
+        </div>
+        <div class="card mt"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
+          <div class="table-wrap"><table><thead><tr><th>Descrição / categoria</th><th>Vínculos</th><th>Prioridade</th><th>Vencimento</th><th>Valor</th><th>Situação / pagamento</th><th>Ações</th></tr></thead><tbody id="despesasBody"></tbody></table></div>
         </div>
       </section>
 
@@ -362,6 +362,6 @@
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261003-orgaos-icones"></script>
-<script src="/static/despesas.js?v=20261003-terceirizados"></script>
+<script src="/static/despesas.js?v=20261003-cadastro-fixo"></script>
 </body>
 </html>

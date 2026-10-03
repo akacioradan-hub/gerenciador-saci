@@ -61,11 +61,11 @@ function despAtualizarPago(){
   if(pago&&!despEl('despDataPagamento').value)despEl('despDataPagamento').value=despHoje();
   if(!pago)despEl('despDataPagamento').value='';
 }
-function novaDespesa(){
+function novaDespesa(rolar=true){
   despEl('despForm').reset();despEl('despId').value='';
   despEl('despCompetencia').value=despEl('despMes').value;
   despEl('despPrioridade').value='Normal';despAtualizarCategoria();despAtualizarPago();
-  despEl('despTitulo').textContent='Cadastrar despesa';despEl('despCadastro').classList.remove('hidden');despEl('despCadastro').scrollIntoView({behavior:'smooth',block:'start'});
+  despEl('despTitulo').textContent='Cadastrar despesa';despEl('despCadastro').classList.remove('hidden');if(rolar)despEl('despCadastro').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function editarDespesa(id){
   const r=despesasMes.find(x=>x.id===id);if(!r)return;
@@ -109,15 +109,15 @@ async function verDespesasVinculadas(id){
 }
 if(despEl('despesas')){
   despEl('despMes').value=despHoje().slice(0,7);
-  despEl('novaDespesa').addEventListener('click',novaDespesa);
-  despEl('despCancelar').addEventListener('click',()=>despEl('despCadastro').classList.add('hidden'));
+  despEl('novaDespesa').addEventListener('click',()=>novaDespesa());
+  despEl('despCancelar').addEventListener('click',()=>novaDespesa(false));
   despEl('despGrupo').addEventListener('change',()=>despAtualizarCategoria());
   despEl('despPago').addEventListener('change',despAtualizarPago);
   despEl('despForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despId').value;
     const campos={descricao:'Descricao',grupo:'Grupo',categoria:'Categoria',competencia:'Competencia',vencimento:'Vencimento',valor:'Valor',prioridade:'Prioridade',fornecedor_id:'Fornecedor',terceirizado_id:'Terceirizado',funcionario_id:'Funcionario',veiculo_id:'Veiculo',documento:'Documento',observacoes:'Observacoes',data_pagamento:'DataPagamento'};
     const payload=Object.fromEntries(Object.entries(campos).map(([k,v])=>[k,despEl('desp'+v).value]));payload.pago=despEl('despPago').checked;
-    try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;despEl('despCadastro').classList.add('hidden');await carregarDespesas();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
+    try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;novaDespesa(false);await carregarDespesas();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
   ['despMes','despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>carregarDespesas().catch(e=>msg(e.message,'erro'))));
   despEl('despBusca').addEventListener('input',()=>{clearTimeout(window._despBusca);window._despBusca=setTimeout(()=>carregarDespesas().catch(e=>msg(e.message,'erro')),250)});
@@ -131,5 +131,5 @@ if(despEl('despesas')){
   document.querySelectorAll('.tab-btn[data-tab="despesas"]').forEach(b=>b.addEventListener('click',async()=>{
     try{await carregarCadastrosDespesas();await carregarDespesas()}catch(e){msg(e.message,'erro')}
   }));
-  trocarCadastroDespesa('funcionarios');despAtualizarCategoria();despAtualizarPago();
+  trocarCadastroDespesa('funcionarios');novaDespesa(false);
 }

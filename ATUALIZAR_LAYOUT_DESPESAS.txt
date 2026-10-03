@@ -1,0 +1,4 @@
+Cadastrar despesa agora fica sempre aberto. Limpar / cancelar edição limpa os campos sem fechar o formulário. Ao salvar, a ficha é limpa e continua visível. Cadastros vinculados aparece imediatamente abaixo de Cadastrar despesa, seguido de Contas do mês.
+
+Atualize os arquivos no GitHub e faça deploy no Render. Pressione Ctrl + F5.
+Arquivos modificados: templates/index.html e static/despesas.js. Não há mudanças no banco.
