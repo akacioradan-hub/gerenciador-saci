@@ -177,20 +177,23 @@ function documentoFormatado(v){
 }
 function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
 
-function renderClientes(){const body=document.getElementById('clientesBody');body.innerHTML=clientes.length?clientes.map(c=>`<tr><td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td><td>${documentoFormatado(c.cpf_cnpj)}</td><td>${c.whatsapp||c.telefone||'-'}</td><td>${localCliente(c)}</td><td>${moeda(c.divida)}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td><td><div class="acoes"><button class="view" onclick="mostrarCliente(${c.id})">Ver</button><button class="finance" onclick="abrirFinanceiroCliente(${c.id})">Financeiro</button><button class="edit" onclick="editarCliente(${c.id})">Editar</button><button class="danger" onclick="excluirCliente(${c.id})">Excluir</button></div></td></tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum cliente cadastrado.</td></tr>'}
-function preencherClientes(){const sel=document.getElementById('pagCliente');if(!sel)return;const atual=sel.value;sel.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${c.nome}</option>`).join('');if(clientes.some(c=>String(c.id)===String(atual)))sel.value=atual;renderFinanceiroCliente()}
-function renderFinanceiroCliente(){
-  const sel=document.getElementById('pagCliente');if(!sel)return;
-  const id=Number(sel.value||0);
-  const c=clientes.find(x=>Number(x.id)===id);
-  document.getElementById('finDivida').textContent=c?moeda(c.divida):'R$ 0,00';
-  document.getElementById('finPago').textContent=c?moeda(c.total_pago):'R$ 0,00';
-  document.getElementById('finSaldo').textContent=c?moeda(c.saldo):'R$ 0,00';
-  document.getElementById('finPrevisao').textContent=c?dataBR(c.previsao):'—';
-  const body=document.getElementById('pagamentosBody');if(!body)return;
-  if(!c){body.innerHTML='<tr><td colspan="4" class="empty">Selecione um cliente para visualizar o histórico.</td></tr>';return}
-  const pags=pagamentos.filter(p=>Number(p.cliente_id)===id);
-  body.innerHTML=pags.length?pags.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${p.observacao||'-'}</td><td><button class="danger" onclick="excluirPagamento(${p.id})">Excluir</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Este cliente ainda não possui pagamentos registrados.</td></tr>';
+function renderClientes(){
+  const body=document.getElementById('clientesBody');
+  body.innerHTML=clientes.length?clientes.map(c=>`<tr>
+    <td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td>
+    <td>${c.whatsapp||c.telefone||'-'}</td>
+    <td>${moeda(c.divida)}</td>
+    <td>${dataBR(c.previsao)}</td>
+    <td>${moeda(c.saldo)}</td>
+    <td><span class="badge ${statusClass(c.status)}">${c.status}</span></td>
+    <td>
+      <div class="acoes icon-actions">
+        <button class="view icon-btn" title="Ver ficha do cliente" aria-label="Ver ficha do cliente" onclick="mostrarCliente(${c.id})">👁</button>
+        <button class="edit icon-btn" title="Editar cliente" aria-label="Editar cliente" onclick="editarCliente(${c.id})">✎</button>
+        <button class="danger icon-btn" title="Excluir cliente" aria-label="Excluir cliente" onclick="excluirCliente(${c.id})">🗑</button>
+      </div>
+    </td>
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum cliente cadastrado.</td></tr>';
 }
 function abrirFinanceiroCliente(id){
   const sel=document.getElementById('pagCliente');if(!sel)return;
