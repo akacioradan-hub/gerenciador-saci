@@ -1,0 +1,2 @@
+Atualize templates/index.html, static/despesas.js e static/style.css no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Na coluna Pagamento, ✓ marca como paga e ↶ reabre uma despesa paga. O ícone disponível depende da situação da despesa, com descrição ao passar o mouse.
