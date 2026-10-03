@@ -130,8 +130,11 @@
       </section>
 
       <section id="clientes" class="tab">
-        <div class="page-head"><div><span class="eyebrow">CADASTRO</span><h2>Clientes</h2><p>Cadastre os dados de identificação, contato, endereço e informações financeiras do cliente.</p></div></div>
-        <div class="card client-card">
+        <div class="page-head">
+          <div><span class="eyebrow">CADASTRO</span><h2>Clientes</h2><p>Consulte os clientes cadastrados e abra a ficha somente quando precisar cadastrar ou editar.</p></div>
+          <button id="novoClienteBtn" class="primary new-client-btn" type="button">+ Novo cliente</button>
+        </div>
+        <div id="clienteCadastroCard" class="card client-card hidden">
           <div class="form-title-row"><div><span class="eyebrow">FICHA CADASTRAL</span><h3 id="tituloCliente">Cadastrar cliente</h3></div><span class="required-note">* Campos obrigatórios</span></div>
           <form id="clienteForm" class="client-form">
             <input type="hidden" id="clienteId">

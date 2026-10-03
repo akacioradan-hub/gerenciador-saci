@@ -126,8 +126,36 @@ function payloadCliente(){return {
   divida:Number(document.getElementById('valorDivida').value||0),previsao:campo('previsaoPagamento')||null
 }}
 document.getElementById('clienteForm').addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('clienteId').value;try{await api(id?'/api/clientes/'+id:'/api/clientes',{method:id?'PUT':'POST',body:JSON.stringify(payloadCliente())});msg(id?'Cliente atualizado.':'Cliente cadastrado.');limparEdicao();await atualizarTudo()}catch(err){msg(err.message,'erro')}})
-function editarCliente(id){const c=clientes.find(x=>x.id===id);if(!c)return;const vals={clienteId:c.id,nomeCliente:c.nome,tipoPessoa:c.tipo_pessoa||'PF',cpfCnpj:documentoFormatado(c.cpf_cnpj)==='-'?'':documentoFormatado(c.cpf_cnpj),rgIe:c.rg_ie||'',dataNascimento:c.data_nascimento||'',telefoneCliente:c.telefone||'',whatsappCliente:c.whatsapp||'',emailCliente:c.email||'',cepCliente:c.cep||'',logradouroCliente:c.logradouro||'',numeroCliente:c.numero||'',complementoCliente:c.complemento||'',bairroCliente:c.bairro||'',cidadeCliente:c.cidade||'',ufCliente:c.uf||'',observacoesCliente:c.observacoes||'',valorDivida:c.divida,previsaoPagamento:c.previsao||''};Object.entries(vals).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});document.getElementById('tituloCliente').textContent='Editar cliente';document.getElementById('cancelarEdicao').classList.remove('hidden');document.querySelector('#clientes .client-card')?.scrollIntoView({behavior:'smooth',block:'start'})}
-function limparEdicao(){document.getElementById('clienteForm').reset();document.getElementById('clienteId').value='';document.getElementById('tipoPessoa').value='PF';document.getElementById('tituloCliente').textContent='Cadastrar cliente';document.getElementById('cancelarEdicao').classList.add('hidden')}
+function abrirCadastroCliente(){
+  limparFormularioCliente(false);
+  const card=document.getElementById('clienteCadastroCard');
+  card?.classList.remove('hidden');
+  document.getElementById('tituloCliente').textContent='Cadastrar cliente';
+  document.getElementById('cancelarEdicao').textContent='Fechar ficha';
+  document.getElementById('cancelarEdicao').classList.remove('hidden');
+  card?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function editarCliente(id){
+  const c=clientes.find(x=>x.id===id);if(!c)return;
+  const card=document.getElementById('clienteCadastroCard');
+  card?.classList.remove('hidden');
+  const vals={clienteId:c.id,nomeCliente:c.nome,tipoPessoa:c.tipo_pessoa||'PF',cpfCnpj:documentoFormatado(c.cpf_cnpj)==='-'?'':documentoFormatado(c.cpf_cnpj),rgIe:c.rg_ie||'',dataNascimento:c.data_nascimento||'',telefoneCliente:c.telefone||'',whatsappCliente:c.whatsapp||'',emailCliente:c.email||'',cepCliente:c.cep||'',logradouroCliente:c.logradouro||'',numeroCliente:c.numero||'',complementoCliente:c.complemento||'',bairroCliente:c.bairro||'',cidadeCliente:c.cidade||'',ufCliente:c.uf||'',observacoesCliente:c.observacoes||'',valorDivida:c.divida,previsaoPagamento:c.previsao||''};
+  Object.entries(vals).forEach(([id,v])=>{const el=document.getElementById(id);if(el)el.value=v});
+  document.getElementById('tituloCliente').textContent='Editar cliente';
+  document.getElementById('cancelarEdicao').textContent='Cancelar edição';
+  document.getElementById('cancelarEdicao').classList.remove('hidden');
+  card?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function limparFormularioCliente(fechar=true){
+  document.getElementById('clienteForm').reset();
+  document.getElementById('clienteId').value='';
+  document.getElementById('tipoPessoa').value='PF';
+  document.getElementById('tituloCliente').textContent='Cadastrar cliente';
+  document.getElementById('cancelarEdicao').textContent='Fechar ficha';
+  if(fechar) document.getElementById('clienteCadastroCard')?.classList.add('hidden');
+}
+function limparEdicao(){limparFormularioCliente(true)}
+document.getElementById('novoClienteBtn')?.addEventListener('click',abrirCadastroCliente);
 document.getElementById('cancelarEdicao').onclick=limparEdicao;
 async function excluirCliente(id){if(!confirm('Excluir este cliente e todos os pagamentos vinculados?'))return;try{await api('/api/clientes/'+id,{method:'DELETE'});msg('Cliente excluído.');await atualizarTudo()}catch(err){msg(err.message,'erro')}}
 

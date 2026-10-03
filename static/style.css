@@ -58,3 +58,10 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}l
 .finance:hover{background:#f8d7d4}
 @media(max-width:1000px){.finance-content-grid{grid-template-columns:1fr}.finance-summary-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:620px){.finance-head{align-items:stretch}.finance-client-select{min-width:0;width:100%}.finance-summary-grid{grid-template-columns:1fr 1fr}.payment-inline-form{grid-template-columns:1fr}}
+
+
+/* Ficha cadastral retrátil */
+.new-client-btn{white-space:nowrap;align-self:flex-end}
+#clienteCadastroCard{animation:clientFormOpen .18s ease-out}
+@keyframes clientFormOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:820px){.new-client-btn{width:100%;align-self:stretch}}
