@@ -8,6 +8,8 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, inspect, or_
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.pool import NullPool
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -30,6 +32,13 @@ app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 if os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT"):
     app.config["SESSION_COOKIE_SECURE"] = True
+
+# Não reutiliza conexões PostgreSQL entre requisições ou processos.
+if DATABASE_URL.startswith("postgresql"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "poolclass": NullPool,
+        "connect_args": {"connect_timeout": 10},
+    }
 
 db = SQLAlchemy(app)
 
@@ -182,9 +191,36 @@ def init_db():
             raise
 
 
+def consultar_com_retry(consulta):
+    """Repete somente leitura após uma desconexão reconhecida pelo driver."""
+    for tentativa in range(2):
+        try:
+            return consulta()
+        except OperationalError as exc:
+            mensagem = str(exc.orig).lower()
+            desconexao = exc.connection_invalidated or any(
+                termo in mensagem for termo in (
+                    "bad record mac", "eof detected", "server closed the connection",
+                    "connection already closed", "connection reset",
+                )
+            )
+            db.session.remove()
+            if not desconexao or tentativa == 1:
+                raise
+
+
+@app.errorhandler(OperationalError)
+def falha_banco(exc):
+    db.session.remove()
+    app.logger.error("Falha de conexão ou operação no banco", exc_info=True)
+    if request.path.startswith("/api/"):
+        return jsonify({"erro": "Banco temporariamente indisponível. Atualize a página."}), 503
+    return "Banco temporariamente indisponível. Aguarde alguns segundos e atualize a página.", 503
+
+
 def usuario_atual():
     uid = session.get("user_id")
-    return db.session.get(Usuario, uid) if uid else None
+    return consultar_com_retry(lambda: db.session.get(Usuario, uid)) if uid else None
 
 
 def admin_required(fn):
@@ -223,7 +259,7 @@ def login():
 def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
-    user = db.session.execute(db.select(Usuario).where(Usuario.username == username)).scalar_one_or_none()
+    user = consultar_com_retry(lambda: db.session.execute(db.select(Usuario).where(Usuario.username == username)).scalar_one_or_none())
     if not user or not user.ativo or not user.verificar_senha(password):
         return render_template("login.html", erro="Usuário ou senha inválidos."), 401
     session.clear()
