@@ -1,0 +1,14 @@
+CORREÇÃO POSTGRESQL / RENDER
+
+Esta versão adiciona:
+- pool_pre_ping=True
+- pool_recycle=180 segundos
+- retry de consultas críticas de autenticação
+- descarte do pool após falha SSL/conexão
+- página amigável 503 em falha temporária
+
+Depois de enviar ao GitHub:
+1. Render > Manual Deploy > Deploy latest commit
+2. Aguarde o deploy terminar
+3. Teste /health e /ready
+4. Abra o sistema novamente

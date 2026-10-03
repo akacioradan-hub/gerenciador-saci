@@ -25,6 +25,18 @@ CONSULTA_TOKEN = (os.getenv("CONSULTA_TOKEN") or "").strip()
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# Render/PostgreSQL: valida conexões antes de reutilizar e recicla
+# conexões antigas para evitar falhas SSL em conexões ociosas.
+if DATABASE_URL.startswith("postgresql"):
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 180,
+        "pool_timeout": 30,
+        "pool_size": 5,
+        "max_overflow": 5,
+    }
+
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-change-me")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -190,9 +202,31 @@ def init_db():
             raise
 
 
+
+def executar_com_retry(funcao, tentativas=2):
+    """Repete uma operação simples se a conexão PostgreSQL cair temporariamente."""
+    ultimo_erro = None
+    for tentativa in range(tentativas):
+        try:
+            return funcao()
+        except (OperationalError, DisconnectionError) as exc:
+            ultimo_erro = exc
+            try:
+                db.session.rollback()
+                db.session.remove()
+                db.engine.dispose()
+            except Exception:
+                pass
+            if tentativa + 1 >= tentativas:
+                raise
+    raise ultimo_erro
+
+
 def usuario_atual():
     uid = session.get("user_id")
-    return db.session.get(Usuario, uid) if uid else None
+    if not uid:
+        return None
+    return executar_com_retry(lambda: db.session.get(Usuario, uid))
 
 
 def admin_required(fn):
@@ -231,7 +265,11 @@ def login():
 def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
-    user = db.session.execute(db.select(Usuario).where(Usuario.username == username)).scalar_one_or_none()
+    user = executar_com_retry(
+        lambda: db.session.execute(
+            db.select(Usuario).where(Usuario.username == username)
+        ).scalar_one_or_none()
+    )
     if not user or not user.ativo or not user.verificar_senha(password):
         return render_template("login.html", erro="Usuário ou senha inválidos."), 401
     session.clear()
@@ -329,6 +367,38 @@ def consulta_publica(token):
         "consulta_publica.html",
         clientes=clientes_publicos,
         atualizado_em=date.today().strftime("%d/%m/%Y"),
+    )
+
+
+
+@app.errorhandler(OperationalError)
+@app.errorhandler(DisconnectionError)
+def tratar_falha_temporaria_banco(exc):
+    try:
+        db.session.rollback()
+        db.session.remove()
+        db.engine.dispose()
+    except Exception:
+        pass
+    app.logger.exception("Falha temporária de conexão com o PostgreSQL")
+    if request.path.startswith("/api/"):
+        return jsonify({
+            "erro": "Conexão temporariamente indisponível. Atualize a página em alguns segundos."
+        }), 503
+    return (
+        "<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'>"
+        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
+        "<title>Conexão temporária</title></head>"
+        "<body style='font-family:Arial;background:#f5f5f7;padding:40px;color:#29292e'>"
+        "<div style='max-width:620px;margin:auto;background:#fff;padding:28px;border-radius:16px;"
+        "box-shadow:0 8px 24px rgba(0,0,0,.08)'>"
+        "<h2>Conexão temporariamente indisponível</h2>"
+        "<p>O banco de dados perdeu a conexão por alguns instantes. "
+        "Aguarde alguns segundos e atualize a página.</p>"
+        "<button onclick='location.reload()' style='padding:10px 16px;border:0;border-radius:9px;"
+        "background:#e10600;color:white;font-weight:700;cursor:pointer'>Tentar novamente</button>"
+        "</div></body></html>",
+        503,
     )
 
 
