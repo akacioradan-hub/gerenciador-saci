@@ -1,0 +1,3 @@
+Janela de Nova despesa ampliada para até 1200px, com campos em três colunas. Em telas menores, duas colunas e depois uma. Descrição e observações ocupam a largura completa. Altura máxima ajustada ao tamanho da tela.
+
+Atualize static/style.css e templates/index.html no GitHub, faça deploy no Render e pressione Ctrl + F5. Não há alterações no banco ou nas funções.
