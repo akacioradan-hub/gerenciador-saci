@@ -161,6 +161,13 @@ if(despEl('despesas')){
   ['despMes','despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>{if(id==='despFiltroGrupo')atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'))}));
   despEl('despBusca').addEventListener('input',()=>{clearTimeout(window._despBusca);window._despBusca=setTimeout(()=>filtrarContasMes().catch(e=>msg(e.message,'erro')),250)});
   document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog,true)));
+  despEl('despExibirCadastros').addEventListener('click',()=>{
+    const lista=despEl('despListaCadastros'),botao=despEl('despExibirCadastros');
+    const mostrar=lista.classList.contains('hidden');
+    lista.classList.toggle('hidden',!mostrar);
+    botao.textContent=mostrar?'Ocultar cadastrados':'Exibir cadastrados';
+    botao.setAttribute('aria-expanded',String(mostrar));
+  });
   despEl('despCadCancelar').addEventListener('click',()=>{limparCadastroDespesa();despEl('despCadForm').classList.add('hidden')});
   despEl('despCadForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despCadId').value;

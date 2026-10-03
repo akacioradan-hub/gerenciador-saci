@@ -1,0 +1,3 @@
+Cadastros vinculados: lista oculta por padrão. Clique em Exibir cadastrados para ver os registros do tipo selecionado. Clique em Ocultar cadastrados para recolher. Os botões de cadastro e as fichas continuam funcionando.
+
+Atualize templates/index.html e static/despesas.js no GitHub e faça deploy no Render. Pressione Ctrl + F5. Não há alteração no banco.
