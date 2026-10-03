@@ -10,7 +10,7 @@ const despNomes={funcionarios:'Funcionários',veiculos:'Veículos',fornecedores:
 const despHoje=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 function despParametros(){
   const params=new URLSearchParams({mes:despEl('despMes').value});
-  const campos={despFiltroGrupo:'grupo',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despFiltroTerceirizado:'terceirizado_id',despBusca:'q'};
+  const campos={despFiltroGrupo:'grupo',despFiltroCategoria:'categoria',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despFiltroTerceirizado:'terceirizado_id',despBusca:'q'};
   Object.entries(campos).forEach(([id,campo])=>{const v=despEl(id).value.trim();if(v)params.set(campo,v)});
   return params;
 }
@@ -27,7 +27,16 @@ async function carregarDespesas(){
   despEl('despContagem').textContent=`${r.quantidade||0} conta(s) · Totais conforme o mês de competência e os filtros.`;
   despEl('despGrupos').innerHTML=Object.entries(r.por_grupo||{}).map(([g,v])=>`<div><span>${escaparFinanceiro(g)}</span><strong>${moeda(v)}</strong></div>`).join('');
   despEl('despExportar').href='/api/exportar/despesas.csv?'+params;
-  despEl('despesasBody').innerHTML=despesasMes.length?despesasMes.map(r=>{
+  renderContasMes();
+}
+const DESP_POR_PAGINA=10;
+let despPagina=1;
+function renderContasMes(){
+  const total=despesasMes.length;
+  const paginas=Math.max(1,Math.ceil(total/DESP_POR_PAGINA));
+  despPagina=Math.max(1,Math.min(despPagina,paginas));
+  const inicio=(despPagina-1)*DESP_POR_PAGINA;
+  despEl('despesasBody').innerHTML=despesasMes.length?despesasMes.slice(inicio,inicio+DESP_POR_PAGINA).map(r=>{
     const vinculos=[r.fornecedor_nome,r.funcionario_nome,r.veiculo_nome,r.terceirizado_nome].filter(Boolean);
     return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
       <td>${vinculos.map(v=>`<div class="table-sub">${escaparFinanceiro(v)}</div>`).join('')||'—'}</td>
@@ -36,7 +45,32 @@ async function carregarDespesas(){
       <td><div class="desp-pay-actions"><span class="badge ${statusClass(r.status)}">${escaparFinanceiro(r.status)}</span>${r.pago?`<span class="table-sub">${dataBR(r.data_pagamento)}</span>`:''}<button type="button" class="secondary" onclick="pagarDespesa(${r.id},${!r.pago})">${r.pago?'Reabrir':'Marcar pago'}</button></div></td>
       <td><div class="acoes icon-actions"><button type="button" class="edit icon-btn" aria-label="Editar despesa" title="Editar despesa" onclick="editarDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" aria-label="Excluir despesa" title="Excluir despesa" onclick="excluirDespesa(${r.id})">🗑</button></div></td></tr>`;
   }).join(''):'<tr><td colspan="7" class="empty">Nenhuma despesa para o mês e os filtros selecionados.</td></tr>';
+  despEl('despPaginaResumo').textContent=total?`${inicio+1}–${Math.min(inicio+DESP_POR_PAGINA,total)} de ${total} contas · Página ${despPagina} de ${paginas}`:'0 contas';
+  const botao=(pagina,label,extra='')=>`<button type="button" class="secondary ${pagina===despPagina?'current-page':''}" ${extra} onclick="mudarPaginaDespesas(${pagina})">${label}</button>`;
+  let html=botao(despPagina-1,'Anterior',despPagina===1?'disabled':'');
+  const numeros=new Set([1,paginas]);
+  for(let n=Math.max(1,despPagina-2);n<=Math.min(paginas,despPagina+2);n++)numeros.add(n);
+  let anterior=0;
+  for(const n of [...numeros].sort((a,b)=>a-b)){
+    if(anterior&&n>anterior+1)html+='<span class="pagination-gap">…</span>';
+    html+=botao(n,n,`aria-label="Página ${n}" ${n===despPagina?'aria-current="page"':''}`);anterior=n;
+  }
+  html+=botao(despPagina+1,'Próxima',despPagina===paginas?'disabled':'');
+  despEl('despPaginas').innerHTML=html;
 }
+function mudarPaginaDespesas(pagina){
+  if(!Number.isInteger(pagina)||pagina<1||pagina>Math.max(1,Math.ceil(despesasMes.length/DESP_POR_PAGINA)))return;
+  despPagina=pagina;renderContasMes();
+}
+function atualizarFiltroCategoria(){
+  const el=despEl('despFiltroCategoria'),valor=el.value;
+  const grupo=despEl('despFiltroGrupo').value;
+  const categorias=grupo?despCategorias[grupo]:Object.values(despCategorias).flat();
+  el.innerHTML='<option value="">Todas</option>'+categorias.map(c=>`<option>${escaparFinanceiro(c)}</option>`).join('');
+  el.value=categorias.includes(valor)?valor:'';
+}
+function filtrarContasMes(){despPagina=1;return carregarDespesas()}
+
 function despOpcoes(id,tipo,filtro=false){
   const el=despEl(id),valor=el.value;
   el.innerHTML=`<option value="">${filtro?'Todos':'Sem vínculo'}</option>`+despCadastros[tipo].map(r=>`<option value="${r.id}">${escaparFinanceiro(r.nome+(r.placa?' · '+r.placa:''))}</option>`).join('');
@@ -103,9 +137,9 @@ async function excluirCadastroDespesa(id){
   try{await api('/api/despesas/cadastros/'+despTipoCadastro+'/'+id,{method:'DELETE'});await carregarCadastrosDespesas();msg('Cadastro excluído.')}catch(e){msg(e.message,'erro')}
 }
 async function verDespesasVinculadas(id){
-  for(const campo of ['despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(campo).value='';
+  for(const campo of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(campo).value='';
   despEl({funcionarios:'despFiltroFuncionario',veiculos:'despFiltroVeiculo',fornecedores:'despFiltroFornecedor',terceirizados:'despFiltroTerceirizado'}[despTipoCadastro]).value=String(id);
-  try{await carregarDespesas();despEl('despMes').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){msg(e.message,'erro')}
+  try{atualizarFiltroCategoria();await filtrarContasMes();despEl('despContasCard').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){msg(e.message,'erro')}
 }
 if(despEl('despesas')){
   despEl('despMes').value=despHoje().slice(0,7);
@@ -119,8 +153,8 @@ if(despEl('despesas')){
     const payload=Object.fromEntries(Object.entries(campos).map(([k,v])=>[k,despEl('desp'+v).value]));payload.pago=despEl('despPago').checked;
     try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;novaDespesa(false);await carregarDespesas();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
-  ['despMes','despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>carregarDespesas().catch(e=>msg(e.message,'erro'))));
-  despEl('despBusca').addEventListener('input',()=>{clearTimeout(window._despBusca);window._despBusca=setTimeout(()=>carregarDespesas().catch(e=>msg(e.message,'erro')),250)});
+  ['despMes','despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>{if(id==='despFiltroGrupo')atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'))}));
+  despEl('despBusca').addEventListener('input',()=>{clearTimeout(window._despBusca);window._despBusca=setTimeout(()=>filtrarContasMes().catch(e=>msg(e.message,'erro')),250)});
   document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog)));
   despEl('despCadCancelar').addEventListener('click',limparCadastroDespesa);
   despEl('despCadForm').addEventListener('submit',async e=>{
@@ -131,5 +165,10 @@ if(despEl('despesas')){
   document.querySelectorAll('.tab-btn[data-tab="despesas"]').forEach(b=>b.addEventListener('click',async()=>{
     try{await carregarCadastrosDespesas();await carregarDespesas()}catch(e){msg(e.message,'erro')}
   }));
-  trocarCadastroDespesa('funcionarios');novaDespesa(false);
+  despEl('despLimparFiltros').addEventListener('click',()=>{
+    clearTimeout(window._despBusca);
+    for(const id of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(id).value='';
+    atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'));
+  });
+  atualizarFiltroCategoria();trocarCadastroDespesa('funcionarios');novaDespesa(false);
 }

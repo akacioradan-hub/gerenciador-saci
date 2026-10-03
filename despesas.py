@@ -128,7 +128,7 @@ def registrar_despesas(app, db, login_required):
     def consultar():
         competencia = mes(request.args.get('mes') or date.today().strftime('%Y-%m'))
         stmt = db.select(Despesa).where(Despesa.competencia == competencia)
-        for campo in ('grupo', 'prioridade', 'funcionario_id', 'veiculo_id', 'fornecedor_id', 'terceirizado_id'):
+        for campo in ('grupo', 'categoria', 'prioridade', 'funcionario_id', 'veiculo_id', 'fornecedor_id', 'terceirizado_id'):
             valor = request.args.get(campo)
             if valor:
                 if campo.endswith('_id'):

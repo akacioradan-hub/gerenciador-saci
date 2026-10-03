@@ -1,0 +1,13 @@
+CONTAS DO MÊS: FILTROS E PAGINAÇÃO
+
+Atualize os arquivos no GitHub e faça deploy no Render. Após concluir, pressione Ctrl + F5.
+Arquivos alterados: despesas.py, static/despesas.js, static/style.css e templates/index.html.
+
+O mês de competência permanece no topo. Os demais filtros aparecem junto à tabela Contas do mês: grupo, categoria, situação, prioridade, funcionário, veículo, fornecedor, terceirizado e pesquisa por descrição/categoria/documento.
+Limpar filtros preserva o mês selecionado. Ao alterar filtros, a lista volta à primeira página.
+São exibidas até 10 contas por página, com números, Anterior, Próxima e indicação do intervalo de registros.
+Os totais e o CSV consideram todas as contas filtradas, não somente a página visível.
+Cadastrar despesa permanece aberto e Cadastros vinculados continua logo abaixo.
+Não há alterações de tabelas nesta atualização. Mantenha o banco e a DATABASE_URL atuais.
+
+Testes locais: paginação com 25 registros (10/10/5), lista vazia, ajuste após exclusão, reinício ao filtrar, vínculo/edição, filtro por categoria na API, totais e preservação dos registros. PostgreSQL do Render não acessado.
