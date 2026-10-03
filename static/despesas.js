@@ -150,11 +150,11 @@ function trocarCadastroDespesa(tipo,abrir=false){
   renderCadastrosDespesas();
 }
 function renderCadastrosDespesas(){
-  despEl('despCadBody').innerHTML=despCadastros[despTipoCadastro].length?despCadastros[despTipoCadastro].map(r=>`<tr><td>${escaparFinanceiro(r.nome)}</td><td>${escaparFinanceiro([r.cargo,r.servico,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td><td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nenhum cadastro.</td></tr>';
+  despEl('despCadBody').innerHTML=despCadastros[despTipoCadastro].length?despCadastros[despTipoCadastro].map(r=>`<tr><td>${escaparFinanceiro(r.nome)}</td><td>${escaparFinanceiro([r.cargo,r.data_nascimento?dataBR(r.data_nascimento):null,r.endereco,r.servico,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td><td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nenhum cadastro.</td></tr>';
 }
 function editarCadastroDespesa(id){
   const r=despCadastros[despTipoCadastro].find(x=>x.id===id);if(!r)return;
-  for(const [campo,sufixo] of Object.entries({id:'Id',nome:'Nome',cargo:'Cargo',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}))despEl('despCad'+sufixo).value=r[campo]??'';
+  for(const [campo,sufixo] of Object.entries({id:'Id',nome:'Nome',cargo:'Cargo',data_nascimento:'Nascimento',endereco:'Endereco',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}))despEl('despCad'+sufixo).value=r[campo]??'';
   despEl('despCadForm').classList.remove('hidden');
   despEl('despCadForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -192,8 +192,8 @@ if(despEl('despesas')){
   despEl('despCadCancelar').addEventListener('click',()=>{limparCadastroDespesa();despEl('despCadForm').classList.add('hidden')});
   despEl('despCadForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despCadId').value;
-    const payload=Object.fromEntries(Object.entries({nome:'Nome',cargo:'Cargo',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}).map(([k,v])=>[k,despEl('despCad'+v).value]));
-    try{await api('/api/despesas/cadastros/'+despTipoCadastro+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(payload)});limparCadastroDespesa();despEl('despCadForm').classList.add('hidden');await carregarCadastrosDespesas();await carregarDespesas();msg('Cadastro salvo.')}catch(e){msg(e.message,'erro')}
+    const payload=Object.fromEntries(Object.entries({nome:'Nome',cargo:'Cargo',data_nascimento:'Nascimento',endereco:'Endereco',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}).map(([k,v])=>[k,despEl('despCad'+v).value]));
+    try{await api('/api/despesas/cadastros/'+despTipoCadastro+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(payload)});limparCadastroDespesa();despEl('despCadForm').classList.add('hidden');await carregarCadastrosDespesas();await carregarDespesas();await carregarDashboard();msg('Cadastro salvo.')}catch(e){msg(e.message,'erro')}
   });
   document.querySelectorAll('.tab-btn[data-tab="despesas"]').forEach(b=>b.addEventListener('click',async()=>{
     try{await carregarCadastrosDespesas();await carregarDespesas()}catch(e){msg(e.message,'erro')}

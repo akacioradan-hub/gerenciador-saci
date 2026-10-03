@@ -1,0 +1,13 @@
+FUNCIONÁRIOS — NASCIMENTO, ENDEREÇO E AVISOS
+
+Atualize o pacote no GitHub, mantendo as pastas. Faça deploy no Render e pressione Ctrl + F5.
+Arquivos alterados: app.py, despesas.py, templates/index.html, static/despesas.js e static/app.js.
+
+Em Cadastros vinculados > Cadastrar funcionário, informe data de nascimento e endereço completo. Os campos são opcionais e podem ser preenchidos na edição.
+Os dados são mantidos no backup geral.
+No dia anterior ao aniversário, o funcionário aparece no centro de avisos, com nome, data e idade que completará. O contador do sino inclui o aviso. Os avisos são consultados ao carregar/atualizar o dashboard.
+O cálculo usa America/Fortaleza. Para nascimento em 29/02, em ano não bissexto considera aniversário em 01/03 e aviso em 28/02.
+
+A migração adiciona data_nascimento e endereco em funcionarios_despesas sem apagar os registros existentes. Não altere o banco ou DATABASE_URL.
+
+Testes locais: migração com funcionário e conta preexistentes, cadastro/edição/backup, aniversário amanhã, virada de ano, bissexto, rejeição de datas inválidas/futuras, sino e painel de avisos. PostgreSQL do Render não acessado.

@@ -1,7 +1,8 @@
 """Contas a pagar e cadastros vinculados; usa o banco central da aplicação."""
 import csv
 import io
-from datetime import date
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from decimal import Decimal, InvalidOperation
 from flask import request, jsonify, send_file
 from sqlalchemy import or_, func, inspect, text
@@ -14,6 +15,8 @@ def registrar_despesas(app, db, login_required):
         id = db.Column(db.Integer, primary_key=True)
         nome = db.Column(db.String(180), nullable=False)
         cargo = db.Column(db.String(100))
+        data_nascimento = db.Column(db.Date)
+        endereco = db.Column(db.String(500))
         telefone = db.Column(db.String(30))
         observacoes = db.Column(db.Text)
 
@@ -84,7 +87,10 @@ def registrar_despesas(app, db, login_required):
 
     def cadastro_dict(r):
         campos = ('nome', 'cargo', 'servico', 'telefone', 'placa', 'ano', 'documento', 'observacoes')
-        return {'id': r.id, **{c: getattr(r, c) for c in campos if hasattr(r, c)}}
+        dados = {'id': r.id, **{c: getattr(r, c) for c in campos if hasattr(r, c)}}
+        if isinstance(r, Funcionario):
+            dados.update(data_nascimento=r.data_nascimento.isoformat() if r.data_nascimento else None, endereco=r.endereco or '')
+        return dados
 
     def despesa_dict(r):
         return {'id': r.id, 'descricao': r.descricao, 'grupo': r.grupo, 'categoria': r.categoria,
@@ -175,13 +181,19 @@ def registrar_despesas(app, db, login_required):
                 if r.ano and not 1900 <= r.ano <= 2100: raise ValueError('Ano inválido.')
             else:
                 r.telefone = texto(d, 'telefone', 30)
-                if tipo == 'funcionarios': r.cargo = texto(d, 'cargo', 100)
+                if tipo == 'funcionarios':
+                    r.cargo = texto(d, 'cargo', 100)
+                    if 'data_nascimento' in d:
+                        r.data_nascimento = date.fromisoformat(d['data_nascimento']) if d.get('data_nascimento') else None
+                        if r.data_nascimento and r.data_nascimento > datetime.now(ZoneInfo('America/Fortaleza')).date():
+                            raise ValueError('A data de nascimento não pode estar no futuro.')
+                    if 'endereco' in d: r.endereco = texto(d, 'endereco', 500)
                 else: r.documento = texto(d, 'documento', 30)
                 if tipo == 'terceirizados': r.servico = texto(d, 'servico', 100)
             db.session.add(r); db.session.commit()
             return jsonify(cadastro_dict(r)), 200 if ident else 201
         except (ValueError, TypeError):
-            db.session.rollback(); return jsonify(erro='Confira os dados: nome obrigatório, limites dos campos e ano/placa válidos.'), 400
+            db.session.rollback(); return jsonify(erro='Confira nome, datas, limites dos campos e ano/placa válidos.'), 400
         except IntegrityError:
             db.session.rollback(); return jsonify(erro='Já existe um veículo com esta placa.'), 409
 
@@ -249,4 +261,22 @@ def registrar_despesas(app, db, login_required):
                 conn.execute(text('ALTER TABLE despesas_mensais ADD COLUMN terceirizado_id INTEGER REFERENCES terceirizados_despesas(id) ON DELETE RESTRICT'))
         with db.engine.begin() as conn:
             conn.execute(text('CREATE INDEX IF NOT EXISTS ix_despesas_mensais_terceirizado_id ON despesas_mensais (terceirizado_id)'))
-    return backup, migrar
+        colunas_funcionario = {c['name'] for c in inspect(db.engine).get_columns('funcionarios_despesas')}
+        with db.engine.begin() as conn:
+            for nome,tipo in [('data_nascimento','DATE'),('endereco','VARCHAR(500)')]:
+                if nome not in colunas_funcionario:
+                    conn.execute(text(f'ALTER TABLE funcionarios_despesas ADD COLUMN {nome} {tipo}'))
+
+    def aniversarios_amanha(hoje=None):
+        hoje = hoje or datetime.now(ZoneInfo('America/Fortaleza')).date()
+        amanha = hoje + timedelta(days=1)
+        avisos = []
+        registros = db.session.execute(db.select(Funcionario).where(Funcionario.data_nascimento.is_not(None)).order_by(Funcionario.nome)).scalars()
+        for r in registros:
+            nascimento = r.data_nascimento
+            try: aniversario = date(amanha.year,nascimento.month,nascimento.day)
+            except ValueError: aniversario = date(amanha.year,3,1)  # 29/02 em ano não bissexto.
+            if aniversario == amanha and amanha.year > nascimento.year:
+                avisos.append({'id':r.id,'nome':r.nome,'data_aniversario':aniversario.isoformat(),'idade':amanha.year-nascimento.year})
+        return avisos
+    return backup, migrar, aniversarios_amanha

@@ -127,6 +127,11 @@ function renderAvisosDashboard(d){
 
   if(!panel)return;
   let html='';
+  const aniversarios=d.aniversarios_amanha||[];
+  if(aniversarios.length){
+    html+='<div class="alert-section-title">Aniversários de funcionários — amanhã</div>';
+    html+=aniversarios.map(a=>`<div class="alert-item today"><strong>${escaparFinanceiro(a.nome)}</strong><span>Aniversário amanhã: ${dataBR(a.data_aniversario)}</span><span>Completa ${Number(a.idade)} anos.</span></div>`).join('');
+  }
 
   if(clientes60.length){
     html+=`<div class="alert-section-title critical-title">Clientes — 60 dias ou mais</div>`;

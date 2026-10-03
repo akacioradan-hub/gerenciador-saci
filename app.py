@@ -680,7 +680,9 @@ def dashboard():
         for nome, valor in sorted(por_orgao.items(), key=lambda kv: kv[1], reverse=True)[:6]
     ]
 
+    aniversarios_amanha = aniversarios_funcionarios()
     return jsonify({
+        "aniversarios_amanha": aniversarios_amanha,
         "total_receber": total_receber,
         "total_recebido": total_recebido,
         "saldo_devedor": saldo,
@@ -690,7 +692,7 @@ def dashboard():
         "atrasados": atrasados[:20],
         "clientes_60_dias": clientes_60_dias[:30],
         "orgaos_60_dias": orgaos_60_dias[:30],
-        "total_alertas": len(vencem_hoje) + len(atrasados) + len(clientes_60_dias) + len(orgaos_60_dias),
+        "total_alertas": len(vencem_hoje) + len(atrasados) + len(clientes_60_dias) + len(orgaos_60_dias) + len(aniversarios_amanha),
         "total_previsto_futuro": total_previsto_futuro,
         "recebimentos_mensais": recebimentos_mensais,
         "previsao_mensal": previsao_mensal,
@@ -961,7 +963,7 @@ def backup_banco():
 
 
 from despesas import registrar_despesas
-backup_despesas, migrar_despesas = registrar_despesas(app, db, login_required)
+backup_despesas, migrar_despesas, aniversarios_funcionarios = registrar_despesas(app, db, login_required)
 
 init_db()
 

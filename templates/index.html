@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-resumo-vinculado">
+<link rel="stylesheet" href="/static/style.css?v=20261003-aniversarios">
 </head>
 <body>
 <div class="app-shell">
@@ -298,6 +298,8 @@
           <form id="despCadForm" class="gov-form hidden">
             <input id="despCadId" type="hidden">
             <label>Nome / modelo *<input id="despCadNome" maxlength="180" required></label>
+            <label data-desp-field="funcionarios">Data de nascimento<input id="despCadNascimento" type="date"></label>
+            <label data-desp-field="funcionarios">Endereço completo<input id="despCadEndereco" maxlength="500" placeholder="Rua, número, bairro, cidade/UF e CEP"></label>
             <label data-desp-field="funcionarios">Cargo<input id="despCadCargo" maxlength="100"></label>
             <label data-desp-field="funcionarios fornecedores terceirizados">Telefone<input id="despCadTelefone" maxlength="30"></label>
             <label data-desp-field="terceirizados">Serviço / especialidade<input id="despCadServico" maxlength="100" placeholder="Ex.: Eletricista, frete ou limpeza"></label>
@@ -369,13 +371,13 @@
 
 <div id="alertOverlay" class="alert-overlay hidden"></div>
 <aside id="alertPanel" class="alert-panel">
-  <div class="alert-panel-head"><div><span class="eyebrow">CENTRO DE AVISOS</span><h3>Vencimentos</h3></div><button id="closeAlerts" type="button">×</button></div>
+  <div class="alert-panel-head"><div><span class="eyebrow">CENTRO DE AVISOS</span><h3>Avisos</h3></div><button id="closeAlerts" type="button">×</button></div>
   <div id="alertPanelBody" class="alert-panel-body"><div class="empty">Nenhum aviso.</div></div>
 </aside>
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-orgaos-icones"></script>
-<script src="/static/despesas.js?v=20261003-resumo-vinculado"></script>
+<script src="/static/app.js?v=20261003-aniversarios"></script>
+<script src="/static/despesas.js?v=20261003-aniversarios"></script>
 </body>
 </html>
