@@ -1,0 +1,4 @@
+Atualize static/despesas.js e templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Veículos: Nome/modelo, Placa, Ano, Observações, Ações.
+Fornecedores: Nome, Telefone, CPF/CNPJ, Observações, Ações.
+Terceirizados: Nome, Telefone, Serviço/especialidade, CPF/CNPJ, Observações, Ações.

@@ -160,15 +160,18 @@ function trocarCadastroDespesa(tipo,abrir=false){
   renderCadastrosDespesas();
 }
 function renderCadastrosDespesas(){
-  const funcionarios=despTipoCadastro==='funcionarios';
-  const colunas=funcionarios?['Nome','Cargo','Data de nascimento','Endereço','Telefone','Ações']:['Nome','Informações','Ações'];
+  const campos={
+    funcionarios:[['nome','Nome'],['cargo','Cargo'],['data_nascimento','Data de nascimento'],['endereco','Endereço'],['telefone','Telefone']],
+    veiculos:[['nome','Nome / modelo'],['placa','Placa'],['ano','Ano'],['observacoes','Observações']],
+    fornecedores:[['nome','Nome'],['telefone','Telefone'],['documento','CPF/CNPJ'],['observacoes','Observações']],
+    terceirizados:[['nome','Nome'],['telefone','Telefone'],['servico','Serviço / especialidade'],['documento','CPF/CNPJ'],['observacoes','Observações']]
+  }[despTipoCadastro];
+  const colunas=[...campos.map(([,titulo])=>titulo),'Ações'];
   despEl('despCadHead').innerHTML='<tr>'+colunas.map(c=>`<th scope="col">${c}</th>`).join('')+'</tr>';
   const registros=despCadastros[despTipoCadastro];
   despEl('despCadBody').innerHTML=registros.length?registros.map(r=>{
-    const informacoes=funcionarios?
-      `<td>${escaparFinanceiro(r.cargo||'—')}</td><td>${dataBR(r.data_nascimento)}</td><td>${escaparFinanceiro(r.endereco||'—')}</td><td>${escaparFinanceiro(r.telefone||'—')}</td>`:
-      `<td>${escaparFinanceiro([r.servico,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td>`;
-    return `<tr><td>${escaparFinanceiro(r.nome)}</td>${informacoes}<td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`;
+    const celulas=campos.map(([campo])=>`<td>${campo==='data_nascimento'?dataBR(r[campo]):escaparFinanceiro(String(r[campo]??'')||'—')}</td>`).join('');
+    return `<tr>${celulas}<td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`;
   }).join(''):`<tr><td colspan="${colunas.length}" class="empty">Nenhum cadastro.</td></tr>`;
 }
 function editarCadastroDespesa(id){
