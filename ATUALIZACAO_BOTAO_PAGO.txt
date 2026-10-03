@@ -1,0 +1,2 @@
+Atualize static/despesas.js e templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Na tabela de despesas, o botão Marcar pago passa a se chamar Pago.
