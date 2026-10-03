@@ -1,0 +1,8 @@
+Atualize app.py, static/app.js, static/style.css e templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+
+1. Em Órgãos Públicos, escolha o órgão devedor no novo filtro.
+2. Marque os débitos em aberto desejados ou use a caixa do cabeçalho para selecionar todos os débitos em aberto filtrados.
+3. Informe o desconto total em reais. Confira o total selecionado e o valor a receber.
+4. Clique Receber selecionados e confirme. Todos os débitos selecionados serão marcados como pagos, com desconto proporcional em cada registro.
+
+A seleção é limpa ao alterar os filtros. Valores pagos não podem ser selecionados. Se um débito já tiver sido pago, excluído ou o total tiver mudado, o lote é recusado sem alterações parciais.

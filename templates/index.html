@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-excluir-avisos">
+<link rel="stylesheet" href="/static/style.css?v=20261003-orgaos-lote">
 </head>
 <body>
 <div class="app-shell">
@@ -193,7 +193,7 @@
 
           <div class="finance-summary-grid">
             <div class="finance-mini-card"><span>Dívida inicial</span><strong id="finDivida">R$ 0,00</strong></div>
-            <div class="finance-mini-card paid"><span>Total pago</span><strong id="finPago">R$ 0,00</strong></div>
+            <div class="finance-mini-card paid"><span>Total pago</span><strong id="finPago">R$ 0,00</strong><small id="finDesconto">Descontos: R$ 0,00</small></div>
             <div class="finance-mini-card open"><span>Saldo devedor</span><strong id="finSaldo">R$ 0,00</strong></div>
             <div class="finance-mini-card"><span>Previsão</span><strong id="finPrevisao">—</strong></div>
           </div>
@@ -203,14 +203,16 @@
               <div class="section-label">Registrar novo pagamento</div>
               <form id="pagamentoForm" class="payment-inline-form">
                 <label>Data do pagamento<input id="pagData" type="date" required></label>
-                <label>Valor pago<input id="pagValor" type="number" min="0.01" step="0.01" required></label>
+                <label>Valor recebido (R$)<input id="pagValor" type="number" min="0" step="0.01" required></label>
+                <label>Desconto (R$)<input id="pagDesconto" type="number" min="0" step="0.01" value="0"></label>
+                <p class="form-hint span-2" id="pagResumo">O valor recebido e o desconto serão abatidos do saldo.</p>
                 <label class="span-2">Observação<input id="pagObs" placeholder="Opcional"></label>
                 <div class="form-actions"><button class="primary" type="submit">Registrar pagamento</button></div>
               </form>
             </div>
             <div class="finance-history">
               <div class="section-label">Histórico do cliente</div>
-              <div class="table-wrap"><table><thead><tr><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
+              <div class="table-wrap"><table><thead><tr><th>Data</th><th>Valor recebido</th><th>Desconto</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
             </div>
           </div>
         </div>
@@ -227,7 +229,7 @@
         <div class="gov-summary-grid">
           <div class="card gov-kpi"><span>Registros</span><strong id="govQtd">0</strong><small>débitos cadastrados</small></div>
           <div class="card gov-kpi"><span>Valor total</span><strong id="govTotal">R$ 0,00</strong><small>total dos débitos</small></div>
-          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="govPago">R$ 0,00</strong><small>débitos quitados</small></div>
+          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="govPago">R$ 0,00</strong><small id="govDesconto">Descontos: R$ 0,00</small></div>
           <div class="card gov-kpi gov-open"><span>Em aberto</span><strong id="govNaoPago">R$ 0,00</strong><small>saldo pendente</small></div>
         </div>
 
@@ -242,6 +244,7 @@
             <label>Nº da nota fiscal *<input id="orgaoNota" required placeholder="Ex.: NF 1234"></label>
             <label>Nº da ordem de compra / serviço<input id="orgaoOrdem" placeholder="Ex.: OC 245/2026 ou OS 078/2026"></label>
             <label class="check-label"><input id="orgaoPago" type="checkbox"> Pago</label>
+            <label>Desconto no pagamento (R$)<input id="orgaoDesconto" type="number" min="0" step="0.01" value="0" disabled><small id="orgaoRecebidoResumo">Marque Pago para aplicar desconto.</small></label>
             <div class="form-actions"><button class="primary" type="submit">Salvar débito</button><button id="cancelarOrgao" class="secondary hidden" type="button">Cancelar</button></div>
           </form>
         </div>
@@ -250,13 +253,21 @@
           <div class="gov-toolbar">
             <div><h3>Débitos cadastrados</h3><p>Consulte por órgão, nota fiscal, ordem de compra/serviço, ano ou situação.</p></div>
             <div class="gov-filters">
+              <select id="filtroDevedorOrgao" aria-label="Filtrar órgão devedor"><option value="">Todos os órgãos devedores</option></select>
               <input id="buscaOrgao" placeholder="Órgão, nota fiscal ou ordem...">
               <input id="filtroAnoOrgao" type="number" min="2000" max="2100" placeholder="Ano">
               <select id="filtroStatusOrgao"><option value="">Todos</option><option value="pago">Pago</option><option value="nao-pago">Em aberto</option></select>
               <a class="secondary gov-export" href="/api/exportar/orgaos-publicos.csv">Exportar CSV</a>
             </div>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Órgão devedor</th><th>Tipo</th><th>Data</th><th>Valor do débito</th><th>Pago</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
+          <form id="orgReceberLote" class="gov-batch">
+            <div><strong id="orgSelecionadosResumo" aria-live="polite">Nenhum débito selecionado</strong><small>Selecione os débitos em aberto na tabela.</small></div>
+            <label>Desconto total (R$)<input id="orgLoteDesconto" type="number" min="0" step="0.01" value="0" disabled></label>
+            <div><span>Valor a receber</span><strong id="orgLoteLiquido" aria-live="polite">R$ 0,00</strong></div>
+            <button type="submit" class="primary" id="orgLoteConfirmar" disabled>Receber selecionados</button>
+            <button type="button" class="secondary" id="orgLimparSelecao" disabled>Limpar seleção</button>
+          </form>
+          <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="orgSelecionarTodos" aria-label="Selecionar todos os débitos em aberto filtrados" title="Selecionar todos os débitos em aberto filtrados"></th><th>Órgão devedor</th><th>Tipo</th><th>Data</th><th>Valor do débito</th><th>Pago</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
         </div>
       </section>
 
@@ -377,7 +388,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-excluir-avisos"></script>
+<script src="/static/app.js?v=20261003-orgaos-lote"></script>
 <script src="/static/despesas.js?v=20261003-filtros-fixos"></script>
 </body>
 </html>

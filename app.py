@@ -4,6 +4,7 @@ import hmac
 import csv
 import io
 import json
+from decimal import Decimal, InvalidOperation
 from datetime import date
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
@@ -99,6 +100,7 @@ class Pagamento(db.Model):
     cliente_id = db.Column(db.Integer, db.ForeignKey("clientes.id", ondelete="CASCADE"), nullable=False, index=True)
     data = db.Column(db.Date, nullable=False, index=True)
     valor = db.Column(db.Numeric(12, 2), nullable=False)
+    desconto = db.Column(db.Numeric(12, 2), nullable=False, default=0, server_default="0")
     observacao = db.Column(db.Text, nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
     cliente = db.relationship("Cliente", back_populates="pagamentos")
@@ -111,6 +113,7 @@ class DebitoOrgaoPublico(db.Model):
     tipo_orgao = db.Column(db.String(40), nullable=False, default="Prefeitura")
     data_debito = db.Column(db.Date, nullable=False, index=True)
     valor_debito = db.Column(db.Numeric(14, 2), nullable=False, default=0)
+    desconto = db.Column(db.Numeric(14, 2), nullable=False, default=0, server_default="0")
     pago = db.Column(db.Boolean, nullable=False, default=False, index=True)
     numero_nota_fiscal = db.Column(db.String(80), nullable=False, index=True)
     numero_ordem = db.Column(db.String(100), nullable=True, index=True)
@@ -127,6 +130,8 @@ def debito_orgao_dict(registro):
         "mes": registro.data_debito.month,
         "ano": registro.data_debito.year,
         "valor_debito": float(registro.valor_debito or 0),
+        "desconto": float(registro.desconto or 0),
+        "valor_recebido": float(registro.valor_debito - (registro.desconto or 0)) if registro.pago else 0,
         "pago": bool(registro.pago),
         "status": "PAGO" if registro.pago else "EM ABERTO",
         "numero_nota_fiscal": registro.numero_nota_fiscal,
@@ -177,6 +182,26 @@ def migrar_campos_orgaos_publicos():
         app.logger.info("Campo numero_ordem criado em debitos_orgaos_publicos com sucesso.")
 
 
+def migrar_descontos():
+    for tabela in ("pagamentos", "debitos_orgaos_publicos"):
+        colunas = {c["name"] for c in inspect(db.engine).get_columns(tabela)}
+        if "desconto" not in colunas:
+            db.session.execute(db.text(f"ALTER TABLE {tabela} ADD COLUMN desconto NUMERIC(14, 2) NOT NULL DEFAULT 0"))
+    db.session.commit()
+
+
+def valor_monetario(valor):
+    try:
+        numero = Decimal(str(valor))
+        if not numero.is_finite() or numero < 0 or numero > Decimal("9999999999.99"):
+            raise ValueError()
+        if numero != numero.quantize(Decimal("0.01")):
+            raise ValueError()
+        return numero.quantize(Decimal("0.01"))
+    except (InvalidOperation, TypeError, ValueError):
+        raise ValueError("Informe valores não negativos, com até duas casas decimais.")
+
+
 def init_db():
     with app.app_context():
         try:
@@ -184,6 +209,7 @@ def init_db():
             migrar_despesas()
             migrar_campos_cliente()
             migrar_campos_orgaos_publicos()
+            migrar_descontos()
             # Cria o administrador inicial somente se ainda não existir nenhum usuário.
             if db.session.execute(db.select(func.count(Usuario.id))).scalar_one() == 0:
                 username = (os.getenv("ADMIN_USER", "admin") or "admin").strip()
@@ -296,7 +322,8 @@ def ultimo_pagamento(cliente):
 def cliente_dict(cliente):
     pago = total_pago(cliente)
     divida = float(cliente.divida or 0)
-    saldo = max(0.0, divida - pago)
+    desconto = sum((p.desconto or Decimal("0")) for p in cliente.pagamentos)
+    saldo = float(max(Decimal("0"), (cliente.divida or Decimal("0")) - sum((p.valor or Decimal("0")) for p in cliente.pagamentos) - desconto))
     if saldo <= 0:
         status = "QUITADO"
     elif not cliente.previsao:
@@ -325,6 +352,7 @@ def cliente_dict(cliente):
         "divida": divida,
         "previsao": cliente.previsao.isoformat() if cliente.previsao else None,
         "total_pago": pago,
+        "total_desconto": float(desconto),
         "saldo": saldo,
         "ultimo_pagamento": ultimo.isoformat() if ultimo else None,
         "status": status,
@@ -532,6 +560,7 @@ def listar_pagamentos():
         "cliente_nome": p.cliente.nome,
         "data": p.data.isoformat(),
         "valor": float(p.valor),
+        "desconto": float(p.desconto or 0),
         "observacao": p.observacao,
     } for p in pags])
 
@@ -542,20 +571,24 @@ def criar_pagamento():
     data = request.get_json(silent=True) or {}
     try:
         cliente_id = int(data.get("cliente_id"))
-        valor = float(data.get("valor"))
+        valor = valor_monetario(data.get("valor"))
+        desconto = valor_monetario(data.get("desconto", 0))
     except (TypeError, ValueError):
         return jsonify({"erro": "Cliente ou valor inválido."}), 400
-    if valor <= 0:
-        return jsonify({"erro": "O valor deve ser maior que zero."}), 400
+    if valor + desconto <= 0:
+        return jsonify({"erro": "Informe um valor recebido ou desconto maior que zero."}), 400
     try:
         pagamento_data = date.fromisoformat(data.get("data") or "")
     except ValueError:
         return jsonify({"erro": "Informe uma data de pagamento válida."}), 400
-    cliente = db.session.get(Cliente, cliente_id)
+    cliente = db.session.execute(db.select(Cliente).where(Cliente.id == cliente_id).with_for_update()).scalar_one_or_none()
     if not cliente:
         return jsonify({"erro": "Cliente não encontrado."}), 404
+    saldo_atual = (cliente.divida or Decimal("0")) - sum((p.valor or Decimal("0")) + (p.desconto or Decimal("0")) for p in cliente.pagamentos)
+    if valor + desconto > saldo_atual:
+        return jsonify({"erro": "O valor recebido mais o desconto não pode superar o saldo do cliente."}), 400
     observacao = (data.get("observacao") or "").strip() or None
-    pagamento = Pagamento(cliente_id=cliente_id, data=pagamento_data, valor=valor, observacao=observacao)
+    pagamento = Pagamento(cliente_id=cliente_id, data=pagamento_data, valor=valor, desconto=desconto, observacao=observacao)
     db.session.add(pagamento)
     db.session.commit()
     return jsonify({"id": pagamento.id}), 201
@@ -665,7 +698,8 @@ def dashboard():
 
     # ---- Órgãos públicos ----
     org_total = sum(float(r.valor_debito or 0) for r in orgaos)
-    org_pago = sum(float(r.valor_debito or 0) for r in orgaos if r.pago)
+    org_pago = sum(float(r.valor_debito - (r.desconto or 0)) for r in orgaos if r.pago)
+    org_desconto = sum(float(r.desconto or 0) for r in orgaos if r.pago)
     org_nao_pago = sum(float(r.valor_debito or 0) for r in orgaos if not r.pago)
     org_qtd = len(orgaos)
     org_qtd_pago = sum(1 for r in orgaos if r.pago)
@@ -692,9 +726,10 @@ def dashboard():
     org_por_ano = []
     for ano in anos[-6:]:
         total_ano = sum(float(r.valor_debito or 0) for r in orgaos if r.data_debito and r.data_debito.year == ano)
-        pago_ano = sum(float(r.valor_debito or 0) for r in orgaos if r.data_debito and r.data_debito.year == ano and r.pago)
-        aberto_ano = total_ano - pago_ano
-        org_por_ano.append({"ano": str(ano), "total": total_ano, "pago": pago_ano, "nao_pago": aberto_ano})
+        pago_ano = sum(float(r.valor_debito - (r.desconto or 0)) for r in orgaos if r.data_debito and r.data_debito.year == ano and r.pago)
+        desconto_ano = sum(float(r.desconto or 0) for r in orgaos if r.pago and r.data_debito and r.data_debito.year == ano)
+        aberto_ano = total_ano - pago_ano - desconto_ano
+        org_por_ano.append({"ano": str(ano), "total": total_ano, "pago": pago_ano, "nao_pago": aberto_ano, "desconto": desconto_ano})
 
     por_orgao = {}
     for r in orgaos:
@@ -728,6 +763,7 @@ def dashboard():
         "aniversarios_amanha": aniversarios_amanha,
         "total_receber": total_receber,
         "total_recebido": total_recebido,
+        "total_desconto": sum(i["total_desconto"] for i in itens),
         "saldo_devedor": saldo,
         "clientes_atraso": status["ATRASADO"],
         "valor_atrasado": valor_atrasado,
@@ -744,6 +780,7 @@ def dashboard():
         "orgaos": {
             "total": org_total,
             "total_pago": org_pago,
+            "total_desconto": org_desconto,
             "total_nao_pago": org_nao_pago,
             "quantidade": org_qtd,
             "quantidade_pago": org_qtd_pago,
@@ -761,7 +798,10 @@ def listar_debitos_orgaos_publicos():
     q = (request.args.get("q") or "").strip()
     ano = (request.args.get("ano") or "").strip()
     status = (request.args.get("status") or "").strip().lower()
+    orgao = (request.args.get("orgao") or "").strip()
     stmt = db.select(DebitoOrgaoPublico)
+    if orgao:
+        stmt = stmt.where(DebitoOrgaoPublico.nome_orgao == orgao)
     if q:
         stmt = stmt.where(or_(
             DebitoOrgaoPublico.nome_orgao.ilike(f"%{q}%"),
@@ -784,10 +824,12 @@ def listar_debitos_orgaos_publicos():
     dados = [debito_orgao_dict(r) for r in registros]
     return jsonify({
         "registros": dados,
+        "orgaos_devedores": db.session.execute(db.select(DebitoOrgaoPublico.nome_orgao).distinct().order_by(DebitoOrgaoPublico.nome_orgao)).scalars().all(),
         "resumo": {
             "quantidade": len(dados),
             "total": sum(r["valor_debito"] for r in dados),
-            "total_pago": sum(r["valor_debito"] for r in dados if r["pago"]),
+            "total_pago": sum(r["valor_recebido"] for r in dados if r["pago"]),
+            "total_desconto": sum(r["desconto"] for r in dados if r["pago"]),
             "total_nao_pago": sum(r["valor_debito"] for r in dados if not r["pago"]),
         }
     })
@@ -803,20 +845,24 @@ def validar_debito_orgao_payload(data):
     except ValueError:
         return None, "Informe uma data válida para o débito."
     try:
-        valor_debito = float(data.get("valor_debito", 0))
+        valor_debito = valor_monetario(data.get("valor_debito", 0))
+        desconto = valor_monetario(data.get("desconto", 0))
     except (TypeError, ValueError):
         return None, "Informe um valor de débito válido."
     if not nome_orgao:
         return None, "Informe o nome do órgão devedor."
     if not numero_nota_fiscal:
         return None, "Informe o número da nota fiscal."
-    if valor_debito < 0:
-        return None, "O valor do débito não pode ser negativo."
+    if desconto > valor_debito:
+        return None, "O desconto não pode superar o valor do débito."
+    if desconto and not data.get("pago", False):
+        return None, "Marque como pago para aplicar o desconto."
     return {
         "nome_orgao": nome_orgao,
         "tipo_orgao": tipo_orgao or "Outro",
         "data_debito": data_debito,
         "valor_debito": valor_debito,
+        "desconto": desconto,
         "pago": bool(data.get("pago", False)),
         "numero_nota_fiscal": numero_nota_fiscal,
         "numero_ordem": numero_ordem or None,
@@ -850,6 +896,46 @@ def atualizar_debito_orgao_publico(registro_id):
     return jsonify(debito_orgao_dict(registro))
 
 
+@app.post("/api/orgaos-publicos/receber-selecionados")
+@login_required
+def receber_orgaos_selecionados():
+    dados = request.get_json(silent=True)
+    if not isinstance(dados, dict):
+        return jsonify({"erro": "Selecione os débitos a receber."}), 400
+    ids = dados.get("ids")
+    if not isinstance(ids, list) or not ids or any(type(i) is not int or i <= 0 for i in ids) or len(set(ids)) != len(ids):
+        return jsonify({"erro": "Seleção de débitos inválida."}), 400
+    try:
+        desconto = valor_monetario(dados.get("desconto", 0))
+        esperado = valor_monetario(dados.get("total_esperado"))
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
+    registros = db.session.execute(db.select(DebitoOrgaoPublico).where(
+        DebitoOrgaoPublico.id.in_(ids)).order_by(DebitoOrgaoPublico.id).with_for_update()).scalars().all()
+    if len(registros) != len(ids) or any(r.pago for r in registros):
+        return jsonify({"erro": "A seleção foi alterada ou contém débitos já pagos. Atualize a lista e selecione novamente."}), 409
+    total = sum((r.valor_debito for r in registros), Decimal("0"))
+    if total != esperado:
+        return jsonify({"erro": "O valor dos débitos mudou. Atualize a lista e confira o total antes de receber."}), 409
+    if desconto > total:
+        return jsonify({"erro": "O desconto não pode superar o total selecionado."}), 400
+    # Rateio proporcional em centavos; maiores restos recebem os centavos restantes.
+    total_centavos = int(total * 100)
+    desconto_centavos = int(desconto * 100)
+    valores = [int(r.valor_debito * 100) for r in registros]
+    parcelas = [v * desconto_centavos // total_centavos if total_centavos else 0 for v in valores]
+    restos = [v * desconto_centavos % total_centavos if total_centavos else 0 for v in valores]
+    ordem = sorted(range(len(registros)), key=lambda i: (-restos[i], registros[i].id))
+    for i in ordem[:desconto_centavos - sum(parcelas)]:
+        parcelas[i] += 1
+    for registro, parcela in zip(registros, parcelas):
+        registro.desconto = Decimal(parcela) / 100
+        registro.pago = True
+    db.session.commit()
+    return jsonify({"quantidade": len(registros), "total": float(total),
+                    "desconto": float(desconto), "valor_recebido": float(total - desconto)})
+
+
 @app.patch("/api/orgaos-publicos/<int:registro_id>/status")
 @login_required
 def alternar_status_debito_orgao_publico(registro_id):
@@ -859,7 +945,15 @@ def alternar_status_debito_orgao_publico(registro_id):
     data = request.get_json(silent=True) or {}
     if "pago" not in data:
         return jsonify({"erro": "Informe o novo status do débito."}), 400
-    registro.pago = bool(data.get("pago"))
+    pago = bool(data.get("pago"))
+    try:
+        desconto = valor_monetario(data.get("desconto", registro.desconto if registro.pago else 0)) if pago else Decimal("0")
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
+    if desconto > registro.valor_debito:
+        return jsonify({"erro": "O desconto não pode superar o valor do débito."}), 400
+    registro.pago = pago
+    registro.desconto = desconto
     db.session.commit()
     return jsonify(debito_orgao_dict(registro))
 
@@ -881,9 +975,9 @@ def exportar_orgaos_publicos():
     registros = db.session.execute(db.select(DebitoOrgaoPublico).order_by(DebitoOrgaoPublico.data_debito.desc())).scalars().all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal", "Ordem de compra / serviço"])
+    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal", "Ordem de compra / serviço", "Desconto", "Valor recebido"])
     for r in registros:
-        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "EM ABERTO", r.numero_nota_fiscal, r.numero_ordem or ""])
+        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "EM ABERTO", r.numero_nota_fiscal, r.numero_ordem or "", f"{float(r.desconto or 0):.2f}", f"{float(r.valor_debito - (r.desconto or 0)) if r.pago else 0:.2f}"])
     mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="debitos_orgaos_publicos.csv")
 
@@ -971,10 +1065,10 @@ def exportar_clientes():
     clientes = db.session.execute(db.select(Cliente).order_by(Cliente.nome.asc())).scalars().all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["ID","Nome completo/Razão social","Tipo","CPF/CNPJ","RG/IE","Nascimento","Telefone","WhatsApp","E-mail","CEP","Endereço","Número","Complemento","Bairro","Cidade","UF","Dívida inicial","Previsão","Total pago","Saldo","Último pagamento","Status","Observações"])
+    writer.writerow(["ID","Nome completo/Razão social","Tipo","CPF/CNPJ","RG/IE","Nascimento","Telefone","WhatsApp","E-mail","CEP","Endereço","Número","Complemento","Bairro","Cidade","UF","Dívida inicial","Previsão","Total pago","Saldo","Último pagamento","Status","Observações","Total descontos"])
     for c in clientes:
         d = cliente_dict(c)
-        writer.writerow([d["id"],d["nome"],d["tipo_pessoa"],d["cpf_cnpj"],d["rg_ie"],d["data_nascimento"] or "",d["telefone"],d["whatsapp"],d["email"],d["cep"],d["logradouro"],d["numero"],d["complemento"],d["bairro"],d["cidade"],d["uf"],f'{d["divida"]:.2f}',d["previsao"] or "",f'{d["total_pago"]:.2f}',f'{d["saldo"]:.2f}',d["ultimo_pagamento"] or "",d["status"],d["observacoes"]])
+        writer.writerow([d["id"],d["nome"],d["tipo_pessoa"],d["cpf_cnpj"],d["rg_ie"],d["data_nascimento"] or "",d["telefone"],d["whatsapp"],d["email"],d["cep"],d["logradouro"],d["numero"],d["complemento"],d["bairro"],d["cidade"],d["uf"],f'{d["divida"]:.2f}',d["previsao"] or "",f'{d["total_pago"]:.2f}',f'{d["saldo"]:.2f}',d["ultimo_pagamento"] or "",d["status"],d["observacoes"],f'{d["total_desconto"]:.2f}'])
     mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="clientes.csv")
 
@@ -995,6 +1089,7 @@ def backup_banco():
             "cliente_id": p.cliente_id,
             "data": p.data.isoformat(),
             "valor": float(p.valor),
+            "desconto": float(p.desconto or 0),
             "observacao": p.observacao,
             "criado_em": p.criado_em.isoformat() if p.criado_em else None,
         } for p in pagamentos],
