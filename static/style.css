@@ -171,3 +171,9 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #despContasCard #despResumoVinculado{margin-top:12px}
 #despContasCard #despResumoVinculado h4{margin:8px 0}
 @media(max-width:700px){#despesas .desp-header-actions{width:100%}#despContasCard .desp-main-filters{grid-template-columns:1fr 1fr}#despContasCard .desp-main-filters > label:first-child{grid-column:1/-1}#despesas .gov-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Destaque das ações, mantendo fonte e espaçamento dos botões. */
+#novaDespesa{background:linear-gradient(135deg,#e10600,#b20b07);color:#fff;box-shadow:0 3px 9px rgba(225,6,0,.24),inset 0 0 0 1px rgba(255,255,255,.16)}
+#despAbrirVinculados{background:linear-gradient(135deg,#34343b,#202024);color:#fff;box-shadow:0 3px 9px rgba(32,32,36,.20),inset 0 0 0 1px rgba(255,255,255,.15)}
+#novaDespesa:hover,#despAbrirVinculados:hover{filter:brightness(1.12)}
+#novaDespesa:focus-visible,#despAbrirVinculados:focus-visible{outline:2px solid var(--red);outline-offset:3px}

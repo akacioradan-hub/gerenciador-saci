@@ -1,0 +1,2 @@
+Atualize templates/index.html e static/style.css no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5.
+Botões: Nova despesa (vermelho) e Novo cadastro (escuro), com maior contraste e sombra, mantendo fonte e espaçamentos.
