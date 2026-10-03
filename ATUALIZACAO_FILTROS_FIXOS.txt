@@ -1,0 +1,2 @@
+Atualize templates/index.html, static/style.css e static/despesas.js no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Pesquisa removida. Grupo, Situação, Prioridade e Fornecedor sempre visíveis; demais filtros em Mais filtros.

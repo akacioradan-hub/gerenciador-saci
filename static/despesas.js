@@ -10,7 +10,7 @@ const despNomes={funcionarios:'Funcionários',veiculos:'Veículos',fornecedores:
 const despHoje=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 function despParametros(){
   const params=new URLSearchParams({mes:despEl('despMes').value});
-  const campos={despFiltroGrupo:'grupo',despFiltroCategoria:'categoria',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despFiltroTerceirizado:'terceirizado_id',despBusca:'q'};
+  const campos={despFiltroGrupo:'grupo',despFiltroCategoria:'categoria',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despFiltroTerceirizado:'terceirizado_id'};
   Object.entries(campos).forEach(([id,campo])=>{const v=despEl(id).value.trim();if(v)params.set(campo,v)});
   return params;
 }
@@ -190,7 +190,7 @@ function fecharVinculadosModal(){
   modal.classList.add('hidden');despEl('despAbrirVinculados').setAttribute('aria-expanded','false');
 }
 async function verDespesasVinculadas(id){
-  for(const campo of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(campo).value='';
+  for(const campo of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'])despEl(campo).value='';
   despEl({funcionarios:'despFiltroFuncionario',veiculos:'despFiltroVeiculo',fornecedores:'despFiltroFornecedor',terceirizados:'despFiltroTerceirizado'}[despTipoCadastro]).value=String(id);
   try{atualizarFiltroCategoria();await filtrarContasMes();fecharVinculadosModal();despEl('despContasCard').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){msg(e.message,'erro')}
 }
@@ -232,7 +232,6 @@ if(despEl('despesas')){
     try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;fecharCadastroDespesa();await carregarDespesas();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
   ['despMes','despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>{if(id==='despFiltroGrupo')atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'))}));
-  despEl('despBusca').addEventListener('input',()=>{clearTimeout(window._despBusca);window._despBusca=setTimeout(()=>filtrarContasMes().catch(e=>msg(e.message,'erro')),250)});
   document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog,true)));
   despEl('despExibirCadastros').addEventListener('click',()=>{
     const lista=despEl('despListaCadastros'),botao=despEl('despExibirCadastros');
@@ -251,8 +250,7 @@ if(despEl('despesas')){
     try{await carregarCadastrosDespesas();await carregarDespesas()}catch(e){msg(e.message,'erro')}
   }));
   despEl('despLimparFiltros').addEventListener('click',()=>{
-    clearTimeout(window._despBusca);
-    for(const id of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(id).value='';
+    for(const id of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'])despEl(id).value='';
     atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'));
   });
   atualizarFiltroCategoria();trocarCadastroDespesa('funcionarios');fecharCadastroDespesa();

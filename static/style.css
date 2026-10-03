@@ -159,7 +159,7 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #despContasCard h3{margin:0}
 #despContasCard .toolbar p{margin:4px 0 0;font-size:12px}
 #despContasCard .desp-filters{gap:8px}
-#despContasCard .desp-main-filters{grid-template-columns:2fr 1fr 1fr;margin-top:10px}
+#despContasCard .desp-main-filters{grid-template-columns:repeat(4,minmax(0,1fr));margin-top:10px}
 #despContasCard label{gap:4px}
 #despContasCard input,#despContasCard select{padding:8px 10px}
 .desp-filter-tools{display:flex;align-items:flex-start;gap:10px;margin:8px 0}
@@ -170,7 +170,7 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #despContasCard .desp-pagination{margin-top:10px;gap:8px}
 #despContasCard #despResumoVinculado{margin-top:12px}
 #despContasCard #despResumoVinculado h4{margin:8px 0}
-@media(max-width:700px){#despesas .desp-header-actions{width:100%}#despContasCard .desp-main-filters{grid-template-columns:1fr 1fr}#despContasCard .desp-main-filters > label:first-child{grid-column:1/-1}#despesas .gov-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){#despesas .desp-header-actions{width:100%}#despContasCard .desp-main-filters{grid-template-columns:1fr 1fr}#despesas .gov-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 /* Destaque das ações, mantendo fonte e espaçamento dos botões. */
 #novaDespesa{background:linear-gradient(135deg,#e10600,#b20b07);color:#fff;box-shadow:0 3px 9px rgba(225,6,0,.24),inset 0 0 0 1px rgba(255,255,255,.16)}

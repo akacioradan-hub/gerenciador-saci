@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-botoes-destaque">
+<link rel="stylesheet" href="/static/style.css?v=20261003-filtros-fixos">
 </head>
 <body>
 <div class="app-shell">
@@ -313,14 +313,14 @@
         </dialog>
         <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
           <div class="desp-filters desp-main-filters">
-          <label>Pesquisar<input id="despBusca" placeholder="Descrição, categoria ou documento"></label>
           <label>Grupo<select id="despFiltroGrupo"><option value="">Todos</option><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
           <label>Situação<select id="despFiltroStatus"><option value="">Todas</option><option value="aberto">Em aberto</option><option value="atrasado">Atrasadas</option><option value="pago">Pagas</option></select></label>
+          <label>Prioridade<select id="despFiltroPrioridade"><option value="">Todas</option><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
+          <label>Fornecedor<select id="despFiltroFornecedor"></select></label>
           </div>
           <div class="desp-filter-tools"><details class="desp-extra-filters"><summary>Mais filtros</summary><div class="desp-filters">
           <label>Categoria<select id="despFiltroCategoria"><option value="">Todas</option></select></label>
-          <label>Prioridade<select id="despFiltroPrioridade"><option value="">Todas</option><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
-          <label>Funcionário<select id="despFiltroFuncionario"></select></label><label>Veículo<select id="despFiltroVeiculo"></select></label><label>Fornecedor<select id="despFiltroFornecedor"></select></label><label>Terceirizado<select id="despFiltroTerceirizado"></select></label>
+          <label>Funcionário<select id="despFiltroFuncionario"></select></label><label>Veículo<select id="despFiltroVeiculo"></select></label><label>Terceirizado<select id="despFiltroTerceirizado"></select></label>
           </div></details><button class="secondary" type="button" id="despLimparFiltros">Limpar filtros</button></div>
           <div class="table-wrap"><table><thead><tr><th>Descrição / categoria</th><th>Vínculos</th><th>Prioridade</th><th>Vencimento</th><th>Valor</th><th>Situação / pagamento</th><th>Ações</th></tr></thead><tbody id="despesasBody"></tbody></table></div>
           <div class="desp-pagination"><span id="despPaginaResumo" aria-live="polite"></span><nav id="despPaginas" aria-label="Páginas de contas do mês"></nav></div>
@@ -377,7 +377,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-botoes-destaque"></script>
-<script src="/static/despesas.js?v=20261003-botoes-destaque"></script>
+<script src="/static/app.js?v=20261003-filtros-fixos"></script>
+<script src="/static/despesas.js?v=20261003-filtros-fixos"></script>
 </body>
 </html>
