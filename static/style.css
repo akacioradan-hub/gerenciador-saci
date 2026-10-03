@@ -145,3 +145,29 @@ body:has(#despCadastro[open]){overflow:hidden}
 body:has(#despVinculadosCard[open]){overflow:hidden}
 @media(max-width:850px){#despVinculadosCard .gov-form{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){#despVinculadosCard .gov-form{grid-template-columns:1fr;gap:14px}}
+
+/* Layout compacto da página de despesas; formulários continuam nos modais. */
+#despesas > .page-head{align-items:center;flex-wrap:wrap;margin-bottom:12px;gap:12px}
+#despesas .desp-header-actions{align-items:flex-end;gap:8px;flex-wrap:wrap}
+#despesas .desp-month-selector{width:180px;max-width:100%;gap:4px}
+#despesas > .gov-summary-grid{margin-top:10px;margin-bottom:8px;gap:8px}
+#despesas .gov-kpi{min-height:0;padding:10px 12px}
+#despesas .gov-kpi strong{font-size:21px;margin-top:4px}
+#despesas .desp-group-summary{margin-top:8px;gap:8px}
+#despesas .desp-group-summary > div{padding:9px 12px;font-size:12px}
+#despContasCard{margin-top:12px;padding:12px}
+#despContasCard h3{margin:0}
+#despContasCard .toolbar p{margin:4px 0 0;font-size:12px}
+#despContasCard .desp-filters{gap:8px}
+#despContasCard .desp-main-filters{grid-template-columns:2fr 1fr 1fr;margin-top:10px}
+#despContasCard label{gap:4px}
+#despContasCard input,#despContasCard select{padding:8px 10px}
+.desp-filter-tools{display:flex;align-items:flex-start;gap:10px;margin:8px 0}
+.desp-extra-filters{flex:1;min-width:0}
+.desp-extra-filters summary{cursor:pointer;font-size:12px;font-weight:600;padding:9px 0;color:var(--text)}
+.desp-extra-filters[open] .desp-filters{margin:4px 0 8px}
+#despContasCard th,#despContasCard td{padding:9px 8px}
+#despContasCard .desp-pagination{margin-top:10px;gap:8px}
+#despContasCard #despResumoVinculado{margin-top:12px}
+#despContasCard #despResumoVinculado h4{margin:8px 0}
+@media(max-width:700px){#despesas .desp-header-actions{width:100%}#despContasCard .desp-main-filters{grid-template-columns:1fr 1fr}#despContasCard .desp-main-filters > label:first-child{grid-column:1/-1}#despesas .gov-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -50,7 +50,7 @@ function renderResumoVinculado(resumo,params){
   despEl('despVincPago').textContent=moeda(resumo.pago);
   despEl('despVincAberto').textContent=moeda(resumo.aberto);
 }
-const DESP_POR_PAGINA=10;
+const DESP_POR_PAGINA=5;
 let despPagina=1;
 function renderContasMes(){
   const total=despesasMes.length;

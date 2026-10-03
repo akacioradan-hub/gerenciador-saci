@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-modal-vinculados">
+<link rel="stylesheet" href="/static/style.css?v=20261003-despesas-compactas">
 </head>
 <body>
 <div class="app-shell">
@@ -262,8 +262,7 @@
 
 
       <section id="despesas" class="tab">
-        <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas do mês</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><div class="desp-header-actions"><button class="primary" id="novaDespesa" type="button">+ Nova despesa</button><button class="secondary" id="despAbrirVinculados" type="button" aria-expanded="false" aria-controls="despVinculadosCard">Cadastros vinculados</button></div></div>
-        <div class="card desp-month-selector"><label>Mês de competência<input id="despMes" type="month" required></label></div>
+        <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas do mês</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><div class="desp-header-actions"><label class="desp-month-selector">Mês de competência<input id="despMes" type="month" required></label><button class="primary" id="novaDespesa" type="button">+ Nova despesa</button><button class="secondary" id="despAbrirVinculados" type="button" aria-expanded="false" aria-controls="despVinculadosCard">Cadastros vinculados</button></div></div>
         <div class="gov-summary-grid mt">
           <div class="card gov-kpi"><span>Total do mês</span><strong id="despTotal">R$ 0,00</strong></div>
           <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="despPagoTotal">R$ 0,00</strong></div>
@@ -313,15 +312,16 @@
           <div class="table-wrap mt hidden" id="despListaCadastros"><table><thead id="despCadHead"><tr><th>Nome</th><th>Cargo</th><th>Data de nascimento</th><th>Endereço</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
         </dialog>
         <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
-          <div class="desp-filters mt">
+          <div class="desp-filters desp-main-filters">
+          <label>Pesquisar<input id="despBusca" placeholder="Descrição, categoria ou documento"></label>
           <label>Grupo<select id="despFiltroGrupo"><option value="">Todos</option><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
-          <label>Categoria<select id="despFiltroCategoria"><option value="">Todas</option></select></label>
           <label>Situação<select id="despFiltroStatus"><option value="">Todas</option><option value="aberto">Em aberto</option><option value="atrasado">Atrasadas</option><option value="pago">Pagas</option></select></label>
+          </div>
+          <div class="desp-filter-tools"><details class="desp-extra-filters"><summary>Mais filtros</summary><div class="desp-filters">
+          <label>Categoria<select id="despFiltroCategoria"><option value="">Todas</option></select></label>
           <label>Prioridade<select id="despFiltroPrioridade"><option value="">Todas</option><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
           <label>Funcionário<select id="despFiltroFuncionario"></select></label><label>Veículo<select id="despFiltroVeiculo"></select></label><label>Fornecedor<select id="despFiltroFornecedor"></select></label><label>Terceirizado<select id="despFiltroTerceirizado"></select></label>
-          <label>Pesquisar<input id="despBusca" placeholder="Descrição, categoria ou documento"></label>
-          </div>
-          <div class="desp-filter-actions"><button class="secondary" type="button" id="despLimparFiltros">Limpar filtros</button></div>
+          </div></details><button class="secondary" type="button" id="despLimparFiltros">Limpar filtros</button></div>
           <div class="table-wrap"><table><thead><tr><th>Descrição / categoria</th><th>Vínculos</th><th>Prioridade</th><th>Vencimento</th><th>Valor</th><th>Situação / pagamento</th><th>Ações</th></tr></thead><tbody id="despesasBody"></tbody></table></div>
           <div class="desp-pagination"><span id="despPaginaResumo" aria-live="polite"></span><nav id="despPaginas" aria-label="Páginas de contas do mês"></nav></div>
           <div id="despResumoVinculado" class="hidden mt" aria-live="polite">
@@ -332,7 +332,7 @@
               <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="despVincPago">R$ 0,00</strong></div>
               <div class="card gov-kpi gov-open"><span>Em aberto</span><strong id="despVincAberto">R$ 0,00</strong></div>
             </div>
-            <p class="form-hint">Totais de todas as contas do período de competência, conforme os filtros abaixo.</p>
+            <p class="form-hint">Totais de todas as contas do período de competência, conforme os filtros selecionados.</p>
           </div>
         </div>
       </section>
@@ -377,7 +377,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-modal-vinculados"></script>
-<script src="/static/despesas.js?v=20261003-modal-vinculados"></script>
+<script src="/static/app.js?v=20261003-despesas-compactas"></script>
+<script src="/static/despesas.js?v=20261003-despesas-compactas"></script>
 </body>
 </html>
