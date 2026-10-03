@@ -224,8 +224,10 @@ async function carregarOrgaosPublicos(){
 function renderOrgaosPublicos(){
   const body=document.getElementById('orgaosBody');if(!body)return;
   body.innerHTML=orgaosPublicos.length?orgaosPublicos.map(r=>`<tr>
-    <td><strong>${r.nome_orgao}</strong></td><td>${r.tipo_orgao}</td><td>${r.dia}</td><td>${String(r.mes).padStart(2,'0')}</td><td>${r.ano}</td>
-    <td>${moeda(r.valor_debito)}</td><td><span class="badge ${r.pago?'QUITADO':'ATRASADO'}">${r.pago?'PAGO':'NÃO PAGO'}</span></td><td>${r.numero_nota_fiscal}</td>
+    <td><strong>${r.nome_orgao}</strong></td><td>${r.tipo_orgao}</td><td>${String(r.dia).padStart(2,'0')}/${String(r.mes).padStart(2,'0')}/${r.ano}</td>
+    <td>${moeda(r.valor_debito)}</td>
+    <td><div class="status-action"><span class="badge ${r.pago?'QUITADO':'ATRASADO'}">${r.pago?'PAGO':'NÃO PAGO'}</span><button class="status-toggle ${r.pago?'is-paid':'is-unpaid'}" onclick="alternarStatusOrgao(${r.id}, ${!r.pago})">${r.pago?'Marcar não pago':'Marcar pago'}</button></div></td>
+    <td>${r.numero_nota_fiscal}</td><td>${r.numero_ordem||'-'}</td>
     <td><div class="acoes"><button class="edit" onclick="editarOrgaoPublico(${r.id})">Editar</button><button class="danger" onclick="excluirOrgaoPublico(${r.id})">Excluir</button></div></td>
   </tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum débito de órgão público cadastrado.</td></tr>';
 }
@@ -236,6 +238,16 @@ function editarOrgaoPublico(id){
   const r=orgaosPublicos.find(x=>x.id===id);if(!r)return;
   document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').value=String(r.pago);document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+async function alternarStatusOrgao(id, novoStatus){
+  const acao=novoStatus?'marcar este débito como PAGO':'marcar este débito como NÃO PAGO';
+  if(!confirm(`Deseja ${acao}?`)) return;
+  try{
+    await api('/api/orgaos-publicos/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago:novoStatus})});
+    msg(novoStatus?'Débito marcado como pago.':'Débito marcado como não pago.');
+    await Promise.all([carregarOrgaosPublicos(),carregarDashboard()]);
+  }catch(err){msg(err.message,'erro')}
+}
+
 async function excluirOrgaoPublico(id){
   if(!confirm('Excluir este débito de órgão público?'))return;
   try{await api('/api/orgaos-publicos/'+id,{method:'DELETE'});msg('Débito excluído.');await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}

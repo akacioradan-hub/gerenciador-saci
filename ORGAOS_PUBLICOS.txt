@@ -27,3 +27,6 @@ ATUALIZAÇÃO NO RENDER:
 1. Substitua os arquivos do repositório GitHub pelos arquivos deste pacote.
 2. Faça Commit/Push.
 3. No Render, use Manual Deploy -> Deploy latest commit, caso o deploy automático não esteja habilitado.
+
+
+Novo: cada débito possui botão direto para alternar entre PAGO e NÃO PAGO sem abrir a edição.

@@ -742,6 +742,20 @@ def atualizar_debito_orgao_publico(registro_id):
     return jsonify(debito_orgao_dict(registro))
 
 
+@app.patch("/api/orgaos-publicos/<int:registro_id>/status")
+@login_required
+def alternar_status_debito_orgao_publico(registro_id):
+    registro = db.session.get(DebitoOrgaoPublico, registro_id)
+    if not registro:
+        return jsonify({"erro": "Registro não encontrado."}), 404
+    data = request.get_json(silent=True) or {}
+    if "pago" not in data:
+        return jsonify({"erro": "Informe o novo status do débito."}), 400
+    registro.pago = bool(data.get("pago"))
+    db.session.commit()
+    return jsonify(debito_orgao_dict(registro))
+
+
 @app.delete("/api/orgaos-publicos/<int:registro_id>")
 @login_required
 def excluir_debito_orgao_publico(registro_id):
