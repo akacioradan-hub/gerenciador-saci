@@ -63,9 +63,10 @@ function renderContasMes(){
       <td>${vinculos.map(v=>`<div class="table-sub">${escaparFinanceiro(v)}</div>`).join('')||'—'}</td>
       <td><span class="desp-priority ${escaparFinanceiro(r.prioridade)}">${escaparFinanceiro(r.prioridade)}</span></td>
       <td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td>
-      <td><div class="desp-pay-actions"><span class="badge ${statusClass(r.status)}">${escaparFinanceiro(r.status)}</span>${r.pago?`<span class="table-sub">${dataBR(r.data_pagamento)}</span>`:''}<button type="button" class="secondary" onclick="pagarDespesa(${r.id},${!r.pago})">${r.pago?'Reabrir':'Pago'}</button></div></td>
+      <td class="desp-status-cell"><span class="badge ${statusClass(r.status)}">${escaparFinanceiro(r.status)}</span></td>
+      <td><div class="desp-payment-cell">${r.pago?`<span class="table-sub">${dataBR(r.data_pagamento)}</span>`:''}<button type="button" class="secondary" onclick="pagarDespesa(${r.id},${!r.pago})">${r.pago?'Reabrir':'Pago'}</button></div></td>
       <td><div class="acoes icon-actions"><button type="button" class="edit icon-btn" aria-label="Editar despesa" title="Editar despesa" onclick="editarDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" aria-label="Excluir despesa" title="Excluir despesa" onclick="excluirDespesa(${r.id})">🗑</button></div></td></tr>`;
-  }).join(''):'<tr><td colspan="7" class="empty">Nenhuma despesa para o mês e os filtros selecionados.</td></tr>';
+  }).join(''):'<tr><td colspan="8" class="empty">Nenhuma despesa para o mês e os filtros selecionados.</td></tr>';
   despEl('despPaginaResumo').textContent=total?`${inicio+1}–${Math.min(inicio+DESP_POR_PAGINA,total)} de ${total} contas · Página ${despPagina} de ${paginas}`:'0 contas';
   const botao=(pagina,label,extra='')=>`<button type="button" class="secondary ${pagina===despPagina?'current-page':''}" ${extra} onclick="mudarPaginaDespesas(${pagina})">${label}</button>`;
   let html=botao(despPagina-1,'Anterior',despPagina===1?'disabled':'');

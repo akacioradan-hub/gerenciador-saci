@@ -1,0 +1,2 @@
+Atualize templates/index.html, static/despesas.js e static/style.css no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Colunas separadas: Situação mostra o status; Pagamento mostra a data (quando pago) e o botão Pago ou Reabrir.

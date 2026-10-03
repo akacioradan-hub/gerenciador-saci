@@ -252,3 +252,9 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #despContasCard #despResumoVinculado .desp-period-label{font-size:14px}
 #despContasCard #despResumoVinculado .form-hint{margin:4px 0;font-size:11px}
 @media(max-width:600px){#despesas > .desp-group-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#despesas > .desp-group-summary > div{flex-wrap:wrap;gap:3px}#despContasCard .desp-pay-actions{min-width:100px}}
+
+/* Status separado dos controles de pagamento. */
+#despContasCard .desp-status-cell .badge{white-space:nowrap}
+#despContasCard .desp-payment-cell{display:flex;flex-direction:column;align-items:flex-start;gap:3px}
+#despContasCard .desp-payment-cell .table-sub{margin:0;white-space:nowrap;font-size:10px}
+#despContasCard .desp-payment-cell button{padding:5px 8px;font-size:11px;min-width:62px}
