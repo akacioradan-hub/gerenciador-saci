@@ -1,0 +1,15 @@
+CORREÇÃO DAS ABAS E DO FINANCEIRO
+
+Arquivos alterados: static/app.js, templates/index.html, render.yaml e Procfile.
+Foram restauradas preencherClientes() e renderFinanceiroCliente().
+O app.py com a correção PostgreSQL foi preservado.
+
+1. Substitua os arquivos no GitHub, mantendo a estrutura static/ e templates/.
+2. Faça commit.
+3. No Render, confirme Start Command:
+gunicorn --bind 0.0.0.0:$PORT --workers 1 --timeout 120 app:app
+4. Faça Manual Deploy > Deploy latest commit.
+5. Após finalizar, pressione Ctrl + F5 e teste as abas.
+
+Mantenha DATABASE_URL e o PostgreSQL atuais. Este pacote não contém banco local e não apaga dados.
+Validação: sintaxe JavaScript/Python e execução do JavaScript com DOM e APIs simuladas, nos perfis administrador e usuário. Testados menus, listagens e resumo/histórico do cliente. Banco real do Render não acessado.

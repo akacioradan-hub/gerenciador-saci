@@ -11,10 +11,35 @@ function mesLabel(ym){if(!ym)return '';const [a,m]=ym.split('-').map(Number);ret
 function destroyChart(nome){if(charts[nome]){charts[nome].destroy();delete charts[nome]}}
 function chartBase(){return {responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{usePointStyle:true,boxWidth:8,font:{size:12}}},tooltip:{callbacks:{label:c=>`${c.dataset.label||c.label}: ${moeda(c.raw)}`}}}}}
 
+function escaparFinanceiro(valor){
+  return String(valor ?? '').replace(/[&<>"']/g, ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function preencherClientes(){
+  const select=document.getElementById('pagCliente');
+  if(!select)return;
+  const selecionado=select.value;
+  select.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${escaparFinanceiro(c.nome)}</option>`).join('');
+  select.value=clientes.some(c=>String(c.id)===selecionado)?selecionado:'';
+  renderFinanceiroCliente();
+}
+function renderFinanceiroCliente(){
+  const id=Number(document.getElementById('pagCliente')?.value||0);
+  const cliente=clientes.find(c=>Number(c.id)===id);
+  const valores={finDivida:moeda(cliente?.divida),finPago:moeda(cliente?.total_pago),finSaldo:moeda(cliente?.saldo),finPrevisao:cliente?dataBR(cliente.previsao):'—'};
+  Object.entries(valores).forEach(([campo,valor])=>{const el=document.getElementById(campo);if(el)el.textContent=valor});
+  document.querySelectorAll('#pagamentoForm input, #pagamentoForm button').forEach(el=>el.disabled=!cliente);
+  const body=document.getElementById('pagamentosBody');
+  if(!body)return;
+  if(!cliente){body.innerHTML='<tr><td colspan="4" class="empty">Selecione um cliente para consultar os pagamentos.</td></tr>';return}
+  const historico=pagamentos.filter(p=>Number(p.cliente_id)===id).slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))||Number(b.id)-Number(a.id));
+  body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${escaparFinanceiro(p.observacao||'-')}</td><td><button class="danger icon-btn" title="Excluir pagamento" aria-label="Excluir pagamento" onclick="excluirPagamento(${Number(p.id)})">🗑</button></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
+}
+
 async function carregarClientes(){const q=document.getElementById('buscaCliente').value.trim();clientes=await api('/api/clientes'+(q?'?q='+encodeURIComponent(q):''));renderClientes();preencherClientes()}
 async function carregarPagamentos(){pagamentos=await api('/api/pagamentos');renderFinanceiroCliente()}
 
 function renderGraficos(d){
+  if(typeof Chart!=='function')return;
   destroyChart('carteira');
   charts.carteira=new Chart(document.getElementById('chartCarteira'),{
     type:'doughnut',
