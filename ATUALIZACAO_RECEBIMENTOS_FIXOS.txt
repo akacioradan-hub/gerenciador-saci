@@ -1,0 +1,2 @@
+Atualize templates/index.html, static/style.css e static/app.js no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Recebimentos e histórico ficam sempre visíveis. Campos, cartões e espaços compactados. Histórico longo tem rolagem dentro do quadro; clientes cadastrados continuam com 5 registros por página.

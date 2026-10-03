@@ -192,3 +192,26 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 @media(max-width:900px){#dashboard .dashboard-grid,#dashboard .org-dashboard-grid{grid-template-columns:1fr}#orgaoForm{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:600px){#orgaoForm{grid-template-columns:1fr}#dashboard .grid{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboard .chart-box{height:260px}}
 
 #dashboard .dashboard-grid>:last-child:nth-child(odd),#dashboard .org-dashboard-grid>:last-child:nth-child(odd){grid-column:1/-1}
+
+/* Recebimentos sempre visíveis, com formulário compacto. */
+#clienteFinanceiro .finance-head{align-items:center;margin-bottom:6px;gap:12px}
+#clienteFinanceiro .finance-client-select{min-width:200px;width:260px;max-width:100%;gap:3px}
+#clienteFinanceiro .finance-summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:6px 0 8px}
+#clienteFinanceiro .finance-mini-card{padding:7px 9px;border-radius:8px}
+#clienteFinanceiro .finance-mini-card strong{font-size:16px;margin-top:3px}
+#clienteFinanceiro .finance-content-grid{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:8px}
+#clienteFinanceiro .finance-entry,#clienteFinanceiro .finance-history{padding:8px;border-radius:8px;min-width:0}
+#clienteFinanceiro .section-label{margin-bottom:6px;font-size:9px}
+#clienteFinanceiro .payment-inline-form{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px}
+#clienteFinanceiro label{gap:3px;font-size:10px}
+#clienteFinanceiro input,#clienteFinanceiro select{padding:7px 8px;font-size:12px;min-width:0}
+#clienteFinanceiro .payment-inline-form label.span-2{grid-column:span 2}
+#clienteFinanceiro #pagResumo{grid-column:1/-1;order:5;font-size:11px;line-height:1.25}
+#clienteFinanceiro .form-actions button{padding:8px;font-size:11px;width:100%}
+#clienteFinanceiro .receipt-scroll{max-height:150px}
+#clienteFinanceiro th,#clienteFinanceiro td{padding:6px;font-size:11px}
+#clientes>.page-head p{display:none}
+#clientes>.page-head h2{font-size:21px}
+#clientes .table-pagination{margin-top:7px}
+@media(max-width:850px){#clienteFinanceiro .finance-content-grid{grid-template-columns:1fr}#clienteFinanceiro .finance-head{flex-wrap:wrap}}
+@media(max-width:520px){#clienteFinanceiro .finance-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#clienteFinanceiro .payment-inline-form{grid-template-columns:repeat(2,minmax(0,1fr))}#clienteFinanceiro .payment-inline-form label.span-2{grid-column:1/-1}#clienteFinanceiro .finance-client-select{width:100%}}

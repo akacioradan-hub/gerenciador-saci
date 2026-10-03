@@ -216,7 +216,6 @@ function renderClientes(){
 }
 function abrirFinanceiroCliente(id){
   const sel=document.getElementById('pagCliente');if(!sel)return;
-  document.getElementById('clienteFinanceiro').open=true;
   sel.value=String(id);renderFinanceiroCliente();
   document.getElementById('clienteFinanceiro')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
