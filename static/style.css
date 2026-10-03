@@ -215,3 +215,40 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #clientes .table-pagination{margin-top:7px}
 @media(max-width:850px){#clienteFinanceiro .finance-content-grid{grid-template-columns:1fr}#clienteFinanceiro .finance-head{flex-wrap:wrap}}
 @media(max-width:520px){#clienteFinanceiro .finance-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#clienteFinanceiro .payment-inline-form{grid-template-columns:repeat(2,minmax(0,1fr))}#clienteFinanceiro .payment-inline-form label.span-2{grid-column:1/-1}#clienteFinanceiro .finance-client-select{width:100%}}
+
+/* Despesas: mais informações visíveis com linhas e espaços compactos. */
+#despesas > .page-head{margin-bottom:8px;gap:8px}
+#despesas > .page-head h2{font-size:21px;margin:2px 0}
+#despesas > .page-head p{margin:0;font-size:12px}
+#despesas > .gov-summary-grid{margin:6px 0;gap:6px}
+#despesas > .gov-summary-grid .gov-kpi{padding:7px 10px}
+#despesas > .gov-summary-grid .gov-kpi strong{font-size:20px;margin-top:3px}
+#despesas > .desp-group-summary{margin-top:6px;gap:6px}
+#despesas > .desp-group-summary > div{padding:6px 10px;border-radius:8px;align-items:center}
+#despContasCard{margin-top:8px;padding:10px}
+#despContasCard .toolbar{gap:8px}
+#despContasCard .toolbar h3{font-size:15px}
+#despContasCard .toolbar p{margin-top:2px;font-size:11px}
+#despContasCard .desp-main-filters{margin-top:7px}
+#despContasCard .desp-filters{gap:6px}
+#despContasCard label{gap:3px;font-size:11px}
+#despContasCard input,#despContasCard select{padding:6px 8px;font-size:12px}
+#despContasCard .desp-filter-tools{margin:5px 0;gap:8px}
+#despContasCard .desp-extra-filters summary{padding:6px 0}
+#despContasCard th,#despContasCard td{padding:5px 7px;line-height:1.25;vertical-align:middle}
+#despContasCard .table-sub{margin-top:2px;line-height:1.2}
+#despContasCard .desp-pay-actions{flex-direction:row;align-items:center;flex-wrap:wrap;gap:4px;max-width:210px}
+#despContasCard .desp-pay-actions .table-sub{margin:0}
+#despContasCard .desp-pay-actions button{padding:6px 8px;font-size:11px}
+#despContasCard .icon-actions{gap:4px}
+#despContasCard .icon-actions .icon-btn{width:28px;height:28px;padding:5px}
+#despContasCard .desp-pagination{margin-top:7px;gap:6px}
+#despContasCard #despPaginas button{padding:6px 9px}
+#despContasCard #despResumoVinculado{margin-top:8px}
+#despContasCard #despResumoVinculado h4{margin:5px 0;font-size:13px}
+#despContasCard #despResumoVinculado .gov-summary-grid{gap:6px;margin-bottom:5px}
+#despContasCard #despResumoVinculado .gov-kpi{padding:7px 9px}
+#despContasCard #despResumoVinculado .gov-kpi strong{font-size:18px}
+#despContasCard #despResumoVinculado .desp-period-label{font-size:14px}
+#despContasCard #despResumoVinculado .form-hint{margin:4px 0;font-size:11px}
+@media(max-width:600px){#despesas > .desp-group-summary{grid-template-columns:repeat(2,minmax(0,1fr))}#despesas > .desp-group-summary > div{flex-wrap:wrap;gap:3px}#despContasCard .desp-pay-actions{min-width:100px}}

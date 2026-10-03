@@ -1,3 +1,2 @@
-Atualize no GitHub os arquivos templates/index.html, static/style.css e static/despesas.js. Aguarde o deploy no Render e pressione Ctrl+F5.
-Contas do mês: 5 registros por página; mês no cabeçalho; cartões e espaços compactos; filtros adicionais em Mais filtros.
-O banco de dados não precisa ser alterado.
+Atualize static/style.css e templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Linhas, cartões e espaços da página Despesas foram compactados. Situação e botão Pago ficam lado a lado quando houver espaço. Mantidos os 5 registros por página e todos os filtros.
