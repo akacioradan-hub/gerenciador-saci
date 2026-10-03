@@ -116,13 +116,23 @@ function despAtualizarPago(){
   if(pago&&!despEl('despDataPagamento').value)despEl('despDataPagamento').value=despHoje();
   if(!pago)despEl('despDataPagamento').value='';
 }
-function novaDespesa(rolar=true){
+function limparFichaDespesa(){
   despEl('despForm').reset();despEl('despId').value='';
   despEl('despCompetencia').value=despEl('despMes').value;
   despEl('despPrioridade').value='Normal';despAtualizarCategoria();despAtualizarPago();
-  despEl('despTitulo').textContent='Cadastrar despesa';despEl('despCadastro').classList.remove('hidden');if(rolar)despEl('despCadastro').scrollIntoView({behavior:'smooth',block:'start'});
+  despEl('despTitulo').textContent='Cadastrar despesa';
 }
-function fecharCadastroDespesa(){novaDespesa(false);despEl('despCadastro').classList.add('hidden')}
+function novaDespesa(){
+  limparFichaDespesa();
+  const modal=despEl('despCadastro');modal.classList.remove('hidden');
+  if(!modal.open)modal.showModal();
+  despEl('despDescricao').focus();
+}
+function fecharCadastroDespesa(){
+  const modal=despEl('despCadastro');
+  if(modal.open)modal.close();
+  modal.classList.add('hidden');limparFichaDespesa();
+}
 function editarDespesa(id){
   const r=despesasMes.find(x=>x.id===id);if(!r)return;
   novaDespesa();despEl('despGrupo').value=r.grupo;despAtualizarCategoria(r.categoria);
@@ -179,7 +189,23 @@ async function verDespesasVinculadas(id){
 if(despEl('despesas')){
   despEl('despMes').value=despHoje().slice(0,7);
   despEl('novaDespesa').addEventListener('click',()=>novaDespesa());
+  despEl('despAbrirVinculados').addEventListener('click',()=>{
+    const card=despEl('despVinculadosCard'),botao=despEl('despAbrirVinculados');
+    const abrir=card.classList.contains('hidden');
+    card.classList.toggle('hidden',!abrir);
+    botao.setAttribute('aria-expanded',String(abrir));
+    if(abrir)card.scrollIntoView({behavior:'smooth',block:'start'});
+  });
   despEl('despCancelar').addEventListener('click',fecharCadastroDespesa);
+  despEl('despModalFechar').addEventListener('click',fecharCadastroDespesa);
+  despEl('despCadastro').addEventListener('close',()=>{
+    despEl('despCadastro').classList.add('hidden');limparFichaDespesa();
+  });
+  despEl('despCadastro').addEventListener('click',e=>{
+    const modal=despEl('despCadastro');if(e.target!==modal)return;
+    const box=modal.getBoundingClientRect();
+    if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)fecharCadastroDespesa();
+  });
   despEl('despGrupo').addEventListener('change',()=>despAtualizarCategoria());
   despEl('despPago').addEventListener('change',despAtualizarPago);
   despEl('despForm').addEventListener('submit',async e=>{

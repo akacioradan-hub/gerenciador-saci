@@ -120,3 +120,14 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}l
 .pagination-gap{padding:0 4px}
 
 #despesas .desp-period-label{font-size:17px;line-height:1.4}
+
+.desp-header-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+/* Janela de cadastro de despesas */
+.desp-modal{width:min(940px,calc(100vw - 32px));max-height:90vh;max-height:90dvh;border:1px solid var(--border);border-radius:18px;padding:24px;box-shadow:0 24px 80px #0003;background:#fff;color:var(--text);overflow:auto}
+.desp-modal::backdrop{background:rgba(22,22,25,.45);backdrop-filter:blur(2px)}
+.desp-modal-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.desp-modal-head h3{margin:0}
+.desp-modal-head button{border:0;background:#ededf1;width:36px;height:36px;border-radius:9px;font-size:24px;cursor:pointer}
+body:has(#despCadastro[open]){overflow:hidden}
+@media(max-width:600px){.desp-modal{padding:16px;width:calc(100vw - 20px)}}

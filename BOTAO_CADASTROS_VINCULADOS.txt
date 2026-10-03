@@ -1,0 +1,3 @@
+Cadastros vinculados agora é um botão ao lado de + Nova despesa. A seção começa recolhida e abre ao clicar no botão. Clique novamente para recolher. Os botões de cadastro e Exibir cadastrados permanecem dentro da seção.
+
+Atualize templates/index.html, static/despesas.js e static/style.css no GitHub, faça deploy no Render e pressione Ctrl + F5. Não há mudanças no banco.

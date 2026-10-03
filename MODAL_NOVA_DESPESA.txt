@@ -1,0 +1,8 @@
+NOVA DESPESA EM JANELA MODAL
+
++ Nova despesa abre uma janela centralizada com todos os campos. Editar abre a mesma janela preenchida.
+Salvar fecha após a confirmação do servidor. Em caso de erro, a janela permanece aberta. Cancelar, botão ×, Esc ou clique no fundo fecham sem salvar.
+O diálogo nativo mantém a navegação por teclado dentro da janela.
+
+Atualize templates/index.html, static/despesas.js e static/style.css no GitHub. Faça deploy no Render e pressione Ctrl + F5. Não há alterações no banco.
+Testes locais: sintaxe, estrutura HTML e execução com diálogo simulado para abertura, foco, fechamento, clique interno/externo e salvamento.

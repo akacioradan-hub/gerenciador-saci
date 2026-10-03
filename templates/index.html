@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-colunas-funcionarios">
+<link rel="stylesheet" href="/static/style.css?v=20261003-modal-despesa">
 </head>
 <body>
 <div class="app-shell">
@@ -262,7 +262,7 @@
 
 
       <section id="despesas" class="tab">
-        <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas do mês</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><button class="primary" id="novaDespesa" type="button">+ Nova despesa</button></div>
+        <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas do mês</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><div class="desp-header-actions"><button class="primary" id="novaDespesa" type="button">+ Nova despesa</button><button class="secondary" id="despAbrirVinculados" type="button" aria-expanded="false" aria-controls="despVinculadosCard">Cadastros vinculados</button></div></div>
         <div class="card desp-month-selector"><label>Mês de competência<input id="despMes" type="month" required></label></div>
         <div class="gov-summary-grid mt">
           <div class="card gov-kpi"><span>Total do mês</span><strong id="despTotal">R$ 0,00</strong></div>
@@ -271,7 +271,7 @@
           <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="despAtrasado">R$ 0,00</strong></div>
         </div>
         <div class="desp-group-summary mt" id="despGrupos"></div>
-        <div class="card mt hidden" id="despCadastro"><h3 id="despTitulo">Cadastrar despesa</h3>
+        <dialog class="desp-modal hidden" id="despCadastro" aria-labelledby="despTitulo"><div class="desp-modal-head"><h3 id="despTitulo">Cadastrar despesa</h3><button id="despModalFechar" type="button" aria-label="Fechar cadastro de despesa">×</button></div>
           <form id="despForm" class="gov-form">
             <input id="despId" type="hidden">
             <label>Descrição *<input id="despDescricao" maxlength="220" required placeholder="Ex.: Salário de outubro / compra de mercadorias"></label>
@@ -291,8 +291,8 @@
             <label>Observações<input id="despObservacoes" maxlength="5000" placeholder="Ex.: km do veículo, parcela ou período do adiantamento"></label>
             <div class="form-actions"><button type="submit" class="primary">Salvar</button><button type="button" class="secondary" id="despCancelar">Cancelar</button></div>
           </form>
-        </div>
-        <div class="card mt"><h3>Cadastros vinculados</h3><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros em Contas do mês para consultar as despesas de cada um.</p>
+        </dialog>
+        <div class="card mt hidden" id="despVinculadosCard"><h3>Cadastros vinculados</h3><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros em Contas do mês para consultar as despesas de cada um.</p>
           <div class="desp-catalog-nav"><button type="button" class="secondary" data-desp-catalog="funcionarios">+ Cadastrar funcionário</button><button type="button" class="secondary" data-desp-catalog="veiculos">+ Cadastrar veículo</button><button type="button" class="secondary" data-desp-catalog="fornecedores">+ Cadastrar fornecedor</button><button type="button" class="secondary" data-desp-catalog="terceirizados">+ Cadastrar terceirizado</button></div>
           <h4 id="despCadTitulo">Funcionários</h4>
           <form id="despCadForm" class="gov-form hidden">
@@ -377,7 +377,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-colunas-funcionarios"></script>
-<script src="/static/despesas.js?v=20261003-colunas-funcionarios"></script>
+<script src="/static/app.js?v=20261003-modal-despesa"></script>
+<script src="/static/despesas.js?v=20261003-modal-despesa"></script>
 </body>
 </html>
