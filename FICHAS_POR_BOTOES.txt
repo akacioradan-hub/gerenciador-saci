@@ -1,0 +1,8 @@
+FICHAS RECOLHIDAS
+
+Na aba Despesas do mês, a ficha de despesa abre somente por + Nova despesa ou pelo ícone de edição.
+Em Cadastros vinculados, use + Cadastrar funcionário, veículo, fornecedor ou terceirizado para abrir a ficha correspondente.
+Ao salvar ou cancelar, a ficha fecha. Os registros, filtros e a paginação continuam disponíveis.
+
+Atualize templates/index.html e static/despesas.js no GitHub e faça deploy no Render. Pressione Ctrl + F5. O ZIP contém o sistema completo atualizado.
+Esta alteração não modifica o banco. Testados em execução JavaScript simulada: exibição inicial, abertura, edição, cancelamento, fechamento após salvar e paginação.
