@@ -1,0 +1,27 @@
+DESPESAS DO MÊS — SACI
+
+ATUALIZAÇÃO
+1. Extraia o ZIP e envie os arquivos ao GitHub mantendo a estrutura de pastas. Inclua o NOVO arquivo despesas.py na raiz e static/despesas.js.
+2. Faça Commit changes e Render > Manual Deploy > Deploy latest commit.
+3. Mantenha o Start Command com --workers 1. Não altere DATABASE_URL, SECRET_KEY ou o banco.
+4. Após o deploy, pressione Ctrl + F5.
+
+USO
+Na nova aba Despesas do mês, escolha a competência. Os totais são calculados pelo mês da conta, mesmo se o pagamento acontecer em outro mês.
+Cadastre funcionários, veículos e fornecedores em Cadastros vinculados.
+Clique em + Nova despesa, informe grupo, categoria, valor, vencimento, prioridade e vínculos. Para contas de fornecedores, selecione um fornecedor cadastrado.
+Custos fixos: salários, encargos, água, luz, telefone, internet, aluguel, contabilidade, seguros, sistemas e impostos.
+Variáveis: combustível, manutenção, adiantamentos, reembolsos, equipamentos, material, limpeza e publicidade.
+Marcar pago solicita a data real no formato AAAA-MM-DD. Reabrir remove a data de pagamento.
+Os filtros permitem consultar contas por mês, situação, prioridade, grupo, funcionário, veículo e fornecedor. Ver despesas nos cadastros aplica o filtro de vínculo ao mês escolhido.
+Os totais refletem os filtros ativos. Em atraso corresponde ao vencimento anterior a hoje e ainda não pago.
+Exportar CSV usa os filtros da tela. O backup geral inclui despesas e os três cadastros novos.
+Cadastros com despesas vinculadas não podem ser excluídos, para preservar o histórico.
+Custos fixos são lançados manualmente a cada mês; não há geração automática. Adiantamentos não são descontados automaticamente dos salários. Pagamentos são integrais, sem parcelas parciais.
+
+BANCO
+A aplicação adiciona as tabelas despesas_mensais, funcionarios_despesas, veiculos_despesas e fornecedores_despesas ao banco existente. Não apaga ou substitui as tabelas atuais.
+
+VALIDAÇÃO
+Rotas Flask testadas com banco SQLite temporário: autenticação, criação, edição, exclusão, filtros, vínculos, valores inválidos, baixa/reabertura, CSV, backup e histórico.
+JavaScript executado com DOM/APIs simulados: navegação, cadastro, edição, resumo e histórico financeiro, contas, vínculos e pagamentos. Sintaxe Python/JavaScript verificada. PostgreSQL do Render não acessado.

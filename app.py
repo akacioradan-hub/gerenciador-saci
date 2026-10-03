@@ -954,9 +954,13 @@ def backup_banco():
         } for p in pagamentos],
         "orgaos_publicos": [debito_orgao_dict(r) for r in orgaos_publicos],
     }
+    payload.update(backup_despesas())
     mem = io.BytesIO(json.dumps(payload, ensure_ascii=False, indent=2).encode("utf-8"))
     return send_file(mem, mimetype="application/json", as_attachment=True, download_name="backup_clientes.json")
 
+
+from despesas import registrar_despesas
+backup_despesas = registrar_despesas(app, db, login_required)
 
 init_db()
 

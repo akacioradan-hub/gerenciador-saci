@@ -91,3 +91,21 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}l
 .icon-btn.edit{background:#fbe7e5;color:#9c241f}
 .icon-btn.danger{background:#fee2e2;color:#991b1b}
 .icon-btn.view{background:#efeff3;color:#3b3b43}
+
+/* Contas a pagar */
+.desp-filters{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.desp-group-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.desp-group-summary div{background:#fff;border:1px solid #e5e5e8;border-radius:12px;padding:16px;display:flex;justify-content:space-between;gap:8px;font-size:13px}
+.desp-catalog-nav{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}
+#despesas label{display:flex;flex-direction:column;gap:7px;font-size:12px;font-weight:600}
+#despesas label.check-label{flex-direction:row;align-items:center}
+#despesas label.hidden{display:none}
+#despesas input,#despesas select{min-width:0;width:100%}
+#despesas input[type=checkbox]{width:auto}
+#despesas h4{margin:16px 0}
+#despesas .toolbar{gap:16px;flex-wrap:wrap}
+.desp-priority{font-size:11px;padding:5px 8px;border-radius:6px;background:#f0f0f3;white-space:nowrap}
+.desp-priority.Alta,.desp-priority.Urgente{color:#a52c26;background:#fff0ee;font-weight:700}
+.desp-pay-actions{display:flex;gap:6px;flex-direction:column;align-items:flex-start}
+@media(max-width:1050px){.desp-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.desp-filters,.desp-group-summary{grid-template-columns:1fr}}
