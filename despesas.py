@@ -4,7 +4,7 @@ import io
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from flask import request, jsonify, send_file
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, inspect, text
 from sqlalchemy.exc import IntegrityError
 
 
@@ -33,6 +33,15 @@ def registrar_despesas(app, db, login_required):
         telefone = db.Column(db.String(30))
         observacoes = db.Column(db.Text)
 
+    class Terceirizado(db.Model):
+        __tablename__ = 'terceirizados_despesas'
+        id = db.Column(db.Integer, primary_key=True)
+        nome = db.Column(db.String(180), nullable=False)
+        servico = db.Column(db.String(100))
+        documento = db.Column(db.String(30))
+        telefone = db.Column(db.String(30))
+        observacoes = db.Column(db.Text)
+
     class Despesa(db.Model):
         __tablename__ = 'despesas_mensais'
         id = db.Column(db.Integer, primary_key=True)
@@ -53,9 +62,11 @@ def registrar_despesas(app, db, login_required):
         funcionario = db.relationship(Funcionario)
         veiculo = db.relationship(Veiculo)
         fornecedor = db.relationship(Fornecedor)
+        terceirizado_id = db.Column(db.Integer, db.ForeignKey("terceirizados_despesas.id", ondelete="RESTRICT"), index=True)
+        terceirizado = db.relationship(Terceirizado)
         criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
-    modelos = {'funcionarios': Funcionario, 'veiculos': Veiculo, 'fornecedores': Fornecedor}
+    modelos = {'funcionarios': Funcionario, 'veiculos': Veiculo, 'fornecedores': Fornecedor, 'terceirizados': Terceirizado}
     grupos = ('Custos fixos', 'Fornecedores', 'Despesas variáveis')
     prioridades = ('Baixa', 'Normal', 'Alta', 'Urgente')
 
@@ -72,7 +83,7 @@ def registrar_despesas(app, db, login_required):
         return valor
 
     def cadastro_dict(r):
-        campos = ('nome', 'cargo', 'telefone', 'placa', 'ano', 'documento', 'observacoes')
+        campos = ('nome', 'cargo', 'servico', 'telefone', 'placa', 'ano', 'documento', 'observacoes')
         return {'id': r.id, **{c: getattr(r, c) for c in campos if hasattr(r, c)}}
 
     def despesa_dict(r):
@@ -81,10 +92,11 @@ def registrar_despesas(app, db, login_required):
                 'prioridade': r.prioridade, 'pago': r.pago,
                 'data_pagamento': r.data_pagamento.isoformat() if r.data_pagamento else None,
                 'documento': r.documento, 'observacoes': r.observacoes,
-                'funcionario_id': r.funcionario_id, 'veiculo_id': r.veiculo_id, 'fornecedor_id': r.fornecedor_id,
+                'funcionario_id': r.funcionario_id, 'veiculo_id': r.veiculo_id, 'fornecedor_id': r.fornecedor_id, 'terceirizado_id': r.terceirizado_id,
                 'funcionario_nome': r.funcionario.nome if r.funcionario else '',
                 'veiculo_nome': f'{r.veiculo.nome} · {r.veiculo.placa}' if r.veiculo else '',
                 'fornecedor_nome': r.fornecedor.nome if r.fornecedor else '',
+                'terceirizado_nome': r.terceirizado.nome if r.terceirizado else '',
                 'status': 'PAGO' if r.pago else ('ATRASADO' if r.vencimento < date.today() else 'EM ABERTO')}
 
     def validar(d):
@@ -104,7 +116,7 @@ def registrar_despesas(app, db, login_required):
             raise ValueError('Situação de pagamento inválida.')
         p['pago'] = d.get('pago', False)
         p['data_pagamento'] = date.fromisoformat(d.get('data_pagamento') or '') if p['pago'] else None
-        for tipo, campo in [('funcionarios', 'funcionario_id'), ('veiculos', 'veiculo_id'), ('fornecedores', 'fornecedor_id')]:
+        for tipo, campo in [('funcionarios', 'funcionario_id'), ('veiculos', 'veiculo_id'), ('fornecedores', 'fornecedor_id'), ('terceirizados', 'terceirizado_id')]:
             ident = d.get(campo)
             p[campo] = int(ident) if ident else None
             if p[campo] and not db.session.get(modelos[tipo], p[campo]):
@@ -116,7 +128,7 @@ def registrar_despesas(app, db, login_required):
     def consultar():
         competencia = mes(request.args.get('mes') or date.today().strftime('%Y-%m'))
         stmt = db.select(Despesa).where(Despesa.competencia == competencia)
-        for campo in ('grupo', 'prioridade', 'funcionario_id', 'veiculo_id', 'fornecedor_id'):
+        for campo in ('grupo', 'prioridade', 'funcionario_id', 'veiculo_id', 'fornecedor_id', 'terceirizado_id'):
             valor = request.args.get(campo)
             if valor:
                 if campo.endswith('_id'):
@@ -146,7 +158,7 @@ def registrar_despesas(app, db, login_required):
         r = db.session.get(modelo, ident) if ident else modelo()
         if r is None: return jsonify(erro='Cadastro não encontrado.'), 404
         if request.method == 'DELETE':
-            campo = {'funcionarios': Despesa.funcionario_id, 'veiculos': Despesa.veiculo_id, 'fornecedores': Despesa.fornecedor_id}[tipo]
+            campo = {'funcionarios': Despesa.funcionario_id, 'veiculos': Despesa.veiculo_id, 'fornecedores': Despesa.fornecedor_id, 'terceirizados': Despesa.terceirizado_id}[tipo]
             if db.session.execute(db.select(Despesa.id).where(campo == ident).limit(1)).first():
                 return jsonify(erro='Este cadastro possui despesas vinculadas. Mantenha-o para preservar o histórico.'), 409
             db.session.delete(r); db.session.commit()
@@ -165,6 +177,7 @@ def registrar_despesas(app, db, login_required):
                 r.telefone = texto(d, 'telefone', 30)
                 if tipo == 'funcionarios': r.cargo = texto(d, 'cargo', 100)
                 else: r.documento = texto(d, 'documento', 30)
+                if tipo == 'terceirizados': r.servico = texto(d, 'servico', 100)
             db.session.add(r); db.session.commit()
             return jsonify(cadastro_dict(r)), 200 if ident else 201
         except (ValueError, TypeError):
@@ -218,14 +231,22 @@ def registrar_despesas(app, db, login_required):
         try: registros = consultar()
         except (ValueError, TypeError): return jsonify(erro='Filtro inválido.'), 400
         out = io.StringIO(); writer = csv.writer(out, delimiter=';')
-        writer.writerow(['Competência','Descrição','Grupo','Categoria','Fornecedor','Funcionário','Veículo','Prioridade','Vencimento','Valor','Situação','Pagamento','Documento','Observações'])
+        writer.writerow(['Competência','Descrição','Grupo','Categoria','Fornecedor','Funcionário','Veículo','Terceirizado','Prioridade','Vencimento','Valor','Situação','Pagamento','Documento','Observações'])
         for r in registros:
             d = despesa_dict(r)
-            row = [r.competencia,r.descricao,r.grupo,r.categoria,d['fornecedor_nome'],d['funcionario_nome'],d['veiculo_nome'],r.prioridade,r.vencimento.isoformat(),f'{r.valor:.2f}',d['status'],d['data_pagamento'] or '',r.documento or '',r.observacoes or '']
+            row = [r.competencia,r.descricao,r.grupo,r.categoria,d['fornecedor_nome'],d['funcionario_nome'],d['veiculo_nome'],d['terceirizado_nome'],r.prioridade,r.vencimento.isoformat(),f'{r.valor:.2f}',d['status'],d['data_pagamento'] or '',r.documento or '',r.observacoes or '']
             writer.writerow(["'"+v if isinstance(v,str) and v.startswith(('=','+','-','@')) else v for v in row])
         return send_file(io.BytesIO(out.getvalue().encode('utf-8-sig')), mimetype='text/csv', as_attachment=True, download_name='despesas_mes.csv')
 
     def backup():
         return {'despesas_mensais': [despesa_dict(r) for r in db.session.execute(db.select(Despesa)).scalars()],
                 **{tipo: [cadastro_dict(r) for r in db.session.execute(db.select(modelo)).scalars()] for tipo, modelo in modelos.items()}}
-    return backup
+    def migrar():
+        # create_all cria a nova tabela; adiciona somente a coluna nas despesas antigas.
+        colunas = {c['name'] for c in inspect(db.engine).get_columns('despesas_mensais')}
+        if 'terceirizado_id' not in colunas:
+            with db.engine.begin() as conn:
+                conn.execute(text('ALTER TABLE despesas_mensais ADD COLUMN terceirizado_id INTEGER REFERENCES terceirizados_despesas(id) ON DELETE RESTRICT'))
+        with db.engine.begin() as conn:
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_despesas_mensais_terceirizado_id ON despesas_mensais (terceirizado_id)'))
+    return backup, migrar

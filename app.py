@@ -173,6 +173,7 @@ def init_db():
     with app.app_context():
         try:
             db.create_all()
+            migrar_despesas()
             migrar_campos_cliente()
             migrar_campos_orgaos_publicos()
             # Cria o administrador inicial somente se ainda não existir nenhum usuário.
@@ -960,7 +961,7 @@ def backup_banco():
 
 
 from despesas import registrar_despesas
-backup_despesas = registrar_despesas(app, db, login_required)
+backup_despesas, migrar_despesas = registrar_despesas(app, db, login_required)
 
 init_db()
 

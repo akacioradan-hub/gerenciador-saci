@@ -4,13 +4,13 @@ const despCategorias={
   'Fornecedores':['Mercadorias','Materiais e insumos','Frete','Serviços contratados','Outros fornecedores'],
   'Despesas variáveis':['Manutenção de veículo','Combustível','Adiantamento de funcionário','Reembolso de funcionário','Manutenção da loja','Equipamentos','Material de escritório','Limpeza','Publicidade','Outras despesas variáveis']
 };
-let despesasMes=[],despCadastros={funcionarios:[],veiculos:[],fornecedores:[]},despTipoCadastro='funcionarios';
+let despesasMes=[],despCadastros={funcionarios:[],veiculos:[],fornecedores:[],terceirizados:[]},despTipoCadastro='funcionarios';
 const despEl=id=>document.getElementById(id);
-const despNomes={funcionarios:'Funcionários',veiculos:'Veículos',fornecedores:'Fornecedores'};
+const despNomes={funcionarios:'Funcionários',veiculos:'Veículos',fornecedores:'Fornecedores',terceirizados:'Terceirizados'};
 const despHoje=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
 function despParametros(){
   const params=new URLSearchParams({mes:despEl('despMes').value});
-  const campos={despFiltroGrupo:'grupo',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despBusca:'q'};
+  const campos={despFiltroGrupo:'grupo',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despFiltroTerceirizado:'terceirizado_id',despBusca:'q'};
   Object.entries(campos).forEach(([id,campo])=>{const v=despEl(id).value.trim();if(v)params.set(campo,v)});
   return params;
 }
@@ -28,7 +28,7 @@ async function carregarDespesas(){
   despEl('despGrupos').innerHTML=Object.entries(r.por_grupo||{}).map(([g,v])=>`<div><span>${escaparFinanceiro(g)}</span><strong>${moeda(v)}</strong></div>`).join('');
   despEl('despExportar').href='/api/exportar/despesas.csv?'+params;
   despEl('despesasBody').innerHTML=despesasMes.length?despesasMes.map(r=>{
-    const vinculos=[r.fornecedor_nome,r.funcionario_nome,r.veiculo_nome].filter(Boolean);
+    const vinculos=[r.fornecedor_nome,r.funcionario_nome,r.veiculo_nome,r.terceirizado_nome].filter(Boolean);
     return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
       <td>${vinculos.map(v=>`<div class="table-sub">${escaparFinanceiro(v)}</div>`).join('')||'—'}</td>
       <td><span class="desp-priority ${escaparFinanceiro(r.prioridade)}">${escaparFinanceiro(r.prioridade)}</span></td>
@@ -44,7 +44,7 @@ function despOpcoes(id,tipo,filtro=false){
 }
 async function carregarCadastrosDespesas(){
   despCadastros=await api('/api/despesas/cadastros');
-  for(const [tipo,campo] of [['funcionarios','Funcionario'],['veiculos','Veiculo'],['fornecedores','Fornecedor']]){
+  for(const [tipo,campo] of [['funcionarios','Funcionario'],['veiculos','Veiculo'],['fornecedores','Fornecedor'],['terceirizados','Terceirizado']]){
     despOpcoes('desp'+campo,tipo);despOpcoes('despFiltro'+campo,tipo,true);
   }
   renderCadastrosDespesas();
@@ -70,7 +70,7 @@ function novaDespesa(){
 function editarDespesa(id){
   const r=despesasMes.find(x=>x.id===id);if(!r)return;
   novaDespesa();despEl('despGrupo').value=r.grupo;despAtualizarCategoria(r.categoria);
-  const campos={despId:'id',despDescricao:'descricao',despCompetencia:'competencia',despVencimento:'vencimento',despValor:'valor',despPrioridade:'prioridade',despFornecedor:'fornecedor_id',despFuncionario:'funcionario_id',despVeiculo:'veiculo_id',despDocumento:'documento',despObservacoes:'observacoes',despDataPagamento:'data_pagamento'};
+  const campos={despId:'id',despDescricao:'descricao',despCompetencia:'competencia',despVencimento:'vencimento',despValor:'valor',despPrioridade:'prioridade',despFornecedor:'fornecedor_id',despTerceirizado:'terceirizado_id',despFuncionario:'funcionario_id',despVeiculo:'veiculo_id',despDocumento:'documento',despObservacoes:'observacoes',despDataPagamento:'data_pagamento'};
   Object.entries(campos).forEach(([id,campo])=>despEl(id).value=r[campo]??'');
   despEl('despPago').checked=r.pago;despAtualizarPago();despEl('despTitulo').textContent='Editar despesa';
 }
@@ -91,11 +91,11 @@ function trocarCadastroDespesa(tipo){
   despEl('despCadPlaca').required=tipo==='veiculos';renderCadastrosDespesas();
 }
 function renderCadastrosDespesas(){
-  despEl('despCadBody').innerHTML=despCadastros[despTipoCadastro].length?despCadastros[despTipoCadastro].map(r=>`<tr><td>${escaparFinanceiro(r.nome)}</td><td>${escaparFinanceiro([r.cargo,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td><td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nenhum cadastro.</td></tr>';
+  despEl('despCadBody').innerHTML=despCadastros[despTipoCadastro].length?despCadastros[despTipoCadastro].map(r=>`<tr><td>${escaparFinanceiro(r.nome)}</td><td>${escaparFinanceiro([r.cargo,r.servico,r.placa,r.ano,r.telefone,r.documento].filter(Boolean).join(' · '))||'—'}</td><td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`).join(''):'<tr><td colspan="3" class="empty">Nenhum cadastro.</td></tr>';
 }
 function editarCadastroDespesa(id){
   const r=despCadastros[despTipoCadastro].find(x=>x.id===id);if(!r)return;
-  for(const [campo,sufixo] of Object.entries({id:'Id',nome:'Nome',cargo:'Cargo',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}))despEl('despCad'+sufixo).value=r[campo]??'';
+  for(const [campo,sufixo] of Object.entries({id:'Id',nome:'Nome',cargo:'Cargo',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}))despEl('despCad'+sufixo).value=r[campo]??'';
   despEl('despCadForm').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function excluirCadastroDespesa(id){
@@ -103,8 +103,8 @@ async function excluirCadastroDespesa(id){
   try{await api('/api/despesas/cadastros/'+despTipoCadastro+'/'+id,{method:'DELETE'});await carregarCadastrosDespesas();msg('Cadastro excluído.')}catch(e){msg(e.message,'erro')}
 }
 async function verDespesasVinculadas(id){
-  for(const campo of ['despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despBusca'])despEl(campo).value='';
-  despEl({funcionarios:'despFiltroFuncionario',veiculos:'despFiltroVeiculo',fornecedores:'despFiltroFornecedor'}[despTipoCadastro]).value=String(id);
+  for(const campo of ['despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(campo).value='';
+  despEl({funcionarios:'despFiltroFuncionario',veiculos:'despFiltroVeiculo',fornecedores:'despFiltroFornecedor',terceirizados:'despFiltroTerceirizado'}[despTipoCadastro]).value=String(id);
   try{await carregarDespesas();despEl('despMes').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){msg(e.message,'erro')}
 }
 if(despEl('despesas')){
@@ -115,17 +115,17 @@ if(despEl('despesas')){
   despEl('despPago').addEventListener('change',despAtualizarPago);
   despEl('despForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despId').value;
-    const campos={descricao:'Descricao',grupo:'Grupo',categoria:'Categoria',competencia:'Competencia',vencimento:'Vencimento',valor:'Valor',prioridade:'Prioridade',fornecedor_id:'Fornecedor',funcionario_id:'Funcionario',veiculo_id:'Veiculo',documento:'Documento',observacoes:'Observacoes',data_pagamento:'DataPagamento'};
+    const campos={descricao:'Descricao',grupo:'Grupo',categoria:'Categoria',competencia:'Competencia',vencimento:'Vencimento',valor:'Valor',prioridade:'Prioridade',fornecedor_id:'Fornecedor',terceirizado_id:'Terceirizado',funcionario_id:'Funcionario',veiculo_id:'Veiculo',documento:'Documento',observacoes:'Observacoes',data_pagamento:'DataPagamento'};
     const payload=Object.fromEntries(Object.entries(campos).map(([k,v])=>[k,despEl('desp'+v).value]));payload.pago=despEl('despPago').checked;
     try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;despEl('despCadastro').classList.add('hidden');await carregarDespesas();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
-  ['despMes','despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor'].forEach(id=>despEl(id).addEventListener('change',()=>carregarDespesas().catch(e=>msg(e.message,'erro'))));
+  ['despMes','despFiltroGrupo','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>carregarDespesas().catch(e=>msg(e.message,'erro'))));
   despEl('despBusca').addEventListener('input',()=>{clearTimeout(window._despBusca);window._despBusca=setTimeout(()=>carregarDespesas().catch(e=>msg(e.message,'erro')),250)});
   document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog)));
   despEl('despCadCancelar').addEventListener('click',limparCadastroDespesa);
   despEl('despCadForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despCadId').value;
-    const payload=Object.fromEntries(Object.entries({nome:'Nome',cargo:'Cargo',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}).map(([k,v])=>[k,despEl('despCad'+v).value]));
+    const payload=Object.fromEntries(Object.entries({nome:'Nome',cargo:'Cargo',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}).map(([k,v])=>[k,despEl('despCad'+v).value]));
     try{await api('/api/despesas/cadastros/'+despTipoCadastro+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(payload)});limparCadastroDespesa();await carregarCadastrosDespesas();await carregarDespesas();msg('Cadastro salvo.')}catch(e){msg(e.message,'erro')}
   });
   document.querySelectorAll('.tab-btn[data-tab="despesas"]').forEach(b=>b.addEventListener('click',async()=>{

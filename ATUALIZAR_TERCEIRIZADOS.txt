@@ -1,0 +1,12 @@
+TERCEIRIZADOS
+
+Envie o pacote completo ao GitHub mantendo as pastas e faça commit. No Render use Manual Deploy > Deploy latest commit. Após o deploy, pressione Ctrl + F5.
+Arquivos alterados: app.py, despesas.py, static/despesas.js, templates/index.html.
+
+Na aba Despesas do mês > Cadastros vinculados > Terceirizados, cadastre nome, serviço/especialidade, telefone, CPF/CNPJ e observações.
+Ao criar ou editar uma despesa, selecione Terceirizado vinculado.
+O filtro Terceirizado e Ver despesas mostram as contas vinculadas do mês selecionado.
+CSV e backup incluem os terceirizados. Cadastros com despesas vinculadas não podem ser excluídos.
+
+A migração cria terceirizados_despesas e adiciona terceirizado_id nas despesas existentes sem apagar registros. Mantenha o banco e DATABASE_URL atuais.
+Testes locais: migração a partir da versão anterior com conta existente, CRUD, vínculo, histórico, filtros, CSV, backup, reinicialização e execução do JavaScript. PostgreSQL do Render não acessado.

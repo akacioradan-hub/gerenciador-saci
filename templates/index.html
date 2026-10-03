@@ -268,7 +268,7 @@
           <label>Grupo<select id="despFiltroGrupo"><option value="">Todos</option><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
           <label>Situação<select id="despFiltroStatus"><option value="">Todas</option><option value="aberto">Em aberto</option><option value="atrasado">Atrasadas</option><option value="pago">Pagas</option></select></label>
           <label>Prioridade<select id="despFiltroPrioridade"><option value="">Todas</option><option>Baixa</option><option>Normal</option><option>Alta</option><option>Urgente</option></select></label>
-          <label>Funcionário<select id="despFiltroFuncionario"></select></label><label>Veículo<select id="despFiltroVeiculo"></select></label><label>Fornecedor<select id="despFiltroFornecedor"></select></label>
+          <label>Funcionário<select id="despFiltroFuncionario"></select></label><label>Veículo<select id="despFiltroVeiculo"></select></label><label>Fornecedor<select id="despFiltroFornecedor"></select></label><label>Terceirizado<select id="despFiltroTerceirizado"></select></label>
           <label>Pesquisar<input id="despBusca" placeholder="Descrição, categoria ou documento"></label>
         </div></div>
         <div class="gov-summary-grid mt">
@@ -289,6 +289,7 @@
             <label>Valor *<input id="despValor" type="number" min="0.01" max="999999999999.99" step="0.01" required></label>
             <label>Prioridade<select id="despPrioridade"><option>Baixa</option><option selected>Normal</option><option>Alta</option><option>Urgente</option></select></label>
             <label>Fornecedor<select id="despFornecedor"></select></label>
+            <label>Terceirizado vinculado<select id="despTerceirizado"></select></label>
             <label>Funcionário vinculado<select id="despFuncionario"></select></label>
             <label>Veículo vinculado<select id="despVeiculo"></select></label>
             <label>Nota fiscal / boleto / referência<input id="despDocumento" maxlength="100"></label>
@@ -301,17 +302,18 @@
         <div class="card mt"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
           <div class="table-wrap"><table><thead><tr><th>Descrição / categoria</th><th>Vínculos</th><th>Prioridade</th><th>Vencimento</th><th>Valor</th><th>Situação / pagamento</th><th>Ações</th></tr></thead><tbody id="despesasBody"></tbody></table></div>
         </div>
-        <div class="card mt"><h3>Cadastros vinculados</h3><p>Cadastre funcionários, veículos e fornecedores. Use os filtros acima para consultar as despesas de cada um.</p>
-          <div class="desp-catalog-nav"><button type="button" class="secondary" data-desp-catalog="funcionarios">Funcionários</button><button type="button" class="secondary" data-desp-catalog="veiculos">Veículos</button><button type="button" class="secondary" data-desp-catalog="fornecedores">Fornecedores</button></div>
+        <div class="card mt"><h3>Cadastros vinculados</h3><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros acima para consultar as despesas de cada um.</p>
+          <div class="desp-catalog-nav"><button type="button" class="secondary" data-desp-catalog="funcionarios">Funcionários</button><button type="button" class="secondary" data-desp-catalog="veiculos">Veículos</button><button type="button" class="secondary" data-desp-catalog="fornecedores">Fornecedores</button><button type="button" class="secondary" data-desp-catalog="terceirizados">Terceirizados</button></div>
           <h4 id="despCadTitulo">Funcionários</h4>
           <form id="despCadForm" class="gov-form">
             <input id="despCadId" type="hidden">
             <label>Nome / modelo *<input id="despCadNome" maxlength="180" required></label>
             <label data-desp-field="funcionarios">Cargo<input id="despCadCargo" maxlength="100"></label>
-            <label data-desp-field="funcionarios fornecedores">Telefone<input id="despCadTelefone" maxlength="30"></label>
+            <label data-desp-field="funcionarios fornecedores terceirizados">Telefone<input id="despCadTelefone" maxlength="30"></label>
+            <label data-desp-field="terceirizados">Serviço / especialidade<input id="despCadServico" maxlength="100" placeholder="Ex.: Eletricista, frete ou limpeza"></label>
             <label data-desp-field="veiculos">Placa *<input id="despCadPlaca" maxlength="10"></label>
             <label data-desp-field="veiculos">Ano<input id="despCadAno" type="number" min="1900" max="2100"></label>
-            <label data-desp-field="fornecedores">CPF/CNPJ<input id="despCadDocumento" maxlength="30"></label>
+            <label data-desp-field="fornecedores terceirizados">CPF/CNPJ<input id="despCadDocumento" maxlength="30"></label>
             <label>Observações<input id="despCadObservacoes" maxlength="5000"></label>
             <div class="form-actions"><button class="primary" type="submit">Salvar cadastro</button><button class="secondary" id="despCadCancelar" type="button">Limpar</button></div>
           </form>
@@ -360,6 +362,6 @@
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261003-orgaos-icones"></script>
-<script src="/static/despesas.js?v=20261003-1"></script>
+<script src="/static/despesas.js?v=20261003-terceirizados"></script>
 </body>
 </html>

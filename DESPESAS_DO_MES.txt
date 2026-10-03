@@ -8,19 +8,19 @@ ATUALIZAÇÃO
 
 USO
 Na nova aba Despesas do mês, escolha a competência. Os totais são calculados pelo mês da conta, mesmo se o pagamento acontecer em outro mês.
-Cadastre funcionários, veículos e fornecedores em Cadastros vinculados.
+Cadastre funcionários, veículos, fornecedores e terceirizados em Cadastros vinculados.
 Clique em + Nova despesa, informe grupo, categoria, valor, vencimento, prioridade e vínculos. Para contas de fornecedores, selecione um fornecedor cadastrado.
 Custos fixos: salários, encargos, água, luz, telefone, internet, aluguel, contabilidade, seguros, sistemas e impostos.
 Variáveis: combustível, manutenção, adiantamentos, reembolsos, equipamentos, material, limpeza e publicidade.
 Marcar pago solicita a data real no formato AAAA-MM-DD. Reabrir remove a data de pagamento.
 Os filtros permitem consultar contas por mês, situação, prioridade, grupo, funcionário, veículo e fornecedor. Ver despesas nos cadastros aplica o filtro de vínculo ao mês escolhido.
 Os totais refletem os filtros ativos. Em atraso corresponde ao vencimento anterior a hoje e ainda não pago.
-Exportar CSV usa os filtros da tela. O backup geral inclui despesas e os três cadastros novos.
+Exportar CSV usa os filtros da tela. O backup geral inclui despesas e os quatro cadastros.
 Cadastros com despesas vinculadas não podem ser excluídos, para preservar o histórico.
 Custos fixos são lançados manualmente a cada mês; não há geração automática. Adiantamentos não são descontados automaticamente dos salários. Pagamentos são integrais, sem parcelas parciais.
 
 BANCO
-A aplicação adiciona as tabelas despesas_mensais, funcionarios_despesas, veiculos_despesas e fornecedores_despesas ao banco existente. Não apaga ou substitui as tabelas atuais.
+A aplicação adiciona as tabelas despesas_mensais, funcionarios_despesas, veiculos_despesas, fornecedores_despesas e terceirizados_despesas ao banco existente. Não apaga ou substitui as tabelas atuais.
 
 VALIDAÇÃO
 Rotas Flask testadas com banco SQLite temporário: autenticação, criação, edição, exclusão, filtros, vínculos, valores inválidos, baixa/reabertura, CSV, backup e histórico.
