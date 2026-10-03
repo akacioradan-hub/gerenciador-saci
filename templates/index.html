@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-orgaos-lote">
+<link rel="stylesheet" href="/static/style.css?v=20261003-dashboard-paginado">
 </head>
 <body>
 <div class="app-shell">
@@ -51,7 +51,7 @@
 
       <section id="dashboard" class="tab active">
         <div class="page-head dashboard-main-head">
-          <div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Informações separadas entre clientes e órgãos públicos.</p></div>
+          <div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Clientes, órgãos públicos e despesas em um só lugar.</p></div>
           <div class="date-chip" id="dataHoje"></div>
         </div>
 
@@ -61,6 +61,23 @@
           <button id="openDueAlerts" type="button">Ver avisos</button>
         </div>
 
+        <div class="dashboard-section-head">
+          <div><span class="section-dot client-dot"></span><h3>Despesas</h3></div>
+          <label>Mês de competência<input type="month" id="dashDespMes" required></label>
+          <button class="section-link" type="button" data-go-tab="despesas">Abrir despesas</button>
+        </div>
+        <p id="dashDespAviso" class="form-hint" aria-live="polite"></p>
+        <div class="grid kpis">
+          <div class="card kpi-card"><span>Total do mês</span><strong id="dashDespTotal">—</strong><small>Por competência</small></div>
+          <div class="card kpi-card"><span>Pago</span><strong id="dashDespPago">—</strong><small>Despesas quitadas</small></div>
+          <div class="card kpi-card"><span>Em aberto</span><strong id="dashDespAberto">—</strong><small>A pagar no período</small></div>
+          <div class="card kpi-card"><span>Em atraso</span><strong id="dashDespAtrasado">—</strong><small>Incluído no valor em aberto</small></div>
+        </div>
+        <div class="dashboard-grid mt">
+          <div class="card compact-card"><h3>Despesas por grupo</h3><div class="chart-box"><canvas id="chartDespGrupos"></canvas></div><div id="dashDespGruposValores" class="chart-values"></div></div>
+          <div class="card compact-card"><h3>Pago e em aberto</h3><div class="chart-box"><canvas id="chartDespStatus"></canvas></div><div id="dashDespStatusValores" class="chart-values"></div></div>
+        </div>
+        <div class="dashboard-divider"></div>
         <div class="dashboard-section-head">
           <div><span class="section-dot client-dot"></span><div><span class="eyebrow">CLIENTES</span><h3>Carteira de clientes</h3></div></div>
           <span class="section-hint">Recebimentos, saldo e previsão</span>
@@ -89,7 +106,7 @@
           </div>
         </div>
 
-        <div class="two-col mt">
+        <details class="compact-details dashboard-agenda mt"><summary>Ver agenda de clientes e resumo por status</summary><div class="two-col mt">
           <div class="card">
             <div class="card-head"><div><span class="eyebrow">AGENDA FINANCEIRA</span><h3>Próximos vencimentos e saldos</h3></div></div>
             <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Previsão</th><th>Saldo</th><th>Status</th></tr></thead><tbody id="dashClientes"></tbody></table></div>
@@ -100,6 +117,7 @@
           </div>
         </div>
 
+        </details>
         <div class="dashboard-divider"></div>
 
         <div class="dashboard-section-head org-section-head">
@@ -132,7 +150,7 @@
 
       <section id="clientes" class="tab">
         <div class="page-head">
-          <div><span class="eyebrow">CADASTRO</span><h2>Clientes</h2><p>Consulte os clientes cadastrados e abra a ficha somente quando precisar cadastrar ou editar.</p></div>
+          <div><span class="eyebrow">CADASTRO</span><h2>Clientes Loja</h2><p>Consulte os clientes cadastrados e abra a ficha somente quando precisar cadastrar ou editar.</p></div>
           <button id="novoClienteBtn" class="primary new-client-btn" type="button">+ Novo cliente</button>
         </div>
         <div id="clienteCadastroCard" class="card client-card hidden">
@@ -185,7 +203,7 @@
             <div class="client-form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar edição</button></div>
           </form>
         </div>
-        <div id="clienteFinanceiro" class="card mt client-finance-card">
+        <details id="clienteFinanceiro" class="card mt client-finance-card compact-details"><summary>Recebimentos e histórico do cliente</summary>
           <div class="card-head finance-head">
             <div><span class="eyebrow">FINANCEIRO DO CLIENTE</span><h3>Pagamentos e movimentação</h3><p>Selecione o cliente para consultar o saldo, registrar recebimentos e visualizar o histórico.</p></div>
             <label class="finance-client-select">Cliente<select id="pagCliente" required><option value="">Selecione...</option></select></label>
@@ -212,14 +230,14 @@
             </div>
             <div class="finance-history">
               <div class="section-label">Histórico do cliente</div>
-              <div class="table-wrap"><table><thead><tr><th>Data</th><th>Valor recebido</th><th>Desconto</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
+              <div class="table-wrap receipt-scroll"><table><thead><tr><th>Data</th><th>Valor recebido</th><th>Desconto</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
             </div>
           </div>
-        </div>
+        </details>
 
 <div class="card mt">
           <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
-          <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div><div class="table-pagination"><span id="clientesPaginaResumo" aria-live="polite"></span><nav id="clientesPaginas" aria-label="Páginas de clientes"></nav></div>
         </div>
       </section>
 
@@ -233,8 +251,7 @@
           <div class="card gov-kpi gov-open"><span>Em aberto</span><strong id="govNaoPago">R$ 0,00</strong><small>saldo pendente</small></div>
         </div>
 
-        <div class="card mt">
-          <div class="card-head"><div><span class="eyebrow">NOVO REGISTRO</span><h3 id="tituloOrgao">Cadastrar débito de órgão público</h3></div></div>
+        <details id="orgaoCadastroCard" class="card mt compact-details"><summary id="tituloOrgao">Cadastrar débito de órgão público</summary>
           <form id="orgaoForm" class="gov-form">
             <input type="hidden" id="orgaoId">
             <label>Nome do órgão devedor *<input id="orgaoNome" required placeholder="Ex.: Prefeitura Municipal de Angicos"></label>
@@ -247,7 +264,7 @@
             <label>Desconto no pagamento (R$)<input id="orgaoDesconto" type="number" min="0" step="0.01" value="0" disabled><small id="orgaoRecebidoResumo">Marque Pago para aplicar desconto.</small></label>
             <div class="form-actions"><button class="primary" type="submit">Salvar débito</button><button id="cancelarOrgao" class="secondary hidden" type="button">Cancelar</button></div>
           </form>
-        </div>
+        </details>
 
         <div class="card mt">
           <div class="gov-toolbar">
@@ -261,13 +278,13 @@
             </div>
           </div>
           <form id="orgReceberLote" class="gov-batch">
-            <div><strong id="orgSelecionadosResumo" aria-live="polite">Nenhum débito selecionado</strong><small>Selecione os débitos em aberto na tabela.</small></div>
+            <div><strong id="orgSelecionadosResumo" aria-live="polite">Nenhum débito selecionado</strong><small>Selecionar todos inclui todas as páginas filtradas.</small></div>
             <label>Desconto total (R$)<input id="orgLoteDesconto" type="number" min="0" step="0.01" value="0" disabled></label>
             <div><span>Valor a receber</span><strong id="orgLoteLiquido" aria-live="polite">R$ 0,00</strong></div>
             <button type="submit" class="primary" id="orgLoteConfirmar" disabled>Receber selecionados</button>
             <button type="button" class="secondary" id="orgLimparSelecao" disabled>Limpar seleção</button>
           </form>
-          <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="orgSelecionarTodos" aria-label="Selecionar todos os débitos em aberto filtrados" title="Selecionar todos os débitos em aberto filtrados"></th><th>Órgão devedor</th><th>Tipo</th><th>Data</th><th>Valor do débito</th><th>Pago</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th><input type="checkbox" id="orgSelecionarTodos" aria-label="Selecionar todos os débitos em aberto filtrados" title="Selecionar todos os débitos em aberto filtrados"></th><th>Órgão devedor</th><th>Tipo</th><th>Data</th><th>Valor do débito</th><th>Pago</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div><div class="table-pagination"><span id="orgaosPaginaResumo" aria-live="polite"></span><nav id="orgaosPaginas" aria-label="Páginas de orgaos"></nav></div>
         </div>
       </section>
 
@@ -388,7 +405,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-orgaos-lote"></script>
-<script src="/static/despesas.js?v=20261003-filtros-fixos"></script>
+<script src="/static/app.js?v=20261003-dashboard-paginado"></script>
+<script src="/static/despesas.js?v=20261003-dashboard-paginado"></script>
 </body>
 </html>

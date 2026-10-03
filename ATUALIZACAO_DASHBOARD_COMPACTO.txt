@@ -1,0 +1,5 @@
+Atualize templates/index.html, static/app.js, static/despesas.js e static/style.css no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5.
+
+Clientes Loja e Órgãos Públicos: 5 registros por página. Filtros consideram todos os registros. Seleção de débitos preservada ao trocar páginas; selecionar todos inclui todos os débitos em aberto filtrados.
+Recebimentos/histórico do cliente e cadastro de órgão ficam recolhidos; clique no título para abrir. Editar órgão abre automaticamente o cadastro.
+Dashboard: despesas por mês de competência (total, pago, em aberto e atrasado), grupos de despesas e gráficos de situação. Valores em atraso já fazem parte do aberto. Clientes e órgãos continuam com totais gerais. Gráficos maiores, cores consistentes e opção Ver valores. Agenda de clientes pode ser expandida.

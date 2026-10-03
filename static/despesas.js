@@ -144,11 +144,11 @@ async function pagarDespesa(id,pago){
   let data=null;
   if(pago){data=prompt('Data do pagamento (AAAA-MM-DD):',despHoje());if(data===null)return}
   else if(!confirm('Reabrir esta conta e remover a data de pagamento?'))return;
-  try{await api('/api/despesas/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago,data_pagamento:data})});await carregarDespesas();msg(pago?'Despesa marcada como paga.':'Despesa reaberta.')}catch(e){msg(e.message,'erro')}
+  try{await api('/api/despesas/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago,data_pagamento:data})});await carregarDespesas();await carregarDespesasDashboard();msg(pago?'Despesa marcada como paga.':'Despesa reaberta.')}catch(e){msg(e.message,'erro')}
 }
 async function excluirDespesa(id){
   if(!confirm('Excluir esta despesa?'))return;
-  try{await api('/api/despesas/'+id,{method:'DELETE'});await carregarDespesas();msg('Despesa excluída.')}catch(e){msg(e.message,'erro')}
+  try{await api('/api/despesas/'+id,{method:'DELETE'});await carregarDespesas();await carregarDespesasDashboard();msg('Despesa excluída.')}catch(e){msg(e.message,'erro')}
 }
 function limparCadastroDespesa(){despEl('despCadForm').reset();despEl('despCadId').value=''}
 function trocarCadastroDespesa(tipo,abrir=false){
@@ -229,7 +229,7 @@ if(despEl('despesas')){
     e.preventDefault();const id=despEl('despId').value;
     const campos={descricao:'Descricao',grupo:'Grupo',categoria:'Categoria',competencia:'Competencia',vencimento:'Vencimento',valor:'Valor',prioridade:'Prioridade',fornecedor_id:'Fornecedor',terceirizado_id:'Terceirizado',funcionario_id:'Funcionario',veiculo_id:'Veiculo',documento:'Documento',observacoes:'Observacoes',data_pagamento:'DataPagamento'};
     const payload=Object.fromEntries(Object.entries(campos).map(([k,v])=>[k,despEl('desp'+v).value]));payload.pago=despEl('despPago').checked;
-    try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;fecharCadastroDespesa();await carregarDespesas();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
+    try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;fecharCadastroDespesa();await carregarDespesas();await carregarDespesasDashboard();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
   ['despMes','despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>{if(id==='despFiltroGrupo')atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'))}));
   document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog,true)));

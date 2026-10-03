@@ -1,6 +1,8 @@
 const moeda=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dataBR=d=>d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'-';
 let clientes=[];
+let paginaClientes=1,paginaOrgaos=1;
+const LINHAS_TABELA=5;
 let pagamentos=[];
 let charts={};
 
@@ -36,59 +38,28 @@ function renderFinanceiroCliente(){
   body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td>${escaparFinanceiro(p.observacao||'-')}</td><td><button class="danger icon-btn" title="Excluir pagamento" aria-label="Excluir pagamento" onclick="excluirPagamento(${Number(p.id)})">🗑</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
 }
 
-async function carregarClientes(){const q=document.getElementById('buscaCliente').value.trim();clientes=await api('/api/clientes'+(q?'?q='+encodeURIComponent(q):''));renderClientes();preencherClientes()}
+async function carregarClientes(){paginaClientes=1;const q=document.getElementById('buscaCliente').value.trim();clientes=await api('/api/clientes'+(q?'?q='+encodeURIComponent(q):''));renderClientes();preencherClientes()}
 async function carregarPagamentos(){pagamentos=await api('/api/pagamentos');renderFinanceiroCliente()}
 
-function renderGraficos(d){
+function graficoBarras(nome,id,labels,datasets,horizontal=false,empilhado=false){
+  destroyChart(nome);
+  const canvas=document.getElementById(id);
+  let dados=document.getElementById(id+'Dados');
+  if(!dados){dados=document.createElement('details');dados.id=id+'Dados';dados.className='chart-data';canvas.parentElement.insertAdjacentElement('afterend',dados)}
+  dados.innerHTML='<summary>Ver valores</summary><div class="table-wrap"><table><thead><tr><th>Período / categoria</th>'+datasets.map(d=>`<th>${escaparFinanceiro(d.label)}</th>`).join('')+'</tr></thead><tbody>'+labels.map((l,i)=>`<tr><td>${escaparFinanceiro(l)}</td>${datasets.map(d=>`<td>${moeda(d.data[i])}</td>`).join('')}</tr>`).join('')+'</tbody></table></div>';
+  canvas.setAttribute('role','img');canvas.setAttribute('aria-label',labels.length?datasets.map(d=>d.label).join(', ')+'. Valores disponíveis abaixo.':'Sem dados no período.');
   if(typeof Chart!=='function')return;
-  destroyChart('carteira');
-  charts.carteira=new Chart(document.getElementById('chartCarteira'),{
-    type:'doughnut',
-    data:{labels:['Recebido','Falta receber','Descontos'],datasets:[{data:[d.total_recebido,d.saldo_devedor,d.total_desconto||0],backgroundColor:['#202024','#ff8f89','#c6c6cf'],borderWidth:0,hoverOffset:3}]},
-    options:{...chartBase(),cutout:'72%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:10}}}}}
-  });
-
-  destroyChart('recebimentos');
-  charts.recebimentos=new Chart(document.getElementById('chartRecebimentos'),{
-    type:'bar',
-    data:{labels:d.recebimentos_mensais.map(x=>mesLabel(x.mes)),datasets:[{label:'Recebido',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#e10600',borderRadius:5,maxBarThickness:32}]},
-    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
-  });
-
-  destroyChart('previsao');
-  charts.previsao=new Chart(document.getElementById('chartPrevisao'),{
-    type:'bar',
-    data:{labels:d.previsao_mensal.map(x=>mesLabel(x.mes)),datasets:[{label:'Previsão',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#2a2a2e',borderRadius:5,maxBarThickness:32}]},
-    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:9}}},y:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
-  });
-
-  const o=d.orgaos||{};
-  destroyChart('orgaosStatus');
-  charts.orgaosStatus=new Chart(document.getElementById('chartOrgaosStatus'),{
-    type:'doughnut',
-    data:{labels:['Pago','Em aberto','Descontos'],datasets:[{data:[o.total_pago||0,o.total_nao_pago||0,o.total_desconto||0],backgroundColor:['#202024','#e10600','#c6c6cf'],borderWidth:0,hoverOffset:3}]},
-    options:{...chartBase(),cutout:'72%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:10}}}}}
-  });
-
-  destroyChart('orgaosAno');
-  charts.orgaosAno=new Chart(document.getElementById('chartOrgaosAno'),{
-    type:'bar',
-    data:{labels:(o.por_ano||[]).map(x=>x.ano),datasets:[
-      {label:'Pago',data:(o.por_ano||[]).map(x=>x.pago),backgroundColor:'#2a2a2e',borderRadius:4,maxBarThickness:28},
-      {label:'Em aberto',data:(o.por_ano||[]).map(x=>x.nao_pago),backgroundColor:'#e10600',borderRadius:4,maxBarThickness:28},
-      {label:'Descontos',data:(o.por_ano||[]).map(x=>x.desconto||0),backgroundColor:'#c6c6cf',borderRadius:4,maxBarThickness:28}
-    ]},
-    options:{...chartBase(),plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:9}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
-  });
-
-  destroyChart('orgaosTop');
-  charts.orgaosTop=new Chart(document.getElementById('chartOrgaosTop'),{
-    type:'bar',
-    data:{labels:(o.top_devedores||[]).map(x=>x.nome),datasets:[{label:'Em aberto',data:(o.top_devedores||[]).map(x=>x.valor),backgroundColor:'#b73a35',borderRadius:4,maxBarThickness:25}]},
-    options:{...chartBase(),indexAxis:'y',plugins:{...chartBase().plugins,legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
-  });
+  charts[nome]=new Chart(canvas,{type:'bar',data:{labels,datasets:datasets.map(d=>({...d,borderRadius:4,maxBarThickness:28}))},options:{...chartBase(),indexAxis:horizontal?'y':'x',animation:false,plugins:{...chartBase().plugins,legend:{display:datasets.length>1,position:'bottom',labels:{usePointStyle:true,font:{size:12}}}},scales:{x:{stacked:empilhado,beginAtZero:true,grid:{display:!horizontal?false:true},ticks:{maxRotation:0,font:{size:12},...(horizontal?{callback:v=>new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v)}:{})}},y:{stacked:empilhado,beginAtZero:true,grid:{display:!horizontal},ticks:{font:{size:12},...(!horizontal?{callback:v=>new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v)}:{})}}}}});
 }
-
+function renderGraficos(d){
+  const o=d.orgaos||{};
+  graficoBarras('carteira','chartCarteira',['Recebido','Falta receber','Descontos'],[{label:'Valor (R$)',data:[d.total_recebido,d.saldo_devedor,d.total_desconto||0],backgroundColor:['#177f58','#d9682d','#89939e']}],true);
+  graficoBarras('recebimentos','chartRecebimentos',d.recebimentos_mensais.map(x=>mesLabel(x.mes)),[{label:'Recebido (R$)',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#177f58'}]);
+  graficoBarras('previsao','chartPrevisao',d.previsao_mensal.map(x=>mesLabel(x.mes)),[{label:'Previsão (R$)',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#466886'}]);
+  graficoBarras('orgaosStatus','chartOrgaosStatus',['Pago','Em aberto','Descontos'],[{label:'Valor (R$)',data:[o.total_pago||0,o.total_nao_pago||0,o.total_desconto||0],backgroundColor:['#177f58','#d9682d','#89939e']}],true);
+  graficoBarras('orgaosAno','chartOrgaosAno',(o.por_ano||[]).map(x=>x.ano),[{label:'Pago',data:(o.por_ano||[]).map(x=>x.pago),backgroundColor:'#177f58'},{label:'Em aberto',data:(o.por_ano||[]).map(x=>x.nao_pago),backgroundColor:'#d9682d'},{label:'Descontos',data:(o.por_ano||[]).map(x=>x.desconto||0),backgroundColor:'#89939e'}],false,true);
+  graficoBarras('orgaosTop','chartOrgaosTop',(o.top_devedores||[]).map(x=>x.nome),[{label:'Em aberto (R$)',data:(o.top_devedores||[]).map(x=>x.valor),backgroundColor:'#d9682d'}],true);
+}
 
 function botaoExcluirAviso(a){
   return `<button type="button" class="danger aviso-excluir" data-aviso="${escaparFinanceiro(a.aviso_chave)}" title="Excluir notificação" aria-label="Excluir notificação">🗑</button>`;
@@ -212,6 +183,7 @@ async function carregarDashboard(){
   document.getElementById('orgDashPagoQtd').textContent=`${o.quantidade_pago||0} registros pagos · Descontos: ${moeda(o.total_desconto)}`;
   document.getElementById('orgDashAbertoQtd').textContent=`${o.quantidade_nao_pago||0} registros em aberto`;
   renderGraficos(d);
+  await carregarDespesasDashboard();
 }
 
 function documentoFormatado(v){
@@ -224,7 +196,9 @@ function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
 
 function renderClientes(){
   const body=document.getElementById('clientesBody');
-  body.innerHTML=clientes.length?clientes.map(c=>`<tr>
+  paginaClientes=Math.min(paginaClientes,Math.max(1,Math.ceil(clientes.length/LINHAS_TABELA)));
+  renderPaginacaoTabela('clientes',paginaClientes,clientes.length,mudarPaginaClientes);
+  body.innerHTML=clientes.length?clientes.slice((paginaClientes-1)*LINHAS_TABELA,paginaClientes*LINHAS_TABELA).map(c=>`<tr>
     <td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td>
     <td>${c.whatsapp||c.telefone||'-'}</td>
     <td>${moeda(c.divida)}</td>
@@ -242,6 +216,7 @@ function renderClientes(){
 }
 function abrirFinanceiroCliente(id){
   const sel=document.getElementById('pagCliente');if(!sel)return;
+  document.getElementById('clienteFinanceiro').open=true;
   sel.value=String(id);renderFinanceiroCliente();
   document.getElementById('clienteFinanceiro')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -386,7 +361,7 @@ if(window.IS_ADMIN){
 let orgaosPublicos=[];
 let orgSelecionados=new Set(),orgConsulta=0,orgRecebendo=false;
 async function carregarOrgaosPublicos(){
-  const consulta=++orgConsulta;
+  const consulta=++orgConsulta;paginaOrgaos=1;
   orgSelecionados.clear();orgaosPublicos=[];renderOrgaosPublicos();
   document.getElementById('orgLoteDesconto').value='0';
   const params=new URLSearchParams();
@@ -412,7 +387,9 @@ async function carregarOrgaosPublicos(){
 }
 function renderOrgaosPublicos(){
   const body=document.getElementById('orgaosBody');if(!body)return;
-  body.innerHTML=orgaosPublicos.length?orgaosPublicos.map(r=>`<tr>
+  paginaOrgaos=Math.min(paginaOrgaos,Math.max(1,Math.ceil(orgaosPublicos.length/LINHAS_TABELA)));
+  renderPaginacaoTabela('orgaos',paginaOrgaos,orgaosPublicos.length,mudarPaginaOrgaos);
+  body.innerHTML=orgaosPublicos.length?orgaosPublicos.slice((paginaOrgaos-1)*LINHAS_TABELA,paginaOrgaos*LINHAS_TABELA).map(r=>`<tr>
     <td><input type="checkbox" class="org-selecao" data-id="${r.id}" ${r.pago||orgRecebendo?'disabled':''} ${orgSelecionados.has(r.id)?'checked':''} aria-label="Selecionar débito ${r.id}"></td>
     <td><strong>${r.nome_orgao}</strong></td><td>${r.tipo_orgao}</td><td>${String(r.dia).padStart(2,'0')}/${String(r.mes).padStart(2,'0')}/${r.ano}</td>
     <td>${moeda(r.valor_debito)}${r.pago?`<small class="desconto-detalhe">Desconto: ${moeda(r.desconto)}<br>Recebido: ${moeda(r.valor_recebido)}</small>`:''}</td>
@@ -426,11 +403,11 @@ function renderOrgaosPublicos(){
   atualizarSelecaoOrgaos();
 }
 function limparOrgaoPublico(){
-  const f=document.getElementById('orgaoForm');if(!f)return;f.reset();document.getElementById('orgaoId').value='';document.getElementById('orgaoPago').checked=false;atualizarDescontoOrgao();document.getElementById('tituloOrgao').textContent='Cadastrar débito de órgão público';document.getElementById('cancelarOrgao').classList.add('hidden');
+  const f=document.getElementById('orgaoForm');if(!f)return;f.reset();document.getElementById('orgaoId').value='';document.getElementById('orgaoPago').checked=false;atualizarDescontoOrgao();document.getElementById('tituloOrgao').textContent='Cadastrar débito de órgão público';document.getElementById('cancelarOrgao').classList.add('hidden');document.getElementById('orgaoCadastroCard').open=false;
 }
 function editarOrgaoPublico(id){
   const r=orgaosPublicos.find(x=>x.id===id);if(!r)return;
-  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').checked=!!r.pago;document.getElementById('orgaoDesconto').value=r.desconto||0;atualizarDescontoOrgao();document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').checked=!!r.pago;document.getElementById('orgaoDesconto').value=r.desconto||0;atualizarDescontoOrgao();document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.getElementById('orgaoCadastroCard').open=true;document.getElementById('orgaoCadastroCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function definirPagoOrgao(id, pago){
   let desconto=0;
@@ -517,3 +494,35 @@ document.getElementById('orgReceberLote').addEventListener('submit',async e=>{
   }catch(err){msg(err.message,'erro')}
   finally{orgRecebendo=false;renderOrgaosPublicos()}
 });
+
+function renderPaginacaoTabela(prefixo,pagina,total,mudar){
+  const paginas=Math.max(1,Math.ceil(total/LINHAS_TABELA));
+  document.getElementById(prefixo+'PaginaResumo').textContent=total?`${(pagina-1)*LINHAS_TABELA+1}–${Math.min(pagina*LINHAS_TABELA,total)} de ${total} registros · Página ${pagina} de ${paginas}`:'Nenhum registro';
+  const nav=document.getElementById(prefixo+'Paginas');
+  const numeros=[...new Set([1,pagina-1,pagina,pagina+1,paginas])].filter(n=>n>=1&&n<=paginas).sort((a,b)=>a-b);
+  let html=`<button type="button" class="secondary" data-pagina="${pagina-1}" ${pagina===1?'disabled':''}>Anterior</button>`;
+  numeros.forEach((n,i)=>{if(i&&n-numeros[i-1]>1)html+='<span>…</span>';html+=`<button type="button" class="${n===pagina?'primary':'secondary'}" data-pagina="${n}" ${n===pagina?'aria-current="page"':''}>${n}</button>`});
+  nav.innerHTML=html+`<button type="button" class="secondary" data-pagina="${pagina+1}" ${pagina===paginas?'disabled':''}>Próxima</button>`;
+  nav.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>mudar(Number(b.dataset.pagina))));
+}
+function mudarPaginaClientes(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(clientes.length/LINHAS_TABELA))return;paginaClientes=n;renderClientes()}
+function mudarPaginaOrgaos(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(orgaosPublicos.length/LINHAS_TABELA))return;paginaOrgaos=n;renderOrgaosPublicos()}
+let consultaDespDashboard=0;
+async function carregarDespesasDashboard(){
+  const campo=document.getElementById('dashDespMes');
+  if(!campo.value){const partes=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit'}).formatToParts(new Date());campo.value=partes.find(p=>p.type==='year').value+'-'+partes.find(p=>p.type==='month').value}
+  const consulta=++consultaDespDashboard;
+  document.getElementById('dashDespAviso').textContent='Carregando despesas…';
+  try{
+    const d=await api('/api/despesas?mes='+encodeURIComponent(campo.value));if(consulta!==consultaDespDashboard)return;
+    const r=d.resumo||{};
+    for(const [id,chave] of [['Total','total'],['Pago','pago'],['Aberto','aberto'],['Atrasado','atrasado']])document.getElementById('dashDesp'+id).textContent=moeda(r[chave]);
+    document.getElementById('dashDespAviso').textContent=`${r.quantidade||0} despesa(s) no período de competência selecionado.`;
+    const grupos=Object.entries(r.por_grupo||{});
+    graficoBarras('despGrupos','chartDespGrupos',grupos.map(x=>x[0]),[{label:'Total',data:grupos.map(x=>x[1]),backgroundColor:'#466886'}],true);
+    graficoBarras('despStatus','chartDespStatus',['Pago','Em aberto'],[{label:'Valor',data:[r.pago||0,r.aberto||0],backgroundColor:['#177f58','#d9682d']}],true);
+    document.getElementById('dashDespGruposValores').innerHTML=grupos.map(([nome,valor])=>`<span>${escaparFinanceiro(nome)}: <strong>${moeda(valor)}</strong></span>`).join('');
+    document.getElementById('dashDespStatusValores').textContent=`Pago: ${moeda(r.pago)} · Em aberto: ${moeda(r.aberto)}`;
+  }catch(e){if(consulta!==consultaDespDashboard)return;for(const id of ['Total','Pago','Aberto','Atrasado'])document.getElementById('dashDesp'+id).textContent='—';destroyChart('despGrupos');destroyChart('despStatus');for(const id of ['chartDespGruposDados','chartDespStatusDados']){const el=document.getElementById(id);if(el)el.innerHTML=''}document.getElementById('dashDespGruposValores').textContent='';document.getElementById('dashDespStatusValores').textContent='';document.getElementById('dashDespAviso').textContent='Não foi possível carregar as despesas: '+e.message}
+}
+document.getElementById('dashDespMes').addEventListener('change',carregarDespesasDashboard);
