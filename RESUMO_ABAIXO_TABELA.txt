@@ -1,0 +1,3 @@
+O resumo do cadastro com período de competência, total, pago e em aberto agora fica abaixo da tabela e da paginação de Contas do mês.
+
+Atualize somente templates/index.html no GitHub, faça deploy no Render e pressione Ctrl + F5. O ZIP contém o sistema completo. Não há alterações nos cálculos ou no banco.
