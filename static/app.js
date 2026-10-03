@@ -39,7 +39,7 @@ function renderGraficos(d){
   destroyChart('orgaosStatus');
   charts.orgaosStatus=new Chart(document.getElementById('chartOrgaosStatus'),{
     type:'doughnut',
-    data:{labels:['Pago','Não pago'],datasets:[{data:[o.total_pago||0,o.total_nao_pago||0],backgroundColor:['#202024','#e10600'],borderWidth:0,hoverOffset:3}]},
+    data:{labels:['Pago','Em aberto'],datasets:[{data:[o.total_pago||0,o.total_nao_pago||0],backgroundColor:['#202024','#e10600'],borderWidth:0,hoverOffset:3}]},
     options:{...chartBase(),cutout:'72%',plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:10}}}}}
   });
 
@@ -48,7 +48,7 @@ function renderGraficos(d){
     type:'bar',
     data:{labels:(o.por_ano||[]).map(x=>x.ano),datasets:[
       {label:'Pago',data:(o.por_ano||[]).map(x=>x.pago),backgroundColor:'#2a2a2e',borderRadius:4,maxBarThickness:28},
-      {label:'Não pago',data:(o.por_ano||[]).map(x=>x.nao_pago),backgroundColor:'#e10600',borderRadius:4,maxBarThickness:28}
+      {label:'Em aberto',data:(o.por_ano||[]).map(x=>x.nao_pago),backgroundColor:'#e10600',borderRadius:4,maxBarThickness:28}
     ]},
     options:{...chartBase(),plugins:{...chartBase().plugins,legend:{position:'bottom',labels:{usePointStyle:true,boxWidth:7,font:{size:9}}}},scales:{x:{stacked:true,grid:{display:false},ticks:{font:{size:9}}},y:{stacked:true,beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
@@ -56,7 +56,7 @@ function renderGraficos(d){
   destroyChart('orgaosTop');
   charts.orgaosTop=new Chart(document.getElementById('chartOrgaosTop'),{
     type:'bar',
-    data:{labels:(o.top_devedores||[]).map(x=>x.nome),datasets:[{label:'Não pago',data:(o.top_devedores||[]).map(x=>x.valor),backgroundColor:'#b73a35',borderRadius:4,maxBarThickness:25}]},
+    data:{labels:(o.top_devedores||[]).map(x=>x.nome),datasets:[{label:'Em aberto',data:(o.top_devedores||[]).map(x=>x.valor),backgroundColor:'#b73a35',borderRadius:4,maxBarThickness:25}]},
     options:{...chartBase(),indexAxis:'y',plugins:{...chartBase().plugins,legend:{display:false}},scales:{y:{grid:{display:false},ticks:{font:{size:9}}},x:{beginAtZero:true,grid:{color:'#f0f0f3'},ticks:{font:{size:9},callback:v=>'R$ '+Number(v).toLocaleString('pt-BR')}}}}
   });
 }
@@ -226,26 +226,27 @@ function renderOrgaosPublicos(){
   body.innerHTML=orgaosPublicos.length?orgaosPublicos.map(r=>`<tr>
     <td><strong>${r.nome_orgao}</strong></td><td>${r.tipo_orgao}</td><td>${String(r.dia).padStart(2,'0')}/${String(r.mes).padStart(2,'0')}/${r.ano}</td>
     <td>${moeda(r.valor_debito)}</td>
-    <td><div class="status-action"><span class="badge ${r.pago?'QUITADO':'ATRASADO'}">${r.pago?'PAGO':'NÃO PAGO'}</span><button class="status-toggle ${r.pago?'is-paid':'is-unpaid'}" onclick="alternarStatusOrgao(${r.id}, ${!r.pago})">${r.pago?'Marcar não pago':'Marcar pago'}</button></div></td>
+    <td><label class="paid-check"><input type="checkbox" ${r.pago?'checked':''} onchange="definirPagoOrgao(${r.id}, this.checked)"><span>Pago</span></label></td>
     <td>${r.numero_nota_fiscal}</td><td>${r.numero_ordem||'-'}</td>
     <td><div class="acoes"><button class="edit" onclick="editarOrgaoPublico(${r.id})">Editar</button><button class="danger" onclick="excluirOrgaoPublico(${r.id})">Excluir</button></div></td>
-  </tr>`).join(''):'<tr><td colspan="9" class="empty">Nenhum débito de órgão público cadastrado.</td></tr>';
+  </tr>`).join(''):'<tr><td colspan="8" class="empty">Nenhum débito de órgão público cadastrado.</td></tr>';
 }
 function limparOrgaoPublico(){
-  const f=document.getElementById('orgaoForm');if(!f)return;f.reset();document.getElementById('orgaoId').value='';document.getElementById('orgaoPago').value='false';document.getElementById('tituloOrgao').textContent='Cadastrar débito de órgão público';document.getElementById('cancelarOrgao').classList.add('hidden');
+  const f=document.getElementById('orgaoForm');if(!f)return;f.reset();document.getElementById('orgaoId').value='';document.getElementById('orgaoPago').checked=false;document.getElementById('tituloOrgao').textContent='Cadastrar débito de órgão público';document.getElementById('cancelarOrgao').classList.add('hidden');
 }
 function editarOrgaoPublico(id){
   const r=orgaosPublicos.find(x=>x.id===id);if(!r)return;
-  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').value=String(r.pago);document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').checked=!!r.pago;document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.querySelector('#orgaos .card')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
-async function alternarStatusOrgao(id, novoStatus){
-  const acao=novoStatus?'marcar este débito como PAGO':'marcar este débito como NÃO PAGO';
-  if(!confirm(`Deseja ${acao}?`)) return;
+async function definirPagoOrgao(id, pago){
   try{
-    await api('/api/orgaos-publicos/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago:novoStatus})});
-    msg(novoStatus?'Débito marcado como pago.':'Débito marcado como não pago.');
+    await api('/api/orgaos-publicos/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago})});
+    msg(pago?'Débito marcado como pago.':'Débito voltou para em aberto.');
     await Promise.all([carregarOrgaosPublicos(),carregarDashboard()]);
-  }catch(err){msg(err.message,'erro')}
+  }catch(err){
+    msg(err.message,'erro');
+    await carregarOrgaosPublicos();
+  }
 }
 
 async function excluirOrgaoPublico(id){
@@ -254,7 +255,7 @@ async function excluirOrgaoPublico(id){
 }
 const orgaoForm=document.getElementById('orgaoForm');
 if(orgaoForm){
-  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),numero_ordem:document.getElementById('orgaoOrdem').value.trim(),pago:document.getElementById('orgaoPago').value==='true'};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}});
+  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),numero_ordem:document.getElementById('orgaoOrdem').value.trim(),pago:document.getElementById('orgaoPago').checked};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await carregarOrgaosPublicos()}catch(err){msg(err.message,'erro')}});
   document.getElementById('cancelarOrgao').addEventListener('click',limparOrgaoPublico);
   ['buscaOrgao','filtroAnoOrgao','filtroStatusOrgao'].forEach(id=>document.getElementById(id)?.addEventListener(id==='buscaOrgao'?'input':'change',()=>{clearTimeout(window._org);window._org=setTimeout(()=>carregarOrgaosPublicos().catch(err=>msg(err.message,'erro')),220)}));
   carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'));

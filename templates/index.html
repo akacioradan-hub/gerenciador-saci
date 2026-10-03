@@ -110,13 +110,13 @@
         <div class="grid kpis org-dashboard-kpis">
           <div class="card kpi-card org-kpi"><div class="kpi-accent red"></div><span>Total de débitos</span><strong id="orgDashTotal">R$ 0,00</strong><small>Valor registrado</small></div>
           <div class="card kpi-card org-kpi"><div class="kpi-accent dark"></div><span>Total pago</span><strong id="orgDashPago">R$ 0,00</strong><small id="orgDashPagoQtd">0 registros pagos</small></div>
-          <div class="card kpi-card org-kpi"><div class="kpi-accent overdue"></div><span>Não pago</span><strong id="orgDashAberto">R$ 0,00</strong><small id="orgDashAbertoQtd">0 registros em aberto</small></div>
+          <div class="card kpi-card org-kpi"><div class="kpi-accent overdue"></div><span>Em aberto</span><strong id="orgDashAberto">R$ 0,00</strong><small id="orgDashAbertoQtd">0 registros em aberto</small></div>
           <div class="card kpi-card org-kpi"><div class="kpi-accent orange"></div><span>Registros</span><strong id="orgDashQtd">0</strong><small>Notas / débitos cadastrados</small></div>
         </div>
 
         <div class="org-dashboard-grid mt">
           <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">SITUAÇÃO</span><h3>Pago x não pago</h3></div></div>
+            <div class="card-head"><div><span class="eyebrow">SITUAÇÃO</span><h3>Pago x em aberto</h3></div></div>
             <div class="chart-box org-mini-donut"><canvas id="chartOrgaosStatus"></canvas></div>
           </div>
           <div class="card compact-card">
@@ -124,7 +124,7 @@
             <div class="chart-box org-mini-chart"><canvas id="chartOrgaosAno"></canvas></div>
           </div>
           <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">MAIORES SALDOS</span><h3>Órgãos com valores não pagos</h3></div></div>
+            <div class="card-head"><div><span class="eyebrow">MAIORES SALDOS</span><h3>Órgãos com valores em aberto</h3></div></div>
             <div class="chart-box org-mini-chart"><canvas id="chartOrgaosTop"></canvas></div>
           </div>
         </div>
@@ -213,7 +213,7 @@
           <div class="card gov-kpi"><span>Registros</span><strong id="govQtd">0</strong><small>débitos cadastrados</small></div>
           <div class="card gov-kpi"><span>Valor total</span><strong id="govTotal">R$ 0,00</strong><small>total dos débitos</small></div>
           <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="govPago">R$ 0,00</strong><small>débitos quitados</small></div>
-          <div class="card gov-kpi gov-open"><span>Não pago</span><strong id="govNaoPago">R$ 0,00</strong><small>saldo pendente</small></div>
+          <div class="card gov-kpi gov-open"><span>Em aberto</span><strong id="govNaoPago">R$ 0,00</strong><small>saldo pendente</small></div>
         </div>
 
         <div class="card mt">
@@ -226,7 +226,7 @@
             <label>Valor do débito *<input id="orgaoValor" type="number" min="0" step="0.01" required></label>
             <label>Nº da nota fiscal *<input id="orgaoNota" required placeholder="Ex.: NF 1234"></label>
             <label>Nº da ordem de compra / serviço<input id="orgaoOrdem" placeholder="Ex.: OC 245/2026 ou OS 078/2026"></label>
-            <label>Situação<select id="orgaoPago"><option value="false">Não pago</option><option value="true">Pago</option></select></label>
+            <label class="check-label"><input id="orgaoPago" type="checkbox"> Pago</label>
             <div class="form-actions"><button class="primary" type="submit">Salvar débito</button><button id="cancelarOrgao" class="secondary hidden" type="button">Cancelar</button></div>
           </form>
         </div>
@@ -237,11 +237,11 @@
             <div class="gov-filters">
               <input id="buscaOrgao" placeholder="Órgão, nota fiscal ou ordem...">
               <input id="filtroAnoOrgao" type="number" min="2000" max="2100" placeholder="Ano">
-              <select id="filtroStatusOrgao"><option value="">Todos</option><option value="pago">Pago</option><option value="nao-pago">Não pago</option></select>
+              <select id="filtroStatusOrgao"><option value="">Todos</option><option value="pago">Pago</option><option value="nao-pago">Em aberto</option></select>
               <a class="secondary gov-export" href="/api/exportar/orgaos-publicos.csv">Exportar CSV</a>
             </div>
           </div>
-          <div class="table-wrap"><table><thead><tr><th>Órgão devedor</th><th>Tipo</th><th>Data</th><th>Valor do débito</th><th>Situação</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
+          <div class="table-wrap"><table><thead><tr><th>Órgão devedor</th><th>Tipo</th><th>Data</th><th>Valor do débito</th><th>Pago</th><th>Nota fiscal</th><th>Ordem compra/serviço</th><th>Ações</th></tr></thead><tbody id="orgaosBody"></tbody></table></div>
         </div>
       </section>
 

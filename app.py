@@ -111,7 +111,7 @@ def debito_orgao_dict(registro):
         "ano": registro.data_debito.year,
         "valor_debito": float(registro.valor_debito or 0),
         "pago": bool(registro.pago),
-        "status": "PAGO" if registro.pago else "NÃO PAGO",
+        "status": "PAGO" if registro.pago else "EM ABERTO",
         "numero_nota_fiscal": registro.numero_nota_fiscal,
         "numero_ordem": registro.numero_ordem,
         "criado_em": registro.criado_em.isoformat() if registro.criado_em else None,
@@ -775,7 +775,7 @@ def exportar_orgaos_publicos():
     writer = csv.writer(output, delimiter=";")
     writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal", "Ordem de compra / serviço"])
     for r in registros:
-        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "NÃO PAGO", r.numero_nota_fiscal, r.numero_ordem or ""])
+        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "EM ABERTO", r.numero_nota_fiscal, r.numero_ordem or ""])
     mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="debitos_orgaos_publicos.csv")
 
