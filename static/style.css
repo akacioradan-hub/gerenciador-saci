@@ -65,3 +65,11 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}l
 #clienteCadastroCard{animation:clientFormOpen .18s ease-out}
 @keyframes clientFormOpen{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:820px){.new-client-btn{width:100%;align-self:stretch}}
+
+
+/* Avisos críticos de 60 dias ou mais */
+.alert-section-title.critical-title{color:#9b1c16}
+.alert-item.critical{border-left:5px solid #8f1510;background:#fff1f0;border-color:#efc4c0}
+.alert-item.critical.public{border-left-color:#2b2b2f;background:#f7f7f8}
+.alert-item.critical strong{color:#7f1713}
+.alert-item.critical.public strong{color:#242428}

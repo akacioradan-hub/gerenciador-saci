@@ -62,8 +62,90 @@ function renderGraficos(d){
   });
 }
 
+
+function renderAvisosDashboard(d){
+  const badge=document.getElementById('alertBadge');
+  const panel=document.getElementById('alertPanelBody');
+  const banner=document.getElementById('dueTodayBanner');
+  const title=document.getElementById('dueTodayTitle');
+  const text=document.getElementById('dueTodayText');
+
+  const hoje=d.vencem_hoje||[];
+  const atrasados=d.atrasados||[];
+  const clientes60=d.clientes_60_dias||[];
+  const orgaos60=d.orgaos_60_dias||[];
+  const total=(d.total_alertas||0);
+
+  if(badge){
+    badge.textContent=total;
+    badge.classList.toggle('hidden',total===0);
+  }
+
+  if(banner){
+    if(hoje.length>0 || clientes60.length>0 || orgaos60.length>0){
+      banner.classList.remove('hidden');
+      if(clientes60.length>0 || orgaos60.length>0){
+        title.textContent='Há débitos com 60 dias ou mais de atraso';
+        const partes=[];
+        if(clientes60.length)partes.push(`${clientes60.length} cliente${clientes60.length>1?'s':''}`);
+        if(orgaos60.length)partes.push(`${orgaos60.length} débito${orgaos60.length>1?'s':''} de órgão público`);
+        if(hoje.length)partes.push(`${hoje.length} vencimento${hoje.length>1?'s':''} previsto${hoje.length>1?'s':''} para hoje`);
+        text.textContent=partes.join(' · ');
+      }else{
+        title.textContent='Há pagamentos previstos para hoje';
+        text.textContent=`${hoje.length} cliente${hoje.length>1?'s':''} com vencimento hoje.`;
+      }
+    }else{
+      banner.classList.add('hidden');
+    }
+  }
+
+  if(!panel)return;
+  let html='';
+
+  if(clientes60.length){
+    html+=`<div class="alert-section-title critical-title">Clientes — 60 dias ou mais</div>`;
+    html+=clientes60.map(a=>`<div class="alert-item critical">
+      <strong>${a.nome}</strong>
+      <span>Vencimento: ${dataBR(a.previsao)} · ${a.dias_atraso} dias de atraso</span>
+      <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
+    </div>`).join('');
+  }
+
+  if(orgaos60.length){
+    html+=`<div class="alert-section-title critical-title">Órgãos públicos — 60 dias ou mais</div>`;
+    html+=orgaos60.map(a=>`<div class="alert-item critical public">
+      <strong>${a.nome_orgao}</strong>
+      <span>Data: ${dataBR(a.data_debito)} · ${a.dias_atraso} dias de atraso</span>
+      <span>NF: ${a.numero_nota_fiscal||'-'}${a.numero_ordem?` · Ordem: ${a.numero_ordem}`:''}</span>
+      <span class="alert-value">Débito: ${moeda(a.valor_debito)}</span>
+    </div>`).join('');
+  }
+
+  if(hoje.length){
+    html+=`<div class="alert-section-title">Vencem hoje</div>`;
+    html+=hoje.map(a=>`<div class="alert-item today">
+      <strong>${a.nome}</strong>
+      <span>Previsão: ${dataBR(a.previsao)}</span>
+      <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
+    </div>`).join('');
+  }
+
+  if(atrasados.length){
+    html+=`<div class="alert-section-title">Clientes atrasados até 59 dias</div>`;
+    html+=atrasados.map(a=>`<div class="alert-item overdue">
+      <strong>${a.nome}</strong>
+      <span>Vencimento: ${dataBR(a.previsao)} · ${a.dias_atraso} dias de atraso</span>
+      <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
+    </div>`).join('');
+  }
+
+  panel.innerHTML=html||'<div class="empty">Nenhum aviso pendente.</div>';
+}
+
 async function carregarDashboard(){
   const d=await api('/api/dashboard');
+  renderAvisosDashboard(d);
   document.getElementById('kpiReceber').textContent=moeda(d.total_receber);
   document.getElementById('kpiRecebido').textContent=moeda(d.total_recebido);
   document.getElementById('kpiSaldo').textContent=moeda(d.saldo_devedor);

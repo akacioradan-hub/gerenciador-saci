@@ -184,11 +184,6 @@
             <div class="client-form-actions"><button class="primary" type="submit">Salvar cliente</button><button id="cancelarEdicao" class="secondary hidden" type="button">Cancelar edição</button></div>
           </form>
         </div>
-        <div class="card mt">
-          <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
-          <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Telefone</th><th>Cidade/UF</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
-        </div>
-
         <div id="clienteFinanceiro" class="card mt client-finance-card">
           <div class="card-head finance-head">
             <div><span class="eyebrow">FINANCEIRO DO CLIENTE</span><h3>Pagamentos e movimentação</h3><p>Selecione o cliente para consultar o saldo, registrar recebimentos e visualizar o histórico.</p></div>
@@ -217,6 +212,11 @@
               <div class="table-wrap"><table><thead><tr><th>Data</th><th>Valor pago</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="pagamentosBody"></tbody></table></div>
             </div>
           </div>
+        </div>
+
+<div class="card mt">
+          <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
+          <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>CPF/CNPJ</th><th>Telefone</th><th>Cidade/UF</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div>
         </div>
       </section>
 

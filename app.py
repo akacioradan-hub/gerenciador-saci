@@ -553,24 +553,30 @@ def dashboard():
 
     vencem_hoje = []
     atrasados = []
+    clientes_60_dias = []
     for item in itens:
         if item["saldo"] <= 0 or not item["previsao"]:
             continue
         data_prevista = date.fromisoformat(item["previsao"])
+        dias_atraso = max(0, (hoje - data_prevista).days)
         resumo = {
             "id": item["id"],
             "nome": item["nome"],
             "previsao": item["previsao"],
             "saldo": item["saldo"],
             "status": item["status"],
+            "dias_atraso": dias_atraso,
         }
         if data_prevista == hoje:
             vencem_hoje.append(resumo)
+        elif dias_atraso >= 60:
+            clientes_60_dias.append(resumo)
         elif data_prevista < hoje:
             atrasados.append(resumo)
 
     vencem_hoje.sort(key=lambda x: x["nome"].lower())
     atrasados.sort(key=lambda x: (x["previsao"], x["nome"].lower()))
+    clientes_60_dias.sort(key=lambda x: (-x["dias_atraso"], x["nome"].lower()))
 
     recebimentos_mensais = []
     for offset in range(-5, 1):
@@ -601,6 +607,23 @@ def dashboard():
     org_qtd_pago = sum(1 for r in orgaos if r.pago)
     org_qtd_nao_pago = sum(1 for r in orgaos if not r.pago)
 
+    orgaos_60_dias = []
+    for r in orgaos:
+        if r.pago or not r.data_debito:
+            continue
+        dias_atraso = (hoje - r.data_debito).days
+        if dias_atraso >= 60:
+            orgaos_60_dias.append({
+                "id": r.id,
+                "nome_orgao": r.nome_orgao,
+                "data_debito": r.data_debito.isoformat(),
+                "valor_debito": float(r.valor_debito or 0),
+                "numero_nota_fiscal": r.numero_nota_fiscal,
+                "numero_ordem": r.numero_ordem,
+                "dias_atraso": dias_atraso,
+            })
+    orgaos_60_dias.sort(key=lambda x: (-x["dias_atraso"], x["nome_orgao"].lower()))
+
     anos = sorted({r.data_debito.year for r in orgaos if r.data_debito})
     org_por_ano = []
     for ano in anos[-6:]:
@@ -628,7 +651,9 @@ def dashboard():
         "valor_atrasado": valor_atrasado,
         "vencem_hoje": vencem_hoje,
         "atrasados": atrasados[:20],
-        "total_alertas": len(vencem_hoje) + len(atrasados),
+        "clientes_60_dias": clientes_60_dias[:30],
+        "orgaos_60_dias": orgaos_60_dias[:30],
+        "total_alertas": len(vencem_hoje) + len(atrasados) + len(clientes_60_dias) + len(orgaos_60_dias),
         "total_previsto_futuro": total_previsto_futuro,
         "recebimentos_mensais": recebimentos_mensais,
         "previsao_mensal": previsao_mensal,
@@ -641,6 +666,7 @@ def dashboard():
             "quantidade": org_qtd,
             "quantidade_pago": org_qtd_pago,
             "quantidade_nao_pago": org_qtd_nao_pago,
+            "quantidade_60_dias": len(orgaos_60_dias),
             "por_ano": org_por_ano,
             "top_devedores": org_top_devedores,
         },
