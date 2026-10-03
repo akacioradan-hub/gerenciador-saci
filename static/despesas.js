@@ -181,20 +181,34 @@ async function excluirCadastroDespesa(id){
   if(!confirm('Excluir este cadastro? Cadastros com despesas vinculadas serão preservados.'))return;
   try{await api('/api/despesas/cadastros/'+despTipoCadastro+'/'+id,{method:'DELETE'});await carregarCadastrosDespesas();msg('Cadastro excluído.')}catch(e){msg(e.message,'erro')}
 }
+function fecharVinculadosModal(){
+  const modal=despEl('despVinculadosCard');
+  if(modal.open)modal.close();
+  modal.classList.add('hidden');despEl('despAbrirVinculados').setAttribute('aria-expanded','false');
+}
 async function verDespesasVinculadas(id){
   for(const campo of ['despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado','despBusca'])despEl(campo).value='';
   despEl({funcionarios:'despFiltroFuncionario',veiculos:'despFiltroVeiculo',fornecedores:'despFiltroFornecedor',terceirizados:'despFiltroTerceirizado'}[despTipoCadastro]).value=String(id);
-  try{atualizarFiltroCategoria();await filtrarContasMes();despEl('despContasCard').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){msg(e.message,'erro')}
+  try{atualizarFiltroCategoria();await filtrarContasMes();fecharVinculadosModal();despEl('despContasCard').scrollIntoView({behavior:'smooth',block:'start'})}catch(e){msg(e.message,'erro')}
 }
 if(despEl('despesas')){
   despEl('despMes').value=despHoje().slice(0,7);
   despEl('novaDespesa').addEventListener('click',()=>novaDespesa());
   despEl('despAbrirVinculados').addEventListener('click',()=>{
-    const card=despEl('despVinculadosCard'),botao=despEl('despAbrirVinculados');
-    const abrir=card.classList.contains('hidden');
-    card.classList.toggle('hidden',!abrir);
-    botao.setAttribute('aria-expanded',String(abrir));
-    if(abrir)card.scrollIntoView({behavior:'smooth',block:'start'});
+    const modal=despEl('despVinculadosCard');modal.classList.remove('hidden');
+    if(!modal.open)modal.showModal();
+    despEl('despAbrirVinculados').setAttribute('aria-expanded','true');
+    despEl('despVinculadosFechar').focus();
+  });
+  despEl('despVinculadosFechar').addEventListener('click',fecharVinculadosModal);
+  despEl('despVinculadosCard').addEventListener('close',()=>{
+    despEl('despVinculadosCard').classList.add('hidden');
+    despEl('despAbrirVinculados').setAttribute('aria-expanded','false');
+  });
+  despEl('despVinculadosCard').addEventListener('click',e=>{
+    const modal=despEl('despVinculadosCard');if(e.target!==modal)return;
+    const box=modal.getBoundingClientRect();
+    if(e.clientX<box.left||e.clientX>box.right||e.clientY<box.top||e.clientY>box.bottom)fecharVinculadosModal();
   });
   despEl('despCancelar').addEventListener('click',fecharCadastroDespesa);
   despEl('despModalFechar').addEventListener('click',fecharCadastroDespesa);

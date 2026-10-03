@@ -1,0 +1,4 @@
+Cadastros vinculados abre em janela modal ampla, com cadastros, fichas e Exibir cadastrados. Feche pelo botão ×, Esc ou clique no fundo. Ver despesas fecha a janela e leva à tabela com os totais do cadastro selecionado.
+
+Atualize templates/index.html, static/despesas.js e static/style.css no GitHub, faça deploy no Render e pressione Ctrl + F5. Não há alterações no banco.
+Testada a execução dos dois modais, campos, fechamento e navegação para despesas com DOM simulado.

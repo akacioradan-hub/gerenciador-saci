@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-modal-amplo">
+<link rel="stylesheet" href="/static/style.css?v=20261003-modal-vinculados">
 </head>
 <body>
 <div class="app-shell">
@@ -292,7 +292,7 @@
             <div class="form-actions"><button type="submit" class="primary">Salvar</button><button type="button" class="secondary" id="despCancelar">Cancelar</button></div>
           </form>
         </dialog>
-        <div class="card mt hidden" id="despVinculadosCard"><h3>Cadastros vinculados</h3><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros em Contas do mês para consultar as despesas de cada um.</p>
+        <dialog class="desp-modal hidden" id="despVinculadosCard" aria-labelledby="despVinculadosTitulo"><div class="desp-modal-head"><h3 id="despVinculadosTitulo">Cadastros vinculados</h3><button id="despVinculadosFechar" type="button" aria-label="Fechar cadastros vinculados">×</button></div><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros em Contas do mês para consultar as despesas de cada um.</p>
           <div class="desp-catalog-nav"><button type="button" class="secondary" data-desp-catalog="funcionarios">+ Cadastrar funcionário</button><button type="button" class="secondary" data-desp-catalog="veiculos">+ Cadastrar veículo</button><button type="button" class="secondary" data-desp-catalog="fornecedores">+ Cadastrar fornecedor</button><button type="button" class="secondary" data-desp-catalog="terceirizados">+ Cadastrar terceirizado</button></div>
           <h4 id="despCadTitulo">Funcionários</h4>
           <form id="despCadForm" class="gov-form hidden">
@@ -311,7 +311,7 @@
           </form>
           <div class="desp-catalog-nav"><button type="button" class="secondary" id="despExibirCadastros" aria-expanded="false" aria-controls="despListaCadastros">Exibir cadastrados</button></div>
           <div class="table-wrap mt hidden" id="despListaCadastros"><table><thead id="despCadHead"><tr><th>Nome</th><th>Cargo</th><th>Data de nascimento</th><th>Endereço</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
-        </div>
+        </dialog>
         <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
           <div class="desp-filters mt">
           <label>Grupo<select id="despFiltroGrupo"><option value="">Todos</option><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
@@ -377,7 +377,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261003-modal-despesa"></script>
-<script src="/static/despesas.js?v=20261003-modal-despesa"></script>
+<script src="/static/app.js?v=20261003-modal-vinculados"></script>
+<script src="/static/despesas.js?v=20261003-modal-vinculados"></script>
 </body>
 </html>
