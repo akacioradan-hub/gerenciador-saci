@@ -386,7 +386,7 @@ function renderOrgaosPublicos(){
     <td>${moeda(r.valor_debito)}</td>
     <td><label class="paid-check"><input type="checkbox" ${r.pago?'checked':''} onchange="definirPagoOrgao(${r.id}, this.checked)"><span>Pago</span></label></td>
     <td>${r.numero_nota_fiscal}</td><td>${r.numero_ordem||'-'}</td>
-    <td><div class="acoes"><button class="edit" onclick="editarOrgaoPublico(${r.id})">Editar</button><button class="danger" onclick="excluirOrgaoPublico(${r.id})">Excluir</button></div></td>
+    <td><div class="acoes icon-actions"><button class="edit icon-btn" title="Editar débito" aria-label="Editar débito" onclick="editarOrgaoPublico(${r.id})">✎</button><button class="danger icon-btn" title="Excluir débito" aria-label="Excluir débito" onclick="excluirOrgaoPublico(${r.id})">🗑</button></div></td>
   </tr>`).join(''):'<tr><td colspan="8" class="empty">Nenhum débito de órgão público cadastrado.</td></tr>';
 }
 function limparOrgaoPublico(){
