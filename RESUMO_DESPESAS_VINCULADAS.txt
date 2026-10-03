@@ -1,0 +1,8 @@
+VER DESPESAS — RESUMO DO CADASTRO
+
+Ao clicar em Ver despesas, a tabela mostra somente as contas vinculadas ao cadastro, no mês selecionado. Um resumo junto à tabela informa o nome, período de competência com primeiro e último dia do mês, total de despesas, valor pago e valor em aberto.
+Alterar mês ou filtros atualiza os valores. Totais correspondem a todas as contas filtradas, não só à página atual.
+O período é o mês de competência das contas, e não a data em que foram pagas.
+
+Atualize templates/index.html, static/despesas.js e static/style.css no GitHub. Faça deploy no Render e pressione Ctrl + F5. ZIP completo incluído. Não há alterações no banco.
+Teste local do JavaScript: resumo por cadastro, totais, troca de mês, fevereiro bissexto e ocultação ao limpar vínculo.

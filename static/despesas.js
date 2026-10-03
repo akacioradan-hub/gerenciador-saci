@@ -27,7 +27,28 @@ async function carregarDespesas(){
   despEl('despContagem').textContent=`${r.quantidade||0} conta(s) · Totais conforme o mês de competência e os filtros.`;
   despEl('despGrupos').innerHTML=Object.entries(r.por_grupo||{}).map(([g,v])=>`<div><span>${escaparFinanceiro(g)}</span><strong>${moeda(v)}</strong></div>`).join('');
   despEl('despExportar').href='/api/exportar/despesas.csv?'+params;
+  renderResumoVinculado(r,params);
   renderContasMes();
+}
+function renderResumoVinculado(resumo,params){
+  const selecionados=[];
+  for(const [tipo,campo] of [['funcionarios','funcionario_id'],['veiculos','veiculo_id'],['fornecedores','fornecedor_id'],['terceirizados','terceirizado_id']]){
+    const id=params.get(campo);
+    if(!id)continue;
+    const cadastro=despCadastros[tipo].find(r=>String(r.id)===id);
+    selecionados.push(cadastro?cadastro.nome+(cadastro.placa?' · '+cadastro.placa:''):despNomes[tipo]);
+  }
+  despEl('despResumoVinculado').classList.toggle('hidden',selecionados.length===0);
+  if(!selecionados.length)return;
+  despEl('despResumoVinculadoNome').textContent='Despesas: '+selecionados.join(' · ');
+  const competencia=params.get('mes');
+  const [ano,mes]=competencia.split('-').map(Number);
+  const ultimoDia=new Date(ano,mes,0).getDate();
+  despEl('despVincPeriodo').textContent=new Intl.DateTimeFormat('pt-BR',{month:'long',year:'numeric'}).format(new Date(ano,mes-1,1));
+  despEl('despVincDatas').textContent=dataBR(competencia+'-01')+' a '+dataBR(competencia+'-'+String(ultimoDia).padStart(2,'0'));
+  despEl('despVincTotal').textContent=moeda(resumo.total);
+  despEl('despVincPago').textContent=moeda(resumo.pago);
+  despEl('despVincAberto').textContent=moeda(resumo.aberto);
 }
 const DESP_POR_PAGINA=10;
 let despPagina=1;

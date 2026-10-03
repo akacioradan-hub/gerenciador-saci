@@ -118,3 +118,5 @@ form{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;align-items:end}l
 #despPaginas .current-page{background:#202024;color:#fff;border-color:#202024}
 #despPaginas button:disabled{opacity:.4;cursor:default}
 .pagination-gap{padding:0 4px}
+
+#despesas .desp-period-label{font-size:17px;line-height:1.4}
