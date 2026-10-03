@@ -3,7 +3,7 @@ import hmac
 import csv
 import io
 import json
-from datetime import date, datetime
+from datetime import date
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -25,18 +25,6 @@ CONSULTA_TOKEN = (os.getenv("CONSULTA_TOKEN") or "").strip()
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# Render/PostgreSQL: valida conexões antes de reutilizar e recicla
-# conexões antigas para evitar falhas SSL em conexões ociosas.
-if DATABASE_URL.startswith("postgresql"):
-    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "pool_pre_ping": True,
-        "pool_recycle": 180,
-        "pool_timeout": 30,
-        "pool_size": 5,
-        "max_overflow": 5,
-    }
-
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-change-me")
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
@@ -97,14 +85,6 @@ class Pagamento(db.Model):
     observacao = db.Column(db.Text, nullable=True)
     criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
     cliente = db.relationship("Cliente", back_populates="pagamentos")
-
-
-
-class AvisoDispensado(db.Model):
-    __tablename__ = "avisos_dispensados"
-    id = db.Column(db.Integer, primary_key=True)
-    chave = db.Column(db.String(255), nullable=False, unique=True, index=True)
-    dispensado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
 
 class DebitoOrgaoPublico(db.Model):
@@ -202,31 +182,9 @@ def init_db():
             raise
 
 
-
-def executar_com_retry(funcao, tentativas=2):
-    """Repete uma operação simples se a conexão PostgreSQL cair temporariamente."""
-    ultimo_erro = None
-    for tentativa in range(tentativas):
-        try:
-            return funcao()
-        except (OperationalError, DisconnectionError) as exc:
-            ultimo_erro = exc
-            try:
-                db.session.rollback()
-                db.session.remove()
-                db.engine.dispose()
-            except Exception:
-                pass
-            if tentativa + 1 >= tentativas:
-                raise
-    raise ultimo_erro
-
-
 def usuario_atual():
     uid = session.get("user_id")
-    if not uid:
-        return None
-    return executar_com_retry(lambda: db.session.get(Usuario, uid))
+    return db.session.get(Usuario, uid) if uid else None
 
 
 def admin_required(fn):
@@ -265,11 +223,7 @@ def login():
 def login_post():
     username = (request.form.get("username") or "").strip()
     password = request.form.get("password") or ""
-    user = executar_com_retry(
-        lambda: db.session.execute(
-            db.select(Usuario).where(Usuario.username == username)
-        ).scalar_one_or_none()
-    )
+    user = db.session.execute(db.select(Usuario).where(Usuario.username == username)).scalar_one_or_none()
     if not user or not user.ativo or not user.verificar_senha(password):
         return render_template("login.html", erro="Usuário ou senha inválidos."), 401
     session.clear()
@@ -370,38 +324,6 @@ def consulta_publica(token):
     )
 
 
-
-@app.errorhandler(OperationalError)
-@app.errorhandler(DisconnectionError)
-def tratar_falha_temporaria_banco(exc):
-    try:
-        db.session.rollback()
-        db.session.remove()
-        db.engine.dispose()
-    except Exception:
-        pass
-    app.logger.exception("Falha temporária de conexão com o PostgreSQL")
-    if request.path.startswith("/api/"):
-        return jsonify({
-            "erro": "Conexão temporariamente indisponível. Atualize a página em alguns segundos."
-        }), 503
-    return (
-        "<!doctype html><html lang='pt-BR'><head><meta charset='utf-8'>"
-        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-        "<title>Conexão temporária</title></head>"
-        "<body style='font-family:Arial;background:#f5f5f7;padding:40px;color:#29292e'>"
-        "<div style='max-width:620px;margin:auto;background:#fff;padding:28px;border-radius:16px;"
-        "box-shadow:0 8px 24px rgba(0,0,0,.08)'>"
-        "<h2>Conexão temporariamente indisponível</h2>"
-        "<p>O banco de dados perdeu a conexão por alguns instantes. "
-        "Aguarde alguns segundos e atualize a página.</p>"
-        "<button onclick='location.reload()' style='padding:10px 16px;border:0;border-radius:9px;"
-        "background:#e10600;color:white;font-weight:700;cursor:pointer'>Tentar novamente</button>"
-        "</div></body></html>",
-        503,
-    )
-
-
 @app.get("/health")
 def health():
     return jsonify({"status": "ok"})
@@ -415,25 +337,6 @@ def ready():
     except Exception as exc:
         app.logger.exception("Falha de conexão com o banco")
         return jsonify({"status": "erro", "database": str(exc)}), 500
-
-
-
-@app.post("/api/avisos/dispensar")
-@login_required
-def dispensar_aviso():
-    dados = request.get_json(silent=True) or {}
-    chave = (dados.get("chave") or "").strip()
-    if not chave:
-        return jsonify({"erro": "Aviso inválido."}), 400
-    if len(chave) > 255:
-        return jsonify({"erro": "Identificador do aviso inválido."}), 400
-    existente = db.session.execute(
-        db.select(AvisoDispensado).where(AvisoDispensado.chave == chave)
-    ).scalar_one_or_none()
-    if not existente:
-        db.session.add(AvisoDispensado(chave=chave))
-        db.session.commit()
-    return jsonify({"ok": True})
 
 
 @app.get("/api/clientes")
@@ -629,15 +532,6 @@ def add_months(year, month, offset):
     return idx // 12, idx % 12 + 1
 
 
-
-def chaves_avisos_dispensados():
-    return set(db.session.execute(db.select(AvisoDispensado.chave)).scalars().all())
-
-
-def aviso_esta_dispensado(chave, dispensados):
-    return chave in dispensados
-
-
 @app.get("/api/dashboard")
 @login_required
 def dashboard():
@@ -655,7 +549,6 @@ def dashboard():
         status[item["status"]] += 1
 
     hoje = date.today()
-    avisos_dispensados = chaves_avisos_dispensados()
     valor_atrasado = sum(i["saldo"] for i in itens if i["status"] == "ATRASADO")
 
     vencem_hoje = []
@@ -675,20 +568,11 @@ def dashboard():
             "dias_atraso": dias_atraso,
         }
         if data_prevista == hoje:
-            chave = f"cliente_hoje:{item['id']}:{item['previsao']}"
-            resumo["aviso_chave"] = chave
-            if not aviso_esta_dispensado(chave, avisos_dispensados):
-                vencem_hoje.append(resumo)
+            vencem_hoje.append(resumo)
         elif dias_atraso >= 60:
-            chave = f"cliente_60:{item['id']}:{item['previsao']}"
-            resumo["aviso_chave"] = chave
-            if not aviso_esta_dispensado(chave, avisos_dispensados):
-                clientes_60_dias.append(resumo)
+            clientes_60_dias.append(resumo)
         elif data_prevista < hoje:
-            chave = f"cliente_atraso:{item['id']}:{item['previsao']}"
-            resumo["aviso_chave"] = chave
-            if not aviso_esta_dispensado(chave, avisos_dispensados):
-                atrasados.append(resumo)
+            atrasados.append(resumo)
 
     vencem_hoje.sort(key=lambda x: x["nome"].lower())
     atrasados.sort(key=lambda x: (x["previsao"], x["nome"].lower()))
@@ -729,18 +613,15 @@ def dashboard():
             continue
         dias_atraso = (hoje - r.data_debito).days
         if dias_atraso >= 60:
-            chave = f"orgao_60:{r.id}:{r.data_debito.isoformat()}"
-            if not aviso_esta_dispensado(chave, avisos_dispensados):
-                orgaos_60_dias.append({
-                    "id": r.id,
-                    "nome_orgao": r.nome_orgao,
-                    "data_debito": r.data_debito.isoformat(),
-                    "valor_debito": float(r.valor_debito or 0),
-                    "numero_nota_fiscal": r.numero_nota_fiscal,
-                    "numero_ordem": r.numero_ordem,
-                    "dias_atraso": dias_atraso,
-                    "aviso_chave": chave,
-                })
+            orgaos_60_dias.append({
+                "id": r.id,
+                "nome_orgao": r.nome_orgao,
+                "data_debito": r.data_debito.isoformat(),
+                "valor_debito": float(r.valor_debito or 0),
+                "numero_nota_fiscal": r.numero_nota_fiscal,
+                "numero_ordem": r.numero_ordem,
+                "dias_atraso": dias_atraso,
+            })
     orgaos_60_dias.sort(key=lambda x: (-x["dias_atraso"], x["nome_orgao"].lower()))
 
     anos = sorted({r.data_debito.year for r in orgaos if r.data_debito})

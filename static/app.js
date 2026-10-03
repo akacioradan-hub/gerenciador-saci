@@ -106,7 +106,6 @@ function renderAvisosDashboard(d){
   if(clientes60.length){
     html+=`<div class="alert-section-title critical-title">Clientes — 60 dias ou mais</div>`;
     html+=clientes60.map(a=>`<div class="alert-item critical">
-      <button class="alert-dismiss" title="Excluir aviso" aria-label="Excluir aviso" onclick="dispensarAviso('${a.aviso_chave}')">×</button>
       <strong>${a.nome}</strong>
       <span>Vencimento: ${dataBR(a.previsao)} · ${a.dias_atraso} dias de atraso</span>
       <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
@@ -116,7 +115,6 @@ function renderAvisosDashboard(d){
   if(orgaos60.length){
     html+=`<div class="alert-section-title critical-title">Órgãos públicos — 60 dias ou mais</div>`;
     html+=orgaos60.map(a=>`<div class="alert-item critical public">
-      <button class="alert-dismiss" title="Excluir aviso" aria-label="Excluir aviso" onclick="dispensarAviso('${a.aviso_chave}')">×</button>
       <strong>${a.nome_orgao}</strong>
       <span>Data: ${dataBR(a.data_debito)} · ${a.dias_atraso} dias de atraso</span>
       <span>NF: ${a.numero_nota_fiscal||'-'}${a.numero_ordem?` · Ordem: ${a.numero_ordem}`:''}</span>
@@ -127,7 +125,6 @@ function renderAvisosDashboard(d){
   if(hoje.length){
     html+=`<div class="alert-section-title">Vencem hoje</div>`;
     html+=hoje.map(a=>`<div class="alert-item today">
-      <button class="alert-dismiss" title="Excluir aviso" aria-label="Excluir aviso" onclick="dispensarAviso('${a.aviso_chave}')">×</button>
       <strong>${a.nome}</strong>
       <span>Previsão: ${dataBR(a.previsao)}</span>
       <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
@@ -137,7 +134,6 @@ function renderAvisosDashboard(d){
   if(atrasados.length){
     html+=`<div class="alert-section-title">Clientes atrasados até 59 dias</div>`;
     html+=atrasados.map(a=>`<div class="alert-item overdue">
-      <button class="alert-dismiss" title="Excluir aviso" aria-label="Excluir aviso" onclick="dispensarAviso('${a.aviso_chave}')">×</button>
       <strong>${a.nome}</strong>
       <span>Vencimento: ${dataBR(a.previsao)} · ${a.dias_atraso} dias de atraso</span>
       <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
@@ -287,19 +283,6 @@ const sidebar=document.getElementById('sidebar');
 const menuToggle=document.getElementById('menuToggle');
 if(menuToggle)menuToggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{if(window.innerWidth<=820)sidebar.classList.remove('open')}));
-
-async function dispensarAviso(chave){
-  if(!chave)return;
-  if(!confirm('Excluir este aviso da lista de notificações? O cadastro e o débito permanecerão no sistema.'))return;
-  try{
-    await api('/api/avisos/dispensar',{method:'POST',body:JSON.stringify({chave})});
-    await carregarDashboard();
-    msg('Aviso removido das notificações.');
-  }catch(err){
-    msg(err.message,'erro');
-  }
-}
-
 function abrirAvisos(){document.getElementById('alertPanel').classList.add('open');document.getElementById('alertOverlay').classList.remove('hidden')}
 function fecharAvisos(){document.getElementById('alertPanel').classList.remove('open');document.getElementById('alertOverlay').classList.add('hidden')}
 document.getElementById('alertButton')?.addEventListener('click',abrirAvisos);
