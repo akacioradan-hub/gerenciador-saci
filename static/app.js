@@ -88,6 +88,18 @@ function renderGraficos(d){
 }
 
 
+function botaoExcluirAviso(a){
+  return `<button type="button" class="danger aviso-excluir" data-aviso="${escaparFinanceiro(a.aviso_chave)}" title="Excluir notificação" aria-label="Excluir notificação">🗑</button>`;
+}
+async function excluirNotificacao(chave){
+  if(!confirm('Excluir esta notificação dos seus avisos? O cadastro e os valores serão mantidos.'))return;
+  try{
+    await api('/api/avisos/excluir',{method:'POST',body:JSON.stringify({chave})});
+    await carregarDashboard();
+    msg('Notificação excluída.');
+  }catch(e){msg(e.message,'erro')}
+}
+
 function renderAvisosDashboard(d){
   const badge=document.getElementById('alertBadge');
   const panel=document.getElementById('alertPanelBody');
@@ -130,12 +142,12 @@ function renderAvisosDashboard(d){
   const aniversarios=d.aniversarios_amanha||[];
   if(aniversarios.length){
     html+='<div class="alert-section-title">Aniversários de funcionários — amanhã</div>';
-    html+=aniversarios.map(a=>`<div class="alert-item today"><strong>${escaparFinanceiro(a.nome)}</strong><span>Aniversário amanhã: ${dataBR(a.data_aniversario)}</span><span>Completa ${Number(a.idade)} anos.</span></div>`).join('');
+    html+=aniversarios.map(a=>`<div class="alert-item today">${botaoExcluirAviso(a)}<strong>${escaparFinanceiro(a.nome)}</strong><span>Aniversário amanhã: ${dataBR(a.data_aniversario)}</span><span>Completa ${Number(a.idade)} anos.</span></div>`).join('');
   }
 
   if(clientes60.length){
     html+=`<div class="alert-section-title critical-title">Clientes — 60 dias ou mais</div>`;
-    html+=clientes60.map(a=>`<div class="alert-item critical">
+    html+=clientes60.map(a=>`<div class="alert-item critical">${botaoExcluirAviso(a)}
       <strong>${a.nome}</strong>
       <span>Vencimento: ${dataBR(a.previsao)} · ${a.dias_atraso} dias de atraso</span>
       <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
@@ -144,7 +156,7 @@ function renderAvisosDashboard(d){
 
   if(orgaos60.length){
     html+=`<div class="alert-section-title critical-title">Órgãos públicos — 60 dias ou mais</div>`;
-    html+=orgaos60.map(a=>`<div class="alert-item critical public">
+    html+=orgaos60.map(a=>`<div class="alert-item critical public">${botaoExcluirAviso(a)}
       <strong>${a.nome_orgao}</strong>
       <span>Data: ${dataBR(a.data_debito)} · ${a.dias_atraso} dias de atraso</span>
       <span>NF: ${a.numero_nota_fiscal||'-'}${a.numero_ordem?` · Ordem: ${a.numero_ordem}`:''}</span>
@@ -154,7 +166,7 @@ function renderAvisosDashboard(d){
 
   if(hoje.length){
     html+=`<div class="alert-section-title">Vencem hoje</div>`;
-    html+=hoje.map(a=>`<div class="alert-item today">
+    html+=hoje.map(a=>`<div class="alert-item today">${botaoExcluirAviso(a)}
       <strong>${a.nome}</strong>
       <span>Previsão: ${dataBR(a.previsao)}</span>
       <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
@@ -163,7 +175,7 @@ function renderAvisosDashboard(d){
 
   if(atrasados.length){
     html+=`<div class="alert-section-title">Clientes atrasados até 59 dias</div>`;
-    html+=atrasados.map(a=>`<div class="alert-item overdue">
+    html+=atrasados.map(a=>`<div class="alert-item overdue">${botaoExcluirAviso(a)}
       <strong>${a.nome}</strong>
       <span>Vencimento: ${dataBR(a.previsao)} · ${a.dias_atraso} dias de atraso</span>
       <span class="alert-value">Saldo: ${moeda(a.saldo)}</span>
@@ -171,6 +183,7 @@ function renderAvisosDashboard(d){
   }
 
   panel.innerHTML=html||'<div class="empty">Nenhum aviso pendente.</div>';
+  panel.querySelectorAll('[data-aviso]').forEach(btn=>btn.addEventListener('click',()=>excluirNotificacao(btn.dataset.aviso))); 
 }
 
 async function carregarDashboard(){

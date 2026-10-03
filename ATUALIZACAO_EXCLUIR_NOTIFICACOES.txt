@@ -1,0 +1,4 @@
+Atualize app.py, static/app.js, static/style.css e templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5.
+Cada aviso tem uma lixeira com confirmação. A exclusão é salva no banco para o usuário conectado e atualiza o contador. Cadastros e valores não são excluídos.
+A tabela avisos_excluidos é criada automaticamente ao iniciar o aplicativo.
+Um aviso de nova data ou nova situação (por exemplo, atingir 60 dias de atraso) pode aparecer novamente.

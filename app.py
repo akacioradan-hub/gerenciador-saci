@@ -1,4 +1,5 @@
 import os
+import re
 import hmac
 import csv
 import io
@@ -8,7 +9,7 @@ from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, inspect, or_
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 from sqlalchemy.pool import NullPool
 from werkzeug.security import check_password_hash, generate_password_hash
 
@@ -58,6 +59,13 @@ class Usuario(db.Model):
 
     def definir_senha(self, senha):
         self.password_hash = generate_password_hash(senha)
+
+
+class AvisoExcluido(db.Model):
+    __tablename__ = "avisos_excluidos"
+    usuario_id = db.Column(db.Integer, primary_key=True)
+    chave = db.Column(db.String(120), primary_key=True)
+    criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
 
 
 class Cliente(db.Model):
@@ -569,6 +577,25 @@ def add_months(year, month, offset):
     return idx // 12, idx % 12 + 1
 
 
+@app.post("/api/avisos/excluir")
+@login_required
+def excluir_aviso():
+    dados = request.get_json(silent=True)
+    chave = dados.get("chave") if isinstance(dados, dict) else None
+    if not isinstance(chave, str) or not re.fullmatch(r"(?:hoje|atrasado|cliente60|orgao60|aniversario):[1-9][0-9]*:[0-9]{4}-[0-9]{2}-[0-9]{2}", chave) or len(chave) > 120:
+        return jsonify({"erro": "Aviso inválido."}), 400
+    uid = session["user_id"]
+    if not db.session.get(AvisoExcluido, (uid, chave)):
+        db.session.add(AvisoExcluido(usuario_id=uid, chave=chave))
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            if not db.session.get(AvisoExcluido, (uid, chave)):
+                raise
+    return jsonify({"ok": True})
+
+
 @app.get("/api/dashboard")
 @login_required
 def dashboard():
@@ -681,6 +708,22 @@ def dashboard():
     ]
 
     aniversarios_amanha = aniversarios_funcionarios()
+    excluidos = set(db.session.execute(db.select(AvisoExcluido.chave).where(
+        AvisoExcluido.usuario_id == session["user_id"])).scalars())
+
+    def avisos_visiveis(registros, tipo, campo_data):
+        visiveis = []
+        for item in registros:
+            item["aviso_chave"] = f"{tipo}:{item['id']}:{item[campo_data]}"
+            if item["aviso_chave"] not in excluidos:
+                visiveis.append(item)
+        return visiveis
+
+    vencem_hoje = avisos_visiveis(vencem_hoje, "hoje", "previsao")
+    atrasados = avisos_visiveis(atrasados, "atrasado", "previsao")
+    clientes_60_dias = avisos_visiveis(clientes_60_dias, "cliente60", "previsao")
+    orgaos_60_dias = avisos_visiveis(orgaos_60_dias, "orgao60", "data_debito")
+    aniversarios_amanha = avisos_visiveis(aniversarios_amanha, "aniversario", "data_aniversario")
     return jsonify({
         "aniversarios_amanha": aniversarios_amanha,
         "total_receber": total_receber,

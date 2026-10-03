@@ -177,3 +177,5 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #despAbrirVinculados{background:linear-gradient(135deg,#34343b,#202024);color:#fff;box-shadow:0 3px 9px rgba(32,32,36,.20),inset 0 0 0 1px rgba(255,255,255,.15)}
 #novaDespesa:hover,#despAbrirVinculados:hover{filter:brightness(1.12)}
 #novaDespesa:focus-visible,#despAbrirVinculados:focus-visible{outline:2px solid var(--red);outline-offset:3px}
+
+.alert-item{position:relative;padding-right:44px}.aviso-excluir{position:absolute;right:7px;top:7px;padding:6px;line-height:1.2}.aviso-excluir:focus-visible{outline:2px solid var(--red);outline-offset:2px}
