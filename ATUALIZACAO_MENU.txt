@@ -1,2 +1,2 @@
 Atualize templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5.
-Menu: Dashboard, Clientes Loja, Órgãos Públicos, Despesas. Usuários permanece após Despesas para administradores.
+Menu: Dashboard, Clientes Loja, Órgãos Públicos, Receitas Saci, Despesas Saci, Receitas ARCM e Usuários (administradores).
