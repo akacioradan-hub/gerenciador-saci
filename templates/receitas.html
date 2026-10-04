@@ -12,12 +12,19 @@
       <label>Mês da receita<input type="month" id="rec-{{ unidade }}-mes" required></label>
       <label>Cliente<select id="rec-{{ unidade }}-cliente"><option value="">Todos</option></select></label>
       <label>Situação<select id="rec-{{ unidade }}-status"><option value="">Todas</option><option value="recebida">Recebida</option><option value="pendente">Pendente</option><option value="atrasada">Atrasada</option></select></label>
-      <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento"></label>
+      <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento{% if unidade == 'arcm' %}, contrato{% endif %}"></label>
     </div>
     <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>
     <div class="table-wrap"><table><thead><tr><th>Cliente / descrição</th><th>Categoria</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Recebimento</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
     <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
   </div>
+  {% if unidade == 'arcm' %}
+  <details class="card compact-details mt"><summary>Previsão de receitas — próximos 12 meses</summary>
+    <p class="form-hint">Por vencimento, a partir do mês selecionado e para o cliente filtrado. Inclui todas as situações, sem aplicar a pesquisa de texto.</p>
+    <p id="recPrevisaoAviso" class="form-hint" aria-live="polite"></p>
+    <div class="table-wrap rec-previsao-scroll"><table><thead><tr><th>Mês</th><th>Previsto total</th><th>Recebido</th><th>A receber</th></tr></thead><tbody id="recPrevisaoBody"></tbody></table></div>
+  </details>
+  {% endif %}
   <details class="card compact-details mt"><summary>Clientes cadastrados — {{ nome }}</summary>
     <div class="table-wrap"><table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-clientesBody"></tbody></table></div>
     <div class="table-pagination"><span id="rec-cli-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-cli-{{ unidade }}Paginas" aria-label="Páginas dos clientes {{ nome }}"></nav></div>
@@ -31,13 +38,24 @@
     <label>Cliente *<select id="recCliente" required></select></label>
     <label class="rec-wide">Descrição *<input id="recDescricao" required maxlength="220"></label>
     <label>Categoria<select id="recCategoria"><option>Vendas</option><option>Serviços</option><option>Outras receitas</option></select></label>
-    <label>Valor (R$) *<input id="recValor" type="number" min="0.01" max="9999999999.99" step="0.01" required></label>
-    <label>Data da receita *<input id="recData" type="date" required></label>
-    <label>Vencimento *<input id="recVencimento" type="date" required></label>
+    <label><span id="recValorLabel">Valor (R$) *</span><input id="recValor" type="number" min="0.01" max="9999999999.99" step="0.01" required></label>
+    <label><span id="recDataLabel">Data da receita *</span><input id="recData" type="date" required></label>
+    <label><span id="recVencimentoLabel">Vencimento *</span><input id="recVencimento" type="date" required></label>
     <label>Situação<select id="recRecebida"><option value="false">Pendente</option><option value="true">Recebida</option></select></label>
     <label>Data do recebimento<input id="recDataRecebimento" type="date" disabled></label>
     <label>Forma de pagamento<select id="recForma"><option value="">Não informada</option><option>Pix</option><option>Dinheiro</option><option>Cartão</option><option>Transferência</option><option>Boleto</option><option>Outro</option></select></label>
     <label>Documento / nota fiscal<input id="recDocumento" maxlength="80"></label>
+    <fieldset id="recContratoCampos" class="rec-full rec-contract hidden">
+      <legend>Contrato ARCM</legend>
+      <div class="rec-contract-grid">
+        <label>Número do contrato<input id="recNumeroContrato" maxlength="80"></label>
+        <label>Tipo de pagamento<select id="recTipoPagamento"><option value="avista">À vista</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option></select></label>
+        <label>Prazo do contrato (meses)<input id="recPrazoMeses" type="number" min="1" max="600" step="1" value="1"></label>
+        <label>Início do contrato<input id="recInicioContrato" type="date"></label>
+      </div>
+      <p id="recContratoResumo" class="form-hint" aria-live="polite"></p>
+      <div class="table-wrap rec-preview"><table><thead><tr><th>Pagamento</th><th>Vencimento</th><th>Valor previsto</th></tr></thead><tbody id="recContratoPreview"></tbody></table></div>
+    </fieldset>
     <label class="rec-full">Observações<textarea id="recObservacoes" rows="2" maxlength="2000"></textarea></label>
     <p id="recErro" class="rec-error rec-full" role="alert"></p>
     <div class="form-actions rec-full"><button class="primary" type="submit">Salvar</button><button class="secondary" type="button" data-rec-fechar="recModal">Cancelar</button></div>

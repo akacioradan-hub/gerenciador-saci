@@ -1,0 +1,12 @@
+ATUALIZAÇÃO
+Atualize app.py, receitas.py, templates/index.html, templates/receitas.html, static/receitas.js e static/style.css no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5. As tabelas e campos novos são criados automaticamente.
+
+RECEITAS ARCM
+No cadastro da nova receita: número do contrato, tipo de pagamento (à vista, mensal, trimestral, semestral ou anual), prazo em meses e início do contrato. Informe o primeiro vencimento e o valor de CADA pagamento.
+Exemplo: mensal, 12 meses, R$ 500 = 12 receitas previstas de R$ 500, total de R$ 6.000. Trimestral gera um pagamento a cada 3 meses; semestral, a cada 6; anual, a cada 12. Um período final incompleto gera um último pagamento integral, conforme a prévia.
+A prévia informa quantidade, valor total e datas antes de salvar. O dia do primeiro vencimento é preservado; em meses mais curtos usa o último dia do mês. Os vencimentos devem estar dentro do prazo do contrato.
+Número de contrato obrigatório para pagamentos recorrentes e não pode ser duplicado. À vista sem número permanece receita avulsa.
+As parcelas futuras ficam pendentes. Se Recebida estiver marcada, somente a primeira parcela será recebida.
+Cada parcela recorrente aparece no mês do vencimento. A previsão dos próximos 12 meses usa o mês e cliente filtrados, sem aplicar situação/pesquisa de texto.
+Editar ou excluir uma parcela afeta somente aquela receita; editar não gera novas parcelas. Dados gerais do contrato são mostrados como consulta na edição.
+Receitas já existentes são preservadas. Dados do contrato incluídos no backup.

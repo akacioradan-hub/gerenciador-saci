@@ -210,6 +210,7 @@ def init_db():
             migrar_campos_cliente()
             migrar_campos_orgaos_publicos()
             migrar_descontos()
+            migrar_receitas()
             # Cria o administrador inicial somente se ainda não existir nenhum usuário.
             if db.session.execute(db.select(func.count(Usuario.id))).scalar_one() == 0:
                 username = (os.getenv("ADMIN_USER", "admin") or "admin").strip()
@@ -1105,7 +1106,7 @@ from despesas import registrar_despesas
 backup_despesas, migrar_despesas, aniversarios_funcionarios = registrar_despesas(app, db, login_required)
 
 from receitas import registrar_receitas
-backup_receitas = registrar_receitas(app, db, login_required, valor_monetario)
+backup_receitas, migrar_receitas = registrar_receitas(app, db, login_required, valor_monetario)
 
 init_db()
 

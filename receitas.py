@@ -1,9 +1,10 @@
 """Receitas e clientes independentes para ARCM e Saci."""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
+from calendar import monthrange
 from zoneinfo import ZoneInfo
 from decimal import Decimal
 from flask import request, jsonify, abort
-from sqlalchemy import or_
+from sqlalchemy import or_, inspect, text
 from sqlalchemy.exc import IntegrityError
 
 
@@ -18,6 +19,19 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         email = db.Column(db.String(180))
         endereco = db.Column(db.String(500))
         observacoes = db.Column(db.String(2000))
+
+    class ContratoReceita(db.Model):
+        __tablename__ = 'contratos_receitas_arcm'
+        id = db.Column(db.Integer, primary_key=True)
+        numero = db.Column(db.String(80), nullable=False, unique=True)
+        cliente_id = db.Column(db.Integer, db.ForeignKey('clientes_receitas.id'), nullable=False)
+        tipo_pagamento = db.Column(db.String(15), nullable=False)
+        prazo_meses = db.Column(db.Integer, nullable=False)
+        inicio = db.Column(db.Date, nullable=False)
+        fim = db.Column(db.Date, nullable=False)
+        primeiro_vencimento = db.Column(db.Date, nullable=False)
+        valor_parcela = db.Column(db.Numeric(14, 2), nullable=False)
+        parcelas = db.Column(db.Integer, nullable=False)
 
     class Receita(db.Model):
         __tablename__ = 'receitas_unidades'
@@ -35,6 +49,25 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         documento = db.Column(db.String(80))
         observacoes = db.Column(db.String(2000))
         cliente = db.relationship(ClienteReceita)
+        contrato_id = db.Column(db.Integer, db.ForeignKey('contratos_receitas_arcm.id'), nullable=True)
+        parcela = db.Column(db.Integer, nullable=True)
+        contrato = db.relationship(ContratoReceita)
+
+    def adicionar_meses(dia, meses):
+        ano, mes = divmod(dia.year * 12 + dia.month - 1 + meses, 12)
+        return date(ano, mes + 1, min(dia.day, monthrange(ano, mes + 1)[1]))
+
+    def migrar_receitas():
+        colunas = {c['name'] for c in inspect(db.engine).get_columns('receitas_unidades')}
+        for nome, tipo in [('contrato_id', 'INTEGER REFERENCES contratos_receitas_arcm(id)'), ('parcela', 'INTEGER')]:
+            if nome not in colunas:
+                db.session.execute(text(f'ALTER TABLE receitas_unidades ADD COLUMN {nome} {tipo}'))
+        db.session.commit()
+
+    def contrato_dict(c):
+        return dict(id=c.id, numero=c.numero, cliente_id=c.cliente_id, tipo_pagamento=c.tipo_pagamento,
+                    prazo_meses=c.prazo_meses, inicio=c.inicio.isoformat(), fim=c.fim.isoformat(),
+                    primeiro_vencimento=c.primeiro_vencimento.isoformat(), valor_parcela=float(c.valor_parcela), parcelas=c.parcelas)
 
     def unidade_valida(unidade):
         if unidade not in ('arcm', 'saci'):
@@ -73,7 +106,8 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                     vencimento=r.vencimento.isoformat(), recebida=r.recebida,
                     status='RECEBIDA' if r.recebida else ('ATRASADA' if r.vencimento < hoje() else 'PENDENTE'),
                     data_recebimento=r.data_recebimento.isoformat() if r.data_recebimento else None,
-                    forma_pagamento=r.forma_pagamento, documento=r.documento, observacoes=r.observacoes)
+                    forma_pagamento=r.forma_pagamento, documento=r.documento, observacoes=r.observacoes,
+                    contrato=contrato_dict(r.contrato) if r.contrato else None, parcela=r.parcela)
 
     @app.get('/api/receitas/<unidade>/clientes')
     @login_required
@@ -92,7 +126,8 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             return jsonify(erro='Cliente não encontrado.'), 404
         if request.method == 'DELETE':
             vinculo = db.session.execute(db.select(Receita.id).where(Receita.cliente_id == ident).limit(1)).first()
-            if vinculo:
+            contrato_vinculado = db.session.execute(db.select(ContratoReceita.id).where(ContratoReceita.cliente_id == ident).limit(1)).first()
+            if vinculo or contrato_vinculado:
                 return jsonify(erro='Este cliente possui receitas vinculadas e não pode ser excluído.'), 409
             try:
                 db.session.delete(c); db.session.commit()
@@ -134,7 +169,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                 stmt = stmt.where(Receita.vencimento < hoje())
             busca = (request.args.get('q') or '').strip()
             if busca:
-                stmt = stmt.join(ClienteReceita).where(or_(Receita.descricao.ilike('%'+busca+'%'), ClienteReceita.nome.ilike('%'+busca+'%'), Receita.documento.ilike('%'+busca+'%')))
+                stmt = stmt.join(ClienteReceita).outerjoin(ContratoReceita, Receita.contrato_id == ContratoReceita.id).where(or_(Receita.descricao.ilike('%'+busca+'%'), ClienteReceita.nome.ilike('%'+busca+'%'), Receita.documento.ilike('%'+busca+'%'), ContratoReceita.numero.ilike('%'+busca+'%')))
             rows = db.session.execute(stmt.order_by(Receita.data.desc(), Receita.id.desc())).scalars().all()
             total = sum((r.valor for r in rows), Decimal(0))
             recebido = sum((r.valor for r in rows if r.recebida), Decimal(0))
@@ -177,19 +212,77 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             if data_recebimento and data_recebimento > hoje():
                 raise ValueError('A data do recebimento não pode ser futura.')
             campos.update(cliente_id=cid, valor=valor, data=data_valida(d.get('data')), vencimento=data_valida(d.get('vencimento')), recebida=recebida, data_recebimento=data_recebimento)
+            if r and r.contrato and cid != r.contrato.cliente_id:
+                raise ValueError('O cliente da parcela deve ser o cliente do contrato.')
+            if not r and unidade == 'arcm':
+                tipo = d.get('tipo_pagamento', 'avista')
+                intervalos = {'avista': 0, 'mensal': 1, 'trimestral': 3, 'semestral': 6, 'anual': 12}
+                if not isinstance(tipo, str) or tipo not in intervalos:
+                    raise ValueError('Tipo de pagamento inválido.')
+                numero = texto(d, 'numero_contrato', 80, tipo != 'avista').upper()
+                if numero:
+                    prazo = d.get('prazo_meses')
+                    if type(prazo) is not int or not 1 <= prazo <= 600:
+                        raise ValueError('Informe um prazo de contrato entre 1 e 600 meses.')
+                    inicio = data_valida(d.get('inicio_contrato'))
+                    fim = adicionar_meses(inicio, prazo) - timedelta(days=1)
+                    passo = intervalos[tipo]
+                    quantidade = (prazo + passo - 1) // passo if passo else 1
+                    datas = [adicionar_meses(campos['vencimento'], i * passo) for i in range(quantidade)]
+                    if datas[0] < inicio or datas[-1] > fim:
+                        raise ValueError('Os vencimentos precisam estar dentro do período do contrato. Confira início, prazo e primeiro vencimento.')
+                    if db.session.execute(db.select(ContratoReceita.id).where(ContratoReceita.numero == numero)).first():
+                        return jsonify(erro='Já existe um contrato com este número. Consulte as receitas existentes.'), 409
+                    contrato = ContratoReceita(numero=numero, cliente_id=cid, tipo_pagamento=tipo, prazo_meses=prazo,
+                                              inicio=inicio, fim=fim, primeiro_vencimento=datas[0],
+                                              valor_parcela=campos['valor'], parcelas=quantidade)
+                    db.session.add(contrato); db.session.flush()
+                    registros = []
+                    for i, vencimento in enumerate(datas):
+                        parcela_campos = dict(campos)
+                        parcela_campos.update(data=vencimento if passo else campos['data'], vencimento=vencimento,
+                                              recebida=campos['recebida'] if i == 0 else False,
+                                              data_recebimento=campos['data_recebimento'] if i == 0 else None)
+                        item = Receita(unidade=unidade, contrato_id=contrato.id, parcela=i+1, **parcela_campos)
+                        db.session.add(item); registros.append(item)
+                    db.session.commit()
+                    return jsonify(**receita_dict(registros[0]), parcelas_criadas=quantidade,
+                                   total_previsto=float(contrato.valor_parcela * quantidade)), 201
             if not r:
                 r = Receita(unidade=unidade); db.session.add(r)
             for campo, valor in campos.items():
                 setattr(r, campo, valor)
             db.session.commit()
             return jsonify(receita_dict(r)), 200 if ident else 201
-        except (ValueError, IntegrityError) as e:
+        except (ValueError, OverflowError, IntegrityError) as e:
             db.session.rollback()
-            return jsonify(erro=str(e) if isinstance(e, ValueError) else 'Cliente indisponível. Atualize os cadastros.'), 400
+            return jsonify(erro=str(e) if isinstance(e, ValueError) else 'Não foi possível salvar. Confira se o número do contrato já existe e atualize os cadastros.'), 400
+
+    @app.get('/api/receitas/arcm/previsao')
+    @login_required
+    def previsao_receitas_arcm():
+        try:
+            inicio = data_valida((request.args.get('mes') or hoje().strftime('%Y-%m')) + '-01')
+            fim = adicionar_meses(inicio, 12)
+            stmt = db.select(Receita).where(Receita.unidade == 'arcm', Receita.vencimento >= inicio, Receita.vencimento < fim)
+            if request.args.get('cliente_id'):
+                stmt = stmt.where(Receita.cliente_id == int(request.args['cliente_id']))
+            rows = db.session.execute(stmt).scalars().all()
+            meses = []
+            for i in range(12):
+                mes = adicionar_meses(inicio, i).strftime('%Y-%m')
+                previstas = [r for r in rows if r.vencimento.strftime('%Y-%m') == mes]
+                recebido = sum((r.valor for r in previstas if r.recebida), Decimal(0))
+                pendente = sum((r.valor for r in previstas if not r.recebida), Decimal(0))
+                meses.append(dict(mes=mes, recebido=float(recebido), pendente=float(pendente), total=float(recebido+pendente)))
+            return jsonify(meses=meses)
+        except (ValueError, OverflowError):
+            return jsonify(erro='Confira o mês e o cliente da previsão.'), 400
 
     def backup_receitas():
         clientes = db.session.execute(db.select(ClienteReceita).order_by(ClienteReceita.id)).scalars().all()
         receitas = db.session.execute(db.select(Receita).order_by(Receita.id)).scalars().all()
-        return dict(clientes_receitas=[cliente_dict(c) for c in clientes], receitas_unidades=[receita_dict(r) for r in receitas])
+        contratos = db.session.execute(db.select(ContratoReceita).order_by(ContratoReceita.id)).scalars().all()
+        return dict(clientes_receitas=[cliente_dict(c) for c in clientes], receitas_unidades=[receita_dict(r) for r in receitas], contratos_receitas_arcm=[contrato_dict(c) for c in contratos])
 
-    return backup_receitas
+    return backup_receitas, migrar_receitas
