@@ -1,0 +1,59 @@
+{% for unidade, nome in [('arcm','ARCM'),('saci','Saci')] %}
+<section id="receitas-{{ unidade }}" class="tab receitas-tab" data-unidade="{{ unidade }}">
+  <div class="page-head"><div><span class="eyebrow">CONTROLE DE RECEITAS</span><h2>Receitas {{ nome }}</h2><p>Clientes e receitas da {{ nome }}.</p></div><div class="rec-actions"><button type="button" class="primary" data-rec-nova="{{ unidade }}">Nova receita</button><button type="button" class="secondary" data-rec-cliente="{{ unidade }}">Novo cliente</button></div></div>
+  <div class="gov-summary-grid">
+    <div class="card gov-kpi"><span>Total</span><strong id="rec-{{ unidade }}-total">R$ 0,00</strong></div>
+    <div class="card gov-kpi gov-paid"><span>Recebido</span><strong id="rec-{{ unidade }}-recebido">R$ 0,00</strong></div>
+    <div class="card gov-kpi gov-open"><span>Pendente</span><strong id="rec-{{ unidade }}-pendente">R$ 0,00</strong></div>
+    <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="rec-{{ unidade }}-atrasado">R$ 0,00</strong><small>Incluído no pendente</small></div>
+  </div>
+  <div class="card">
+    <div class="rec-filtros">
+      <label>Mês da receita<input type="month" id="rec-{{ unidade }}-mes" required></label>
+      <label>Cliente<select id="rec-{{ unidade }}-cliente"><option value="">Todos</option></select></label>
+      <label>Situação<select id="rec-{{ unidade }}-status"><option value="">Todas</option><option value="recebida">Recebida</option><option value="pendente">Pendente</option><option value="atrasada">Atrasada</option></select></label>
+      <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento"></label>
+    </div>
+    <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>
+    <div class="table-wrap"><table><thead><tr><th>Cliente / descrição</th><th>Categoria</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Recebimento</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
+    <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
+  </div>
+  <details class="card compact-details mt"><summary>Clientes cadastrados — {{ nome }}</summary>
+    <div class="table-wrap"><table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-clientesBody"></tbody></table></div>
+    <div class="table-pagination"><span id="rec-cli-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-cli-{{ unidade }}Paginas" aria-label="Páginas dos clientes {{ nome }}"></nav></div>
+  </details>
+</section>
+{% endfor %}
+<dialog id="recModal" class="receita-modal" aria-labelledby="recTitulo">
+  <div class="rec-modal-head"><h3 id="recTitulo">Nova receita</h3><button type="button" class="secondary" data-rec-fechar="recModal" aria-label="Fechar cadastro de receita">×</button></div>
+  <form id="recForm" class="rec-form">
+    <input id="recId" type="hidden">
+    <label>Cliente *<select id="recCliente" required></select></label>
+    <label class="rec-wide">Descrição *<input id="recDescricao" required maxlength="220"></label>
+    <label>Categoria<select id="recCategoria"><option>Vendas</option><option>Serviços</option><option>Outras receitas</option></select></label>
+    <label>Valor (R$) *<input id="recValor" type="number" min="0.01" max="9999999999.99" step="0.01" required></label>
+    <label>Data da receita *<input id="recData" type="date" required></label>
+    <label>Vencimento *<input id="recVencimento" type="date" required></label>
+    <label>Situação<select id="recRecebida"><option value="false">Pendente</option><option value="true">Recebida</option></select></label>
+    <label>Data do recebimento<input id="recDataRecebimento" type="date" disabled></label>
+    <label>Forma de pagamento<select id="recForma"><option value="">Não informada</option><option>Pix</option><option>Dinheiro</option><option>Cartão</option><option>Transferência</option><option>Boleto</option><option>Outro</option></select></label>
+    <label>Documento / nota fiscal<input id="recDocumento" maxlength="80"></label>
+    <label class="rec-full">Observações<textarea id="recObservacoes" rows="2" maxlength="2000"></textarea></label>
+    <p id="recErro" class="rec-error rec-full" role="alert"></p>
+    <div class="form-actions rec-full"><button class="primary" type="submit">Salvar</button><button class="secondary" type="button" data-rec-fechar="recModal">Cancelar</button></div>
+  </form>
+</dialog>
+<dialog id="recClienteModal" class="receita-modal" aria-labelledby="recClienteTitulo">
+  <div class="rec-modal-head"><h3 id="recClienteTitulo">Novo cliente</h3><button type="button" class="secondary" data-rec-fechar="recClienteModal" aria-label="Fechar cadastro de cliente">×</button></div>
+  <form id="recClienteForm" class="rec-form">
+    <input id="recCliId" type="hidden">
+    <label class="rec-wide">Nome / razão social *<input id="recCliNome" maxlength="180" required></label>
+    <label>CPF/CNPJ<input id="recCliDocumento" maxlength="30"></label>
+    <label>Telefone<input id="recCliTelefone" type="tel" maxlength="30"></label>
+    <label class="rec-wide">E-mail<input id="recCliEmail" type="email" maxlength="180"></label>
+    <label class="rec-full">Endereço<input id="recCliEndereco" maxlength="500"></label>
+    <label class="rec-full">Observações<textarea id="recCliObservacoes" maxlength="2000" rows="2"></textarea></label>
+    <p id="recCliErro" class="rec-error rec-full" role="alert"></p>
+    <div class="form-actions rec-full"><button type="submit" class="primary">Salvar</button><button type="button" class="secondary" data-rec-fechar="recClienteModal">Cancelar</button></div>
+  </form>
+</dialog>

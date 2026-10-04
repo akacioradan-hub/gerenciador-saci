@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261003-icones-pagamento">
+<link rel="stylesheet" href="/static/style.css?v=20261004-receitas">
 </head>
 <body>
 <div class="app-shell">
@@ -22,6 +22,8 @@
       <button class="tab-btn" data-tab="clientes"><span>Clientes Loja</span></button>
       <button class="tab-btn" data-tab="orgaos"><span>Órgãos Públicos</span></button>
       <button class="tab-btn" data-tab="despesas"><span>Despesas</span></button>
+      <button class="tab-btn" data-tab="receitas-arcm"><span>Receitas ARCM</span></button>
+      <button class="tab-btn" data-tab="receitas-saci"><span>Receitas Saci</span></button>
       {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span>Usuários</span></button>{% endif %}
     </nav>
     <div class="sidebar-footer">
@@ -289,6 +291,7 @@
       </section>
 
 
+      {% include "receitas.html" %}
       <section id="despesas" class="tab">
         <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas do mês</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><div class="desp-header-actions"><label class="desp-month-selector">Mês de competência<input id="despMes" type="month" required></label><button class="primary" id="novaDespesa" type="button">Nova despesa</button><button class="secondary" id="despAbrirVinculados" type="button" aria-expanded="false" aria-controls="despVinculadosCard">Novo cadastro</button></div></div>
         <div class="gov-summary-grid mt">
@@ -407,5 +410,6 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261003-recebimentos-fixos"></script>
 <script src="/static/despesas.js?v=20261003-icones-pagamento"></script>
+<script src="/static/receitas.js?v=20261004-receitas"></script>
 </body>
 </html>

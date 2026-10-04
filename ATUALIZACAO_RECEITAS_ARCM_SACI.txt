@@ -1,0 +1,13 @@
+ATUALIZAÇÃO
+Atualize app.py, templates/index.html e static/style.css.
+Adicione os novos arquivos receitas.py, templates/receitas.html e static/receitas.js, respeitando as pastas. Todos estão neste ZIP.
+Aguarde o deploy no Render e pressione Ctrl+F5.
+
+NOVAS ABAS
+Receitas ARCM e Receitas Saci, com cadastros independentes.
+Novo cliente: nome/razão social, CPF/CNPJ, telefone, e-mail, endereço e observações.
+Nova receita: cliente, descrição, categoria, valor, data da receita, vencimento, situação, data do recebimento, forma de pagamento, documento e observações.
+Para receber uma receita pendente, clique na caneta, altere a situação para Recebida e informe a data.
+Filtros por mês da receita, cliente, situação e pesquisa. Totais abrangem todos os resultados filtrados. Tabelas com 5 registros por página.
+Clientes com receitas vinculadas não podem ser excluídos.
+As novas tabelas são criadas automaticamente e incluídas no backup. Estes lançamentos são independentes de Clientes Loja e não atualizam aquela carteira.
