@@ -279,6 +279,29 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         except (ValueError, OverflowError):
             return jsonify(erro='Confira o mês e o cliente da previsão.'), 400
 
+    @app.patch('/api/receitas/<unidade>/<int:ident>/status')
+    @login_required
+    def status_receita(unidade, ident):
+        unidade_valida(unidade)
+        r = db.session.get(Receita, ident)
+        if not r or r.unidade != unidade:
+            return jsonify(erro='Receita não encontrada.'), 404
+        try:
+            d = payload()
+            recebida = d.get('recebida')
+            if type(recebida) is not bool:
+                raise ValueError('Informe a situação da receita.')
+            data = data_valida(d.get('data_recebimento')) if recebida else None
+            if data and data > hoje():
+                raise ValueError('A data do recebimento não pode ser futura.')
+            r.recebida = recebida
+            r.data_recebimento = data
+            db.session.commit()
+            return jsonify(receita_dict(r))
+        except ValueError as e:
+            db.session.rollback()
+            return jsonify(erro=str(e)), 400
+
     def backup_receitas():
         clientes = db.session.execute(db.select(ClienteReceita).order_by(ClienteReceita.id)).scalars().all()
         receitas = db.session.execute(db.select(Receita).order_by(Receita.id)).scalars().all()

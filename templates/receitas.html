@@ -15,7 +15,7 @@
       <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento{% if unidade == 'arcm' %}, contrato{% endif %}"></label>
     </div>
     <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>
-    <div class="table-wrap"><table><thead><tr><th>Cliente / descrição</th><th>Categoria</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Recebimento</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>Cliente / descrição</th><th>Categoria</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
     <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
   </div>
   {% if unidade == 'arcm' %}

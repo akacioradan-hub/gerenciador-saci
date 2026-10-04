@@ -1,0 +1,2 @@
+Atualize receitas.py, templates/index.html, templates/receitas.html, static/receitas.js e static/style.css no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5.
+Nas receitas ARCM e Saci, a coluna Recebimento se chama Status. O ícone ✓ marca como pago, solicitando a data do recebimento; ↶ reabre a receita após confirmação. Somente a receita/parcela selecionada é alterada. Totais e previsão são atualizados.

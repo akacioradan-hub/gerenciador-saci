@@ -24,8 +24,9 @@ async function recCarregar(u){
 }
 function recRender(u){
   const st=recEstados[u];st.pagina=Math.min(st.pagina,Math.max(1,Math.ceil(st.registros.length/5)));
-  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(r.descricao)}</div>${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · Parcela ${r.parcela}/${r.contrato.parcelas}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td>${r.recebida?dataBR(r.data_recebimento):'—'}<div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
+  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(r.descricao)}</div>${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · Parcela ${r.parcela}/${r.contrato.parcelas}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
   renderPaginacaoTabela('rec-'+u,st.pagina,st.registros.length,n=>{st.pagina=n;recRender(u)});
+  recEl('rec-'+u+'-body').querySelectorAll('[data-rec-status]').forEach(b=>b.addEventListener('click',()=>recMudarStatus(u,Number(b.dataset.recStatus),b)));
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-edit]').forEach(b=>b.addEventListener('click',()=>recAbrir(u,Number(b.dataset.recEdit))));
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-del]').forEach(b=>b.addEventListener('click',()=>recExcluir(u,Number(b.dataset.recDel),false)));
 }
@@ -137,4 +138,13 @@ async function recCarregarPrevisao(){
     recEl('recPrevisaoBody').innerHTML=d.meses.map(m=>`<tr><td>${mesLabel(m.mes)}</td><td>${moeda(m.total)}</td><td>${moeda(m.recebido)}</td><td>${moeda(m.pendente)}</td></tr>`).join('');
     recEl('recPrevisaoAviso').textContent='Total a receber nos 12 meses: '+moeda(d.meses.reduce((s,m)=>s+m.pendente,0));
   }catch(e){if(consulta!==recPrevisaoConsulta)return;recEl('recPrevisaoBody').innerHTML='';recEl('recPrevisaoAviso').textContent='Não foi possível carregar a previsão: '+e.message}
+}
+
+async function recMudarStatus(u,id,botao){
+  const r=recEstados[u].registros.find(r=>r.id===id);if(!r||botao.disabled)return;
+  const recebida=!r.recebida;let data=null;
+  if(recebida){data=prompt('Data do recebimento (AAAA-MM-DD):',recHoje());if(data===null)return;data=data.trim()}
+  else if(!confirm('Reabrir esta receita e remover a data do recebimento? Somente esta parcela será alterada.'))return;
+  botao.disabled=true;
+  try{await api('/api/receitas/'+u+'/'+id+'/status',{method:'PATCH',body:JSON.stringify({recebida,data_recebimento:data})});await recCarregar(u);msg(recebida?'Receita marcada como paga.':'Receita reaberta.')}catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
 }
