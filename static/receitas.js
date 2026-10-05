@@ -42,6 +42,9 @@ const recCampos={cliente_id:'Cliente',descricao:'Descricao',categoria:'Categoria
 const recCliCampos={nome:'Nome',documento:'Documento',telefone:'Telefone',email:'Email',endereco:'Endereco',observacoes:'Observacoes'};
 function recAbrir(u,id){
   if(u==='arcm'&&!recEstados[u].clientes.length){msg('Cadastre um cliente para lançar a receita.');recAbrirCliente(u);return}
+  const simplificado=u==='saci'&&!id;
+  for(const campo of ['Cliente','Vencimento','Documento']){recEl('rec'+campo+'Campo').classList.toggle('hidden',simplificado);recEl('rec'+campo).disabled=simplificado}
+  recEl('recVencimento').required=!simplificado;
   recUnidade=u;recEl('recForm').reset();recEl('recId').value=id||'';recEl('recErro').textContent='';
   recEl('recTitulo').textContent=(id?'Editar receita':u==='saci'?'Nova entrada manual':'Nova receita')+' — '+recNome(u);
   recEl('recCliente').required=u==='arcm';recEl('recClienteLabel').textContent=u==='saci'?'Cliente (opcional)':'Cliente *';
@@ -57,7 +60,7 @@ function recAbrir(u,id){
   recEl('recData').value=recHoje();recEl('recVencimento').value=recHoje();
   if(u==='saci'&&!id)recEl('recRecebida').value='true';
   if(id){const r=recEstados[u].registros.find(r=>r.id===id);if(!r)return;for(const [k,v] of Object.entries(recCampos))recEl('rec'+v).value=r[k]??'';recEl('recRecebida').value=String(r.recebida)}
-  recConfigurarContrato(u,id?recEstados[u].registros.find(r=>r.id===id):null);recAtualizarSituacao();recEl('recModal').showModal();recEl('recCliente').focus();
+  recConfigurarContrato(u,id?recEstados[u].registros.find(r=>r.id===id):null);recAtualizarSituacao();if(simplificado)recEl('recCliente').disabled=true;recEl('recModal').showModal();recEl(simplificado?'recDescricao':'recCliente').focus();
 }
 function recAbrirCliente(u,id){
   recUnidade=u;recEl('recClienteForm').reset();recEl('recCliId').value=id||'';recEl('recCliErro').textContent='';recEl('recClienteTitulo').textContent=(id?'Editar cliente':'Novo cliente')+' — '+recNome(u);
@@ -73,6 +76,7 @@ async function recSalvar(e,cliente){
   const u=recUnidade,id=recEl(cliente?'recCliId':'recId').value,form=e.target,botao=form.querySelector('[type="submit"]'),erro=recEl(cliente?'recCliErro':'recErro');
   const dados=Object.fromEntries(Object.entries(cliente?recCliCampos:recCampos).map(([k,v])=>[k,recEl((cliente?'recCli':'rec')+v).value]));
   if(!cliente){dados.cliente_id=dados.cliente_id?Number(dados.cliente_id):null;dados.valor=Number(dados.valor);dados.recebida=recEl('recRecebida').value==='true'}
+  if(!cliente&&u==='saci'&&!id){dados.cliente_id=null;dados.documento='';dados.vencimento=dados.data}
   if(!cliente&&u==='arcm'&&!id){
     dados.numero_contrato=recEl('recNumeroContrato').value.trim();dados.tipo_pagamento=recEl('recTipoPagamento').value;dados.prazo_meses=Number(recEl('recPrazoMeses').value);dados.inicio_contrato=recEl('recInicioContrato').value;
     const previsao=recPlanejarContrato();

@@ -1,0 +1,5 @@
+Nova entrada do Fluxo de Caixa: retirados os campos Cliente, Vencimento e Documento/nota fiscal.
+
+Atualize templates/receitas.html, static/receitas.js e templates/index.html no GitHub. Após o deploy no Render, pressione Ctrl+F5. O ZIP contém o projeto completo.
+
+Novas entradas usam a data da receita como referência interna de vencimento, sem vínculo de cliente ou documento. Os campos seguem disponíveis nas Receitas ARCM e na edição de registros antigos para preservar seus dados.

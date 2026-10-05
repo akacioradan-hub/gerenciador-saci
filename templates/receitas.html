@@ -45,16 +45,16 @@
   <div class="rec-modal-head"><h3 id="recTitulo">Nova receita</h3><button type="button" class="secondary" data-rec-fechar="recModal" aria-label="Fechar cadastro de receita">×</button></div>
   <form id="recForm" class="rec-form">
     <input id="recId" type="hidden">
-    <label><span id="recClienteLabel">Cliente *</span><select id="recCliente" required></select></label>
+    <label id="recClienteCampo"><span id="recClienteLabel">Cliente *</span><select id="recCliente" required></select></label>
     <label class="rec-wide">Descrição *<input id="recDescricao" required maxlength="220"></label>
     <label><span id="recCategoriaLabel">Categoria</span><select id="recCategoria"><option>Vendas</option><option>Serviços</option><option>Outras receitas</option></select></label>
     <label><span id="recValorLabel">Valor (R$) *</span><input id="recValor" type="number" min="0.01" max="9999999999.99" step="0.01" required></label>
     <label><span id="recDataLabel">Data da receita *</span><input id="recData" type="date" required></label>
-    <label><span id="recVencimentoLabel">Vencimento *</span><input id="recVencimento" type="date" required></label>
+    <label id="recVencimentoCampo"><span id="recVencimentoLabel">Vencimento *</span><input id="recVencimento" type="date" required></label>
     <label>Situação<select id="recRecebida"><option value="false">Pendente</option><option value="true">Recebida</option></select></label>
     <label>Data do recebimento<input id="recDataRecebimento" type="date" disabled></label>
     <label>Forma de pagamento<select id="recForma"><option value="">Não informada</option><option>Pix</option><option>Dinheiro</option><option>Cartão</option><option>Transferência</option><option>Boleto</option><option>Outro</option></select></label>
-    <label>Documento / nota fiscal<input id="recDocumento" maxlength="80"></label>
+    <label id="recDocumentoCampo">Documento / nota fiscal<input id="recDocumento" maxlength="80"></label>
     <fieldset id="recContratoCampos" class="rec-full rec-contract hidden">
       <legend>Contrato ARCM</legend>
       <div class="rec-contract-grid">
