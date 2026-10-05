@@ -31,6 +31,7 @@ function recRender(u){
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-del]').forEach(b=>b.addEventListener('click',()=>recExcluir(u,Number(b.dataset.recDel),false)));
 }
 function recRenderClientes(u){
+  if(u!=='arcm')return;
   const st=recEstados[u];st.paginaClientes=Math.min(st.paginaClientes,Math.max(1,Math.ceil(st.clientes.length/5)));
   recEl('rec-'+u+'-clientesBody').innerHTML=st.clientes.slice((st.paginaClientes-1)*5,st.paginaClientes*5).map(c=>`<tr>${['nome','documento','telefone','email','endereco'].map(k=>`<td>${escaparFinanceiro(c[k]||'—')}</td>`).join('')}<td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar cliente" aria-label="Editar cliente" data-cli-edit="${c.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir cliente" aria-label="Excluir cliente" data-cli-del="${c.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="6" class="empty">Nenhum cliente cadastrado.</td></tr>';
   renderPaginacaoTabela('rec-cli-'+u,st.paginaClientes,st.clientes.length,n=>{st.paginaClientes=n;recRenderClientes(u)});

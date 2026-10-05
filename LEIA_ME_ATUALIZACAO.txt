@@ -1,0 +1,3 @@
+Retirada a seção Clientes cadastrados — Saci do Fluxo de Caixa. O ajuste é apenas de exibição; nenhum cadastro foi excluído.
+
+Atualize templates/receitas.html, static/receitas.js e templates/index.html no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5. O ZIP contém o projeto completo.

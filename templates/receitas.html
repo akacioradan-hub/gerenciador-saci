@@ -34,10 +34,12 @@
     <div class="table-wrap rec-previsao-scroll"><table><thead><tr><th>Mês</th><th>Previsto total</th><th>Recebido</th><th>A receber</th></tr></thead><tbody id="recPrevisaoBody"></tbody></table></div>
   </details>
   {% endif %}
+  {% if unidade == 'arcm' %}
   <details class="card compact-details mt"><summary>Clientes cadastrados — {{ nome }}</summary>
     <div class="table-wrap"><table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-clientesBody"></tbody></table></div>
     <div class="table-pagination"><span id="rec-cli-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-cli-{{ unidade }}Paginas" aria-label="Páginas dos clientes {{ nome }}"></nav></div>
   </details>
+  {% endif %}
   {% if unidade == 'saci' %}</details>{% endif %}
 </section>
 {% endfor %}
