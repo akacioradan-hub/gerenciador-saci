@@ -1,0 +1,8 @@
+PADRONIZAÇÃO VISUAL
+
+Fonte compartilhada Arial/Helvetica, títulos e destaques em negrito, menus e paginação consistentes, botões uniformes, sombras leves nos cartões e cores semânticas: verde para recebimentos, vermelho para saídas/atrasos e azul para previsões. Resultados e saldos do fluxo mudam de cor conforme positivos ou negativos. Foco de teclado visível e ajustes para telas pequenas.
+
+Atualize todos os arquivos do ZIP no GitHub. Arquivo novo obrigatório: static/visual.css. Alterados: templates/index.html, templates/login.html, templates/consulta_publica.html, templates/fluxo_caixa.html e static/fluxo_caixa.js. O estilo compartilhado deve carregar depois dos estilos anteriores.
+Após o deploy no Render, pressione Ctrl+F5. As funções, registros e ordem dos menus foram preservados.
+
+Conferidas a estrutura do CSS, a sintaxe JavaScript e as referências do novo estilo. Não houve inspeção visual em navegador nem deploy no Render neste ambiente.

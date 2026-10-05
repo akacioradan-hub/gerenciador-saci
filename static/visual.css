@@ -1,0 +1,61 @@
+/* Padrão visual compartilhado entre painel, acesso e consulta pública. */
+:root{--ui-font:Arial,Helvetica,sans-serif;--ui-text:#27272f;--ui-muted:#62626e;--ui-accent:#a8201a;--ui-positive:#166447;--ui-negative:#a52b27;--ui-warning:#875008;--ui-border:#e3e3e9;--ui-shadow:0 3px 12px rgba(29,29,40,.06);--ui-focus:#aa2923}
+html,body,button,input,select,textarea{font-family:var(--ui-font)}
+body{font-size:13px;line-height:1.45;color:var(--ui-text)}
+button,input,select,textarea{font-size:13px;line-height:1.4}
+strong,b{font-weight:700}
+h1,h2,h3,h4,summary{font-family:var(--ui-font);font-weight:700;line-height:1.3}
+.app-shell .page-head h2{font-size:22px;letter-spacing:-.3px;color:var(--ui-text)}
+.app-shell .topbar h1{font-size:17px;font-weight:700}
+.app-shell .card h3,.app-shell .toolbar h3,.app-shell .gov-toolbar h3,#dashboard h3{font-size:15px;font-weight:700;color:var(--ui-text)}
+.app-shell .rec-modal-head h3,.app-shell .desp-modal-head h3{font-size:18px;font-weight:700}
+.page-head p,.form-hint,.table-sub,.card small{color:var(--ui-muted);line-height:1.45}
+.app-shell .eyebrow,.app-shell .topbar-kicker{font-size:10px;font-weight:700;letter-spacing:.8px;color:var(--ui-accent)}
+.sidebar .side-nav .tab-btn{font-size:13px;font-weight:600;line-height:1.4;color:#d3d3db;border-radius:8px;gap:10px}
+.sidebar .side-nav .tab-btn:hover{background:#303036;color:#fff}
+.sidebar .side-nav .tab-btn.active{font-weight:700;color:#fff;background:#3d2e31;box-shadow:0 3px 9px #0002}
+.sidebar .side-nav .tab-btn.active::before{background:#fa7770}
+.sidebar .side-nav .menu-icon{width:18px;height:18px;flex-basis:18px}
+.sidebar .side-logout{font-size:12px;font-weight:600}
+button,.primary,.secondary,.top-action,.section-link,.gov-export{font-weight:700}
+.app-shell .primary{background:#b7251e;color:#fff;border-color:#b7251e;box-shadow:0 2px 7px #b7251e20}
+.app-shell .primary:hover{background:#9d1b16;color:#fff}
+.app-shell .secondary,.app-shell .section-link,.app-shell .top-action{color:#454550;background:#f1f1f5;border:1px solid var(--ui-border);box-shadow:0 1px 3px #24243008}
+.app-shell .secondary:hover,.app-shell .section-link:hover,.app-shell .top-action:hover{background:#e8e8ee;color:#27272f}
+.app-shell .table-pagination button,.app-shell .desp-pagination button,.app-shell .desp-catalog-nav button{font-size:12px;font-weight:700;border-radius:7px}
+.app-shell .table-pagination button[aria-current="page"],.app-shell .desp-pagination button.current-page{background:#b7251e;color:#fff;border-color:#b7251e;box-shadow:0 2px 6px #b7251e25}
+.app-shell .compact-details>summary,.app-shell .desp-extra-filters>summary{font-size:13px;font-weight:700;color:#3b3b46}
+.app-shell .compact-details[open]>summary{color:var(--ui-accent)}
+.app-shell label,#despesas label{font-size:12px;font-weight:600;color:#44444f;line-height:1.4}
+input,select,textarea{color:var(--ui-text);border-color:var(--ui-border)}
+input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--ui-focus);outline-offset:1px}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline:2px solid var(--ui-focus);outline-offset:3px}
+.sidebar button:focus-visible,.sidebar a:focus-visible{outline-color:#ffaaa5}
+button:disabled{opacity:.55;cursor:not-allowed}
+.app-shell .card{border-color:var(--ui-border);border-radius:11px;box-shadow:var(--ui-shadow)}
+.app-shell .gov-kpi,.app-shell .kpi-card,.finance-mini-card{background:linear-gradient(145deg,#fff,#f7f7fa);box-shadow:0 3px 12px #2222300b}
+.app-shell .gov-kpi>span,.app-shell .kpi-card>span,.finance-mini-card>span{font-size:11px;font-weight:700;text-transform:none;letter-spacing:0;color:#555561}
+.app-shell .gov-kpi>strong,.app-shell .kpi-card>strong,.app-shell .finance-mini-card>strong{font-size:22px!important;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#despContasCard .gov-kpi>strong{font-size:18px!important}
+.app-shell .gov-paid{background:linear-gradient(145deg,#fff,#f0f8f4);border-left:3px solid #278563}
+.app-shell .gov-open{background:linear-gradient(145deg,#fff,#fff5f2);border-left:3px solid #bd4b3b}
+.app-shell .gov-paid>strong{color:var(--ui-positive)}
+.app-shell .gov-open>strong{color:var(--ui-negative)}
+.app-shell .status-row{border-color:var(--ui-border);background:#f8f8fb;border-radius:8px;box-shadow:0 1px 3px #22223006}
+.app-shell .status-row strong{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+th{background:#f0f0f5;color:#484853;font-weight:700;font-size:11px;letter-spacing:.2px;text-transform:none}
+td{font-size:12px;color:var(--ui-text);line-height:1.4}
+tbody tr:hover{background:#faf5f4}
+.badge,.desp-priority,.role-badge{font-size:11px;font-weight:700;line-height:1.3;border-radius:6px;box-shadow:0 1px 3px #2424300a}
+.badge.QUITADO,.badge.PAGO,.badge.RECEBIDA{background:#e4f3eb;color:var(--ui-positive)}
+.badge.ATRASADO,.badge.ATRASADA,.desp-priority.Urgente{background:#fce9e7;color:var(--ui-negative)}
+.badge.EM_ABERTO,.badge.PENDENTE,.desp-priority.Alta{background:#fff2d9;color:var(--ui-warning)}
+.desp-priority.Normal,.desp-priority.Baixa{background:#eeeef4;color:#555564}
+.app-shell .ui-positive,.app-shell .fluxo-entrada{color:var(--ui-positive);font-weight:700}
+.app-shell .ui-negative,.app-shell .fluxo-saida{color:var(--ui-negative);font-weight:700}
+.app-shell .ui-accent{color:#3c5f80;font-weight:700}
+.app-shell .rec-status-icon.rec-pago,.app-shell .desp-payment-icon.desp-confirm{color:var(--ui-positive);background:#e4f3eb}
+.app-shell .rec-status-icon.rec-reabrir,.app-shell .desp-payment-icon.desp-reopen{color:#50505c;background:#eeeef4}
+.app-shell .danger{color:#9f2723;background:#fcebea}
+@media(max-width:600px){.app-shell .page-head h2{font-size:20px}.app-shell .gov-kpi>strong,.app-shell .kpi-card>strong{font-size:20px!important}}
+@media(prefers-reduced-motion:reduce){.side-nav .tab-btn,.sidebar{transition:none}}

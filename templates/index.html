@@ -9,6 +9,7 @@
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="stylesheet" href="/static/style.css?v=20261005-fluxo-geral">
+<link rel="stylesheet" href="/static/visual.css?v=20261005-padrao">
 </head>
 <body>
 <div class="app-shell">
@@ -55,13 +56,13 @@
         <div class="page-head"><div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Contas a receber, contas a pagar e previsão de faturamento.</p></div><label>Mês de referência<input id="dashPrevisaoMes" type="month" required></label><button id="dashResumoAtualizar" type="button" class="secondary">Atualizar</button></div>
         <p id="dashResumoAviso" class="form-hint" role="status"></p>
         <div class="dashboard-essencial">
-          <div class="card kpi-card"><span>Contas a receber</span><strong id="dashReceber">—</strong><small>Todo o saldo em aberto cadastrado</small></div>
-          <div class="card kpi-card"><span>Contas a pagar</span><strong id="dashPagar">—</strong><small id="dashPagarAtrasado">—</small></div>
-          <div class="card kpi-card"><span>Previsão de faturamento</span><strong id="dashFaturamento">—</strong><small id="dashFaturamentoMes">Receitas cadastradas no mês selecionado</small></div>
+          <div class="card kpi-card"><span>Contas a receber</span><strong id="dashReceber" class="ui-accent">—</strong><small>Todo o saldo em aberto cadastrado</small></div>
+          <div class="card kpi-card"><span>Contas a pagar</span><strong id="dashPagar" class="ui-negative">—</strong><small id="dashPagarAtrasado">—</small></div>
+          <div class="card kpi-card"><span>Previsão de faturamento</span><strong id="dashFaturamento" class="ui-accent">—</strong><small id="dashFaturamentoMes">Receitas cadastradas no mês selecionado</small></div>
         </div>
         <div class="dashboard-recebidos mt">
-          <div class="card gov-kpi gov-paid"><span>Recebido Saci no mês</span><strong id="dashRecebidoSaci">—</strong><small>Entradas manuais, clientes bloqueados e órgãos públicos</small></div>
-          <div class="card gov-kpi gov-paid"><span>Recebido ARCM no mês</span><strong id="dashRecebidoArcm">—</strong><small>Receitas e parcelas efetivamente recebidas</small></div>
+          <div class="card gov-kpi gov-paid"><span>Recebido Saci no mês</span><strong id="dashRecebidoSaci" class="ui-positive">—</strong><small>Entradas manuais, clientes bloqueados e órgãos públicos</small></div>
+          <div class="card gov-kpi gov-paid"><span>Recebido ARCM no mês</span><strong id="dashRecebidoArcm" class="ui-positive">—</strong><small>Receitas e parcelas efetivamente recebidas</small></div>
         </div>
         <div class="dashboard-essencial mt">
           <div class="card compact-card"><h3>Contas a receber</h3><div id="dashReceberOrigens" class="status-list"></div><p class="form-hint">Clientes bloqueados, órgãos públicos e receitas Saci/ARCM ainda em aberto, inclusive vencimentos futuros.</p></div>
@@ -132,9 +133,9 @@
           </div>
 
           <div class="finance-summary-grid">
-            <div class="finance-mini-card"><span>Dívida inicial</span><strong id="finDivida">R$ 0,00</strong></div>
-            <div class="finance-mini-card paid"><span>Total pago</span><strong id="finPago">R$ 0,00</strong><small id="finDesconto">Descontos: R$ 0,00</small></div>
-            <div class="finance-mini-card open"><span>Saldo devedor</span><strong id="finSaldo">R$ 0,00</strong></div>
+            <div class="finance-mini-card"><span>Dívida inicial</span><strong id="finDivida" class="ui-accent">R$ 0,00</strong></div>
+            <div class="finance-mini-card paid"><span>Total pago</span><strong id="finPago" class="ui-positive">R$ 0,00</strong><small id="finDesconto">Descontos: R$ 0,00</small></div>
+            <div class="finance-mini-card open"><span>Saldo devedor</span><strong id="finSaldo" class="ui-negative">R$ 0,00</strong></div>
             <div class="finance-mini-card"><span>Previsão</span><strong id="finPrevisao">—</strong></div>
           </div>
 
@@ -169,8 +170,8 @@
         <div class="gov-summary-grid">
           <div class="card gov-kpi"><span>Registros</span><strong id="govQtd">0</strong><small>débitos cadastrados</small></div>
           <div class="card gov-kpi"><span>Valor total</span><strong id="govTotal">R$ 0,00</strong><small>total dos débitos</small></div>
-          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="govPago">R$ 0,00</strong><small id="govDesconto">Descontos: R$ 0,00</small></div>
-          <div class="card gov-kpi gov-open"><span>Em aberto</span><strong id="govNaoPago">R$ 0,00</strong><small>saldo pendente</small></div>
+          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="govPago" class="ui-positive">R$ 0,00</strong><small id="govDesconto">Descontos: R$ 0,00</small></div>
+          <div class="card gov-kpi gov-open"><span>Em aberto</span><strong id="govNaoPago" class="ui-negative">R$ 0,00</strong><small>saldo pendente</small></div>
         </div>
 
         <details id="orgaoCadastroCard" class="card mt compact-details"><summary id="tituloOrgao">Cadastrar débito de órgão público</summary>
@@ -217,9 +218,9 @@
         <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas Gerais</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><div class="desp-header-actions"><label class="desp-month-selector">Mês de competência<input id="despMes" type="month" required></label><button class="primary" id="novaDespesa" type="button">Nova despesa</button><button class="secondary" id="despAbrirVinculados" type="button" aria-expanded="false" aria-controls="despVinculadosCard">Novo cadastro</button></div></div>
         <div class="gov-summary-grid mt">
           <div class="card gov-kpi"><span>Total do mês</span><strong id="despTotal">R$ 0,00</strong></div>
-          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="despPagoTotal">R$ 0,00</strong></div>
-          <div class="card gov-kpi gov-open"><span>A pagar</span><strong id="despAberto">R$ 0,00</strong></div>
-          <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="despAtrasado">R$ 0,00</strong></div>
+          <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="despPagoTotal" class="ui-positive">R$ 0,00</strong></div>
+          <div class="card gov-kpi gov-open"><span>A pagar</span><strong id="despAberto" class="ui-negative">R$ 0,00</strong></div>
+          <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="despAtrasado" class="ui-negative">R$ 0,00</strong></div>
         </div>
         <div class="desp-group-summary mt" id="despGrupos"></div>
         <dialog class="desp-modal hidden" id="despCadastro" aria-labelledby="despTitulo"><div class="desp-modal-head"><h3 id="despTitulo">Cadastrar despesa</h3><button id="despModalFechar" type="button" aria-label="Fechar cadastro de despesa">×</button></div>
@@ -333,6 +334,6 @@
 <script src="/static/app.js?v=20261005-fluxo-geral"></script>
 <script src="/static/despesas.js?v=20261005-fluxo-geral"></script>
 <script src="/static/receitas.js?v=20261005-sem-lista-saci"></script>
-<script src="/static/fluxo_caixa.js?v=20261005-fluxo-geral"></script>
+<script src="/static/fluxo_caixa.js?v=20261005-padrao"></script>
 </body>
 </html>

@@ -29,6 +29,7 @@ async function fluxoCarregar(){
     const d=await api('/api/fluxo-caixa/geral?'+new URLSearchParams({mes}));if(consulta!==fluxoEstado.consulta)return;
     fluxoEstado.dados=d;
     for(const [id,k] of Object.entries({fluxoEntradas:'entradas',fluxoSaidas:'saidas',fluxoResultado:'resultado',fluxoFinal:'saldo_final'}))fluxoEl(id).textContent=moeda(d.resumo[k]);
+    for(const [id,k] of Object.entries({fluxoResultado:'resultado',fluxoFinal:'saldo_final'})){fluxoEl(id).classList.toggle('ui-negative',d.resumo[k]<0);fluxoEl(id).classList.toggle('ui-positive',d.resumo[k]>0)}
     fluxoEl('fluxoAnterior').textContent='Saldo anterior registrado: '+moeda(d.resumo.saldo_anterior);
     fluxoEl('fluxoOrigens').textContent=`Entradas: clientes bloqueados ${moeda(d.resumo.origens.clientes)} · Órgãos públicos ${moeda(d.resumo.origens.orgaos)} · Manuais Saci ${moeda(d.resumo.origens.manual)} · ARCM ${moeda(d.resumo.origens.arcm)}`;
     fluxoEl('fluxoAviso').textContent=`${d.registros.length} movimentação(ões) no mês · Integração automática com os controles de origem.`;
