@@ -1,6 +1,12 @@
 {% for unidade, nome in [('arcm','ARCM'),('saci','Saci')] %}
 <section id="receitas-{{ unidade }}" class="tab receitas-tab" data-unidade="{{ unidade }}">
+  {% if unidade == 'saci' %}
+  {% include "fluxo_caixa.html" %}
+  <details id="fluxoManuais" class="card compact-details mt"><summary>Lançamentos manuais e pendentes</summary>
+  <p class="form-hint">Gerencie entradas avulsas de Caixa, Fiado e Serviço. Só as recebidas entram no fluxo, na data do recebimento. Não relance valores já registrados nos controles de clientes e órgãos públicos.</p>
+  {% else %}
   <div class="page-head"><div><span class="eyebrow">CONTROLE DE RECEITAS</span><h2>Receitas {{ nome }}</h2><p>Clientes e receitas da {{ nome }}.</p></div><div class="rec-actions"><button type="button" class="primary" data-rec-nova="{{ unidade }}">Nova receita</button><button type="button" class="secondary" data-rec-cliente="{{ unidade }}">Novo cliente</button></div></div>
+  {% endif %}
   <div class="gov-summary-grid">
     <div class="card gov-kpi"><span>Total</span><strong id="rec-{{ unidade }}-total">R$ 0,00</strong></div>
     <div class="card gov-kpi gov-paid"><span>Recebido</span><strong id="rec-{{ unidade }}-recebido">R$ 0,00</strong></div>
@@ -29,6 +35,7 @@
     <div class="table-wrap"><table><thead><tr><th>Nome</th><th>CPF/CNPJ</th><th>Telefone</th><th>E-mail</th><th>Endereço</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-clientesBody"></tbody></table></div>
     <div class="table-pagination"><span id="rec-cli-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-cli-{{ unidade }}Paginas" aria-label="Páginas dos clientes {{ nome }}"></nav></div>
   </details>
+  {% if unidade == 'saci' %}</details>{% endif %}
 </section>
 {% endfor %}
 <dialog id="recModal" class="receita-modal" aria-labelledby="recTitulo">

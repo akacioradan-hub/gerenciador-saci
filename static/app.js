@@ -391,7 +391,7 @@ function renderOrgaosPublicos(){
   body.innerHTML=orgaosPublicos.length?orgaosPublicos.slice((paginaOrgaos-1)*LINHAS_TABELA,paginaOrgaos*LINHAS_TABELA).map(r=>`<tr>
     <td><input type="checkbox" class="org-selecao" data-id="${r.id}" ${r.pago||orgRecebendo?'disabled':''} ${orgSelecionados.has(r.id)?'checked':''} aria-label="Selecionar débito ${r.id}"></td>
     <td><strong>${r.nome_orgao}</strong></td><td>${r.tipo_orgao}</td><td>${String(r.dia).padStart(2,'0')}/${String(r.mes).padStart(2,'0')}/${r.ano}</td>
-    <td>${moeda(r.valor_debito)}${r.pago?`<small class="desconto-detalhe">Desconto: ${moeda(r.desconto)}<br>Recebido: ${moeda(r.valor_recebido)}</small>`:''}</td>
+    <td>${moeda(r.valor_debito)}${r.pago?`<small class="desconto-detalhe">Desconto: ${moeda(r.desconto)}<br>Recebido: ${moeda(r.valor_recebido)}<br>${r.data_recebimento?dataBR(r.data_recebimento):'Data de recebimento pendente'}</small>`:''}</td>
     <td><label class="paid-check"><input type="checkbox" ${r.pago?'checked':''} onchange="definirPagoOrgao(${r.id}, this.checked)"><span>Pago</span></label></td>
     <td>${r.numero_nota_fiscal}</td><td>${r.numero_ordem||'-'}</td>
     <td><div class="acoes icon-actions"><button class="edit icon-btn" title="Editar débito" aria-label="Editar débito" onclick="editarOrgaoPublico(${r.id})">✎</button><button class="danger icon-btn" title="Excluir débito" aria-label="Excluir débito" onclick="excluirOrgaoPublico(${r.id})">🗑</button></div></td>
@@ -406,10 +406,10 @@ function limparOrgaoPublico(){
 }
 function editarOrgaoPublico(id){
   const r=orgaosPublicos.find(x=>x.id===id);if(!r)return;
-  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').checked=!!r.pago;document.getElementById('orgaoDesconto').value=r.desconto||0;atualizarDescontoOrgao();document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.getElementById('orgaoCadastroCard').open=true;document.getElementById('orgaoCadastroCard').scrollIntoView({behavior:'smooth',block:'start'});
+  document.getElementById('orgaoId').value=r.id;document.getElementById('orgaoNome').value=r.nome_orgao;document.getElementById('orgaoTipo').value=r.tipo_orgao;document.getElementById('orgaoData').value=r.data_debito;document.getElementById('orgaoValor').value=r.valor_debito;document.getElementById('orgaoNota').value=r.numero_nota_fiscal;document.getElementById('orgaoOrdem').value=r.numero_ordem||'';document.getElementById('orgaoPago').checked=!!r.pago;document.getElementById('orgaoDesconto').value=r.desconto||0;document.getElementById('orgaoDataRecebimento').value=r.data_recebimento||'';atualizarDescontoOrgao();document.getElementById('tituloOrgao').textContent='Editar débito de órgão público';document.getElementById('cancelarOrgao').classList.remove('hidden');document.getElementById('orgaoCadastroCard').open=true;document.getElementById('orgaoCadastroCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 async function definirPagoOrgao(id, pago){
-  let desconto=0;
+  let desconto=0,data_recebimento=null;
   if(pago){
     const r=orgaosPublicos.find(x=>x.id===id);
     const entrada=prompt(`Desconto em reais sobre ${moeda(r?.valor_debito)} (0 para nenhum):`,'0');
@@ -418,10 +418,12 @@ async function definirPagoOrgao(id, pago){
     if(!/^\d+(?:[.,]\d{1,2})?$/.test(texto)){msg('Informe um desconto válido em reais.','erro');renderOrgaosPublicos();return}
     desconto=Number(texto.replace(',','.'));
     if(desconto>Number(r.valor_debito)){msg('O desconto não pode superar o débito.','erro');renderOrgaosPublicos();return}
+    data_recebimento=prompt('Data do recebimento (AAAA-MM-DD):',recHoje());
+    if(data_recebimento===null){renderOrgaosPublicos();return}
     if(!confirm(`Confirmar recebimento de ${moeda(Number(r.valor_debito)-desconto)}, com desconto de ${moeda(desconto)}?`)){renderOrgaosPublicos();return}
   }else if(!confirm('Reabrir o débito? O desconto será removido e o valor original voltará a ficar em aberto.')){renderOrgaosPublicos();return}
   try{
-    await api('/api/orgaos-publicos/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago,desconto})});
+    await api('/api/orgaos-publicos/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago,desconto,data_recebimento})});
     msg(pago?'Débito marcado como pago.':'Débito voltou para em aberto.');
     await Promise.all([carregarOrgaosPublicos(),carregarDashboard()]);
   }catch(err){
@@ -436,7 +438,7 @@ async function excluirOrgaoPublico(id){
 }
 const orgaoForm=document.getElementById('orgaoForm');
 if(orgaoForm){
-  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),numero_ordem:document.getElementById('orgaoOrdem').value.trim(),pago:document.getElementById('orgaoPago').checked,desconto:Number(document.getElementById('orgaoDesconto').value||0)};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await Promise.all([carregarOrgaosPublicos(),carregarDashboard()])}catch(err){msg(err.message,'erro')}});
+  orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),numero_ordem:document.getElementById('orgaoOrdem').value.trim(),pago:document.getElementById('orgaoPago').checked,data_recebimento:document.getElementById('orgaoDataRecebimento').value,desconto:Number(document.getElementById('orgaoDesconto').value||0)};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await Promise.all([carregarOrgaosPublicos(),carregarDashboard()])}catch(err){msg(err.message,'erro')}});
   document.getElementById('cancelarOrgao').addEventListener('click',limparOrgaoPublico);
   ['buscaOrgao','filtroAnoOrgao','filtroStatusOrgao','filtroDevedorOrgao'].forEach(id=>document.getElementById(id)?.addEventListener(id==='buscaOrgao'?'input':'change',()=>carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'))));
   carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'));
@@ -451,6 +453,8 @@ function atualizarResumoPagamento(){
 ['pagValor','pagDesconto'].forEach(id=>document.getElementById(id).addEventListener('input',atualizarResumoPagamento));
 function atualizarDescontoOrgao(){
   const pago=document.getElementById('orgaoPago').checked,campo=document.getElementById('orgaoDesconto');
+  const dataCampo=document.getElementById('orgaoDataRecebimento');dataCampo.disabled=!pago;dataCampo.required=pago;
+  if(!pago)dataCampo.value='';
   campo.disabled=!pago;
   if(!pago)campo.value='0';
   const valor=Number(document.getElementById('orgaoValor').value||0),desconto=Number(campo.value||0);
@@ -485,9 +489,11 @@ document.getElementById('orgReceberLote').addEventListener('submit',async e=>{
   const ids=orgaosPublicos.filter(r=>!r.pago&&orgSelecionados.has(r.id)).map(r=>r.id);
   const total=totalSelecaoOrgaos()/100,desconto=Number(document.getElementById('orgLoteDesconto').value||0);
   if(!confirm(`Receber ${ids.length} débito(s)?\nTotal: ${moeda(total)}\nDesconto: ${moeda(desconto)}\nValor recebido: ${moeda(total-desconto)}\nTodos os débitos selecionados serão marcados como pagos.`))return;
+  const data_recebimento=prompt('Data do recebimento dos débitos selecionados (AAAA-MM-DD):',recHoje());
+  if(data_recebimento===null)return;
   orgRecebendo=true;renderOrgaosPublicos();
   try{
-    const resultado=await api('/api/orgaos-publicos/receber-selecionados',{method:'POST',body:JSON.stringify({ids,desconto,total_esperado:total})});
+    const resultado=await api('/api/orgaos-publicos/receber-selecionados',{method:'POST',body:JSON.stringify({ids,desconto,total_esperado:total,data_recebimento})});
     msg(`${resultado.quantidade} débito(s) pago(s). Recebido: ${moeda(resultado.valor_recebido)}.`);
     await Promise.all([carregarOrgaosPublicos(),carregarDashboard()]);
   }catch(err){msg(err.message,'erro')}

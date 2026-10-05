@@ -1,0 +1,25 @@
+<div class="page-head"><div><span class="eyebrow">RECEITAS E DESPESAS REALIZADAS</span><h2>Fluxo de Caixa Saci</h2><p>Recebimentos de clientes e órgãos públicos, entradas manuais e despesas pagas.</p></div><div class="rec-actions"><label>Mês do fluxo<input id="fluxoMes" type="month" required></label><button type="button" class="primary" data-rec-nova="saci">Nova entrada</button><button type="button" class="secondary" id="fluxoAtualizar">Atualizar</button></div></div>
+<div class="gov-summary-grid">
+ <div class="card gov-kpi gov-paid"><span>Entradas do mês</span><strong id="fluxoEntradas">—</strong></div>
+ <div class="card gov-kpi gov-open"><span>Saídas do mês</span><strong id="fluxoSaidas">—</strong></div>
+ <div class="card gov-kpi"><span>Resultado do mês</span><strong id="fluxoResultado">—</strong><small>Entradas menos saídas</small></div>
+ <div class="card gov-kpi"><span>Saldo acumulado registrado</span><strong id="fluxoFinal">—</strong><small id="fluxoAnterior">Saldo anterior: —</small></div>
+</div>
+<p class="form-hint" id="fluxoOrigens"></p>
+<p class="form-hint">Valores pela data efetiva de recebimento ou pagamento, até hoje. Descontos e valores em aberto não movimentam o caixa. O saldo considera apenas o histórico registrado no sistema, sem saldo bancário inicial.</p>
+<p id="fluxoAviso" class="form-hint" role="status"></p>
+<details id="fluxoPendencias" class="card compact-details mt hidden"><summary id="fluxoPendenciasTitulo">Recebimentos sem data</summary>
+ <p class="form-hint">Estes órgãos já estão pagos, mas não tinham data de recebimento. Informe a data real para incluir cada valor no mês correto. A lista abrange todo o histórico.</p>
+ <div class="table-wrap"><table><thead><tr><th>Órgão</th><th>Nota fiscal</th><th>Recebido</th><th>Ação</th></tr></thead><tbody id="fluxoPendenciasBody"></tbody></table></div>
+ <div class="table-pagination"><span id="fluxo-pendenciasPaginaResumo"></span><nav id="fluxo-pendenciasPaginas" aria-label="Páginas de recebimentos sem data"></nav></div>
+</details>
+<div class="card mt"><h3>Resumo diário</h3>
+ <div class="table-wrap"><table><thead><tr><th>Dia</th><th>Entradas</th><th>Saídas</th><th>Resultado do dia</th><th>Saldo acumulado</th></tr></thead><tbody id="fluxoDiasBody"></tbody></table></div>
+ <div class="table-pagination"><span id="fluxo-diasPaginaResumo"></span><nav id="fluxo-diasPaginas" aria-label="Páginas do resumo diário"></nav></div>
+</div>
+<details class="card compact-details mt" open><summary>Movimentações do mês</summary>
+ <div class="fluxo-filtros"><label>Dia<input id="fluxoDia" type="date"></label><label>Origem<select id="fluxoOrigem"><option value="">Todas</option><option value="clientes">Clientes bloqueados</option><option value="orgaos">Órgãos públicos</option><option value="manual">Entradas manuais</option><option value="despesas">Despesas Saci</option></select></label></div>
+ <p class="form-hint">Filtros abaixo se aplicam somente às movimentações. Para corrigir um valor automático, edite ou reabra no controle de origem.</p>
+ <div class="table-wrap"><table><thead><tr><th>Data</th><th>Origem</th><th>Descrição / documento</th><th>Tipo</th><th>Valor</th><th>Pagamento</th></tr></thead><tbody id="fluxoMovBody"></tbody></table></div>
+ <div class="table-pagination"><span id="fluxo-movPaginaResumo"></span><nav id="fluxo-movPaginas" aria-label="Páginas das movimentações"></nav></div>
+</details>

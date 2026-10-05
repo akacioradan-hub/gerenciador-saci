@@ -1,0 +1,25 @@
+FLUXO DE CAIXA SACI — PRIMEIRA VERSÃO INTEGRADA
+
+Atualize todos os arquivos deste ZIP no GitHub, mantendo as pastas static e templates. Aguarde o deploy no Render e pressione Ctrl+F5.
+Novos arquivos obrigatórios: fluxo_caixa.py, static/fluxo_caixa.js e templates/fluxo_caixa.html.
+Também foram atualizados app.py, static/app.js, static/receitas.js, static/style.css, templates/index.html e templates/receitas.html.
+
+COMO FUNCIONA
+- Receitas Saci agora aparece como Fluxo de Caixa Saci.
+- Recebimentos do Controle de Clientes Bloqueados entram automaticamente pela data do pagamento, somente pelo valor efetivamente recebido.
+- Pagamentos de órgãos públicos entram automaticamente pela data do recebimento, descontando o desconto concedido.
+- Despesas Saci pagas entram como saídas na data do pagamento.
+- Nova entrada permite registrar Caixa, Fiado ou Serviço sem cliente obrigatório. Formas de pagamento: Pix, dinheiro, cartão crédito e cartão débito.
+- Receitas manuais recebidas são consideradas pela data de recebimento, independentemente do mês do cadastro. Receitas ARCM não entram no fluxo Saci.
+- Valores pendentes, descontos e datas futuras não movimentam o fluxo realizado.
+- Os valores são consultados diretamente nas origens, sem gerar cópias. Reabrir, corrigir ou excluir na origem reflete no fluxo ao abrir a aba ou clicar em Atualizar.
+- Resumo mensal, resumo diário e movimentações com paginação de cinco linhas. Filtros de dia e origem afetam somente a tabela de movimentações.
+
+HISTÓRICO
+A inicialização acrescenta a data de recebimento aos órgãos públicos sem apagar os dados existentes. Os registros antigos pagos que não tinham essa data ficam destacados no fluxo: use Informar data para lançar no mês correto. Não é usada uma data presumida.
+O saldo acumulado considera apenas movimentos registrados no sistema, sem um saldo bancário inicial. É provisório enquanto houver recebimentos sem data.
+Entradas manuais antigas são preservadas em Lançamentos manuais e pendentes. Se você já lançou manualmente um recebimento que também consta nos controles integrados, revise esse lançamento para não contar duas vezes. Não relance os recebimentos automáticos.
+As formas de pagamento dos controles antigos aparecem como Não informada quando não eram registradas.
+
+VALIDAÇÃO
+Testes locais de migração, recebimentos com descontos, recebimento em lote, reabertura, edição, exclusão, datas, saldos e permissões; conferência de renderização, filtros e paginação em ambiente simulado. Deploy no Render não realizado aqui.

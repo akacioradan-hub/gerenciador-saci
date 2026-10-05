@@ -5,7 +5,8 @@ import csv
 import io
 import json
 from decimal import Decimal, InvalidOperation
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
 from flask_sqlalchemy import SQLAlchemy
@@ -115,6 +116,7 @@ class DebitoOrgaoPublico(db.Model):
     valor_debito = db.Column(db.Numeric(14, 2), nullable=False, default=0)
     desconto = db.Column(db.Numeric(14, 2), nullable=False, default=0, server_default="0")
     pago = db.Column(db.Boolean, nullable=False, default=False, index=True)
+    data_recebimento = db.Column(db.Date)
     numero_nota_fiscal = db.Column(db.String(80), nullable=False, index=True)
     numero_ordem = db.Column(db.String(100), nullable=True, index=True)
     criado_em = db.Column(db.DateTime, nullable=False, server_default=func.now())
@@ -132,6 +134,7 @@ def debito_orgao_dict(registro):
         "valor_debito": float(registro.valor_debito or 0),
         "desconto": float(registro.desconto or 0),
         "valor_recebido": float(registro.valor_debito - (registro.desconto or 0)) if registro.pago else 0,
+        "data_recebimento": registro.data_recebimento.isoformat() if registro.data_recebimento else None,
         "pago": bool(registro.pago),
         "status": "PAGO" if registro.pago else "EM ABERTO",
         "numero_nota_fiscal": registro.numero_nota_fiscal,
@@ -182,6 +185,23 @@ def migrar_campos_orgaos_publicos():
         app.logger.info("Campo numero_ordem criado em debitos_orgaos_publicos com sucesso.")
 
 
+def migrar_datas_recebimento():
+    colunas = {c["name"] for c in inspect(db.engine).get_columns("debitos_orgaos_publicos")}
+    if "data_recebimento" not in colunas:
+        db.session.execute(db.text("ALTER TABLE debitos_orgaos_publicos ADD COLUMN data_recebimento DATE"))
+        db.session.commit()
+
+
+def data_recebimento_orgao(valor):
+    try:
+        dia = date.fromisoformat(valor or "")
+    except (ValueError, TypeError):
+        raise ValueError("Informe a data do recebimento do órgão público.")
+    if dia > datetime.now(ZoneInfo("America/Fortaleza")).date():
+        raise ValueError("A data do recebimento não pode ser futura.")
+    return dia
+
+
 def migrar_descontos():
     for tabela in ("pagamentos", "debitos_orgaos_publicos"):
         colunas = {c["name"] for c in inspect(db.engine).get_columns(tabela)}
@@ -210,6 +230,7 @@ def init_db():
             migrar_campos_cliente()
             migrar_campos_orgaos_publicos()
             migrar_descontos()
+            migrar_datas_recebimento()
             migrar_receitas()
             # Cria o administrador inicial somente se ainda não existir nenhum usuário.
             if db.session.execute(db.select(func.count(Usuario.id))).scalar_one() == 0:
@@ -858,7 +879,12 @@ def validar_debito_orgao_payload(data):
         return None, "O desconto não pode superar o valor do débito."
     if desconto and not data.get("pago", False):
         return None, "Marque como pago para aplicar o desconto."
+    try:
+        data_recebimento = data_recebimento_orgao(data.get("data_recebimento")) if data.get("pago", False) else None
+    except ValueError as erro:
+        return None, str(erro)
     return {
+        "data_recebimento": data_recebimento,
         "nome_orgao": nome_orgao,
         "tipo_orgao": tipo_orgao or "Outro",
         "data_debito": data_debito,
@@ -909,6 +935,7 @@ def receber_orgaos_selecionados():
     try:
         desconto = valor_monetario(dados.get("desconto", 0))
         esperado = valor_monetario(dados.get("total_esperado"))
+        recebido_em = data_recebimento_orgao(dados.get("data_recebimento"))
     except ValueError as erro:
         return jsonify({"erro": str(erro)}), 400
     registros = db.session.execute(db.select(DebitoOrgaoPublico).where(
@@ -932,6 +959,7 @@ def receber_orgaos_selecionados():
     for registro, parcela in zip(registros, parcelas):
         registro.desconto = Decimal(parcela) / 100
         registro.pago = True
+        registro.data_recebimento = recebido_em
     db.session.commit()
     return jsonify({"quantidade": len(registros), "total": float(total),
                     "desconto": float(desconto), "valor_recebido": float(total - desconto)})
@@ -953,7 +981,12 @@ def alternar_status_debito_orgao_publico(registro_id):
         return jsonify({"erro": str(erro)}), 400
     if desconto > registro.valor_debito:
         return jsonify({"erro": "O desconto não pode superar o valor do débito."}), 400
+    try:
+        recebido_em = data_recebimento_orgao(data.get("data_recebimento")) if pago else None
+    except ValueError as erro:
+        return jsonify({"erro": str(erro)}), 400
     registro.pago = pago
+    registro.data_recebimento = recebido_em
     registro.desconto = desconto
     db.session.commit()
     return jsonify(debito_orgao_dict(registro))
@@ -976,9 +1009,9 @@ def exportar_orgaos_publicos():
     registros = db.session.execute(db.select(DebitoOrgaoPublico).order_by(DebitoOrgaoPublico.data_debito.desc())).scalars().all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
-    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal", "Ordem de compra / serviço", "Desconto", "Valor recebido"])
+    writer.writerow(["Órgão devedor", "Tipo", "Dia", "Mês", "Ano", "Valor do débito", "Situação", "Número da nota fiscal", "Ordem de compra / serviço", "Desconto", "Valor recebido", "Data do recebimento"])
     for r in registros:
-        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "EM ABERTO", r.numero_nota_fiscal, r.numero_ordem or "", f"{float(r.desconto or 0):.2f}", f"{float(r.valor_debito - (r.desconto or 0)) if r.pago else 0:.2f}"])
+        writer.writerow([r.nome_orgao, r.tipo_orgao, r.data_debito.day, r.data_debito.month, r.data_debito.year, f"{float(r.valor_debito):.2f}", "PAGO" if r.pago else "EM ABERTO", r.numero_nota_fiscal, r.numero_ordem or "", f"{float(r.desconto or 0):.2f}", f"{float(r.valor_debito - (r.desconto or 0)) if r.pago else 0:.2f}", r.data_recebimento.isoformat() if r.data_recebimento else ""])
     mem = io.BytesIO(output.getvalue().encode("utf-8-sig"))
     return send_file(mem, mimetype="text/csv", as_attachment=True, download_name="debitos_orgaos_publicos.csv")
 
@@ -1107,6 +1140,9 @@ backup_despesas, migrar_despesas, aniversarios_funcionarios = registrar_despesas
 
 from receitas import registrar_receitas
 backup_receitas, migrar_receitas = registrar_receitas(app, db, login_required, valor_monetario)
+
+from fluxo_caixa import registrar_fluxo_caixa
+registrar_fluxo_caixa(app, db, login_required)
 
 init_db()
 

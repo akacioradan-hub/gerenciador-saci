@@ -19,7 +19,7 @@ async function recCarregar(u){
     st.clientes=clientes;st.registros=d.registros;recOpcoes(u);
     for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent=moeda(d.resumo[k]);
     recEl('rec-'+u+'-aviso').textContent=`${d.resumo.quantidade} receita(s) · Totais de todos os resultados filtrados pela data da receita.`;
-    recRender(u);recRenderClientes(u);if(u==='arcm')await recCarregarPrevisao();
+    recRender(u);recRenderClientes(u);if(u==='saci'&&typeof fluxoCarregar==='function')await fluxoCarregar();if(u==='arcm')await recCarregarPrevisao();
   }catch(e){if(consulta!==st.consulta)return;st.registros=[];recRender(u);for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent='—';recEl('rec-'+u+'-aviso').textContent='Não foi possível carregar: '+e.message}
 }
 function recRender(u){
@@ -43,7 +43,7 @@ const recCliCampos={nome:'Nome',documento:'Documento',telefone:'Telefone',email:
 function recAbrir(u,id){
   if(u==='arcm'&&!recEstados[u].clientes.length){msg('Cadastre um cliente para lançar a receita.');recAbrirCliente(u);return}
   recUnidade=u;recEl('recForm').reset();recEl('recId').value=id||'';recEl('recErro').textContent='';
-  recEl('recTitulo').textContent=(id?'Editar receita':'Nova receita')+' — '+recNome(u);
+  recEl('recTitulo').textContent=(id?'Editar receita':u==='saci'?'Nova entrada manual':'Nova receita')+' — '+recNome(u);
   recEl('recCliente').required=u==='arcm';recEl('recClienteLabel').textContent=u==='saci'?'Cliente (opcional)':'Cliente *';
   recEl('recCategoriaLabel').textContent=u==='saci'?'Fonte da receita':'Categoria';
   const atual=id?recEstados[u].registros.find(r=>r.id===id):null;
@@ -55,6 +55,7 @@ function recAbrir(u,id){
   recEl('recForma').innerHTML='<option value="">Não informada</option>'+formas.map(v=>`<option>${escaparFinanceiro(v)}</option>`).join('');
   recEl('recCliente').innerHTML=`<option value="">${u==='saci'?'Sem cliente':'Selecione...'}</option>`+recEstados[u].clientes.map(c=>`<option value="${c.id}">${escaparFinanceiro(c.nome)}</option>`).join('');
   recEl('recData').value=recHoje();recEl('recVencimento').value=recHoje();
+  if(u==='saci'&&!id)recEl('recRecebida').value='true';
   if(id){const r=recEstados[u].registros.find(r=>r.id===id);if(!r)return;for(const [k,v] of Object.entries(recCampos))recEl('rec'+v).value=r[k]??'';recEl('recRecebida').value=String(r.recebida)}
   recConfigurarContrato(u,id?recEstados[u].registros.find(r=>r.id===id):null);recAtualizarSituacao();recEl('recModal').showModal();recEl('recCliente').focus();
 }
