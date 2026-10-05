@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261004-status-receitas">
+<link rel="stylesheet" href="/static/style.css?v=20261005-menu-clean">
 </head>
 <body>
 <div class="app-shell">
@@ -17,14 +17,14 @@
       <img src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção">
       <div><strong>Administrator</strong><span>Saci Casa & Construção</span></div>
     </div>
-    <nav class="side-nav">
-      <button class="tab-btn active" data-tab="dashboard"><span>Dashboard</span></button>
-      <button class="tab-btn" data-tab="clientes"><span>Clientes Loja</span></button>
-      <button class="tab-btn" data-tab="orgaos"><span>Órgãos Públicos</span></button>
-      <button class="tab-btn" data-tab="receitas-saci"><span>Receitas Saci</span></button>
-      <button class="tab-btn" data-tab="despesas"><span>Despesas Saci</span></button>
-      <button class="tab-btn" data-tab="receitas-arcm"><span>Receitas ARCM</span></button>
-      {% if is_admin %}<button class="tab-btn" data-tab="usuarios"><span>Usuários</span></button>{% endif %}
+    <nav class="side-nav" aria-label="Menu principal">
+      <button class="tab-btn active" data-tab="dashboard" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>Dashboard</span></button>
+      <button class="tab-btn" data-tab="clientes" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 10-4"/><circle cx="18" cy="17" r="4"/><path d="m15 14 6 6"/></svg><span>Controle de Clientes Bloqueados</span></button>
+      <button class="tab-btn" data-tab="orgaos" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 9 9-6 9 6H3Zm2 3v6m7-6v6m7-6v6M3 21h18"/></svg><span>Controle de Pagamentos Órgãos Públicos</span></button>
+      <button class="tab-btn" data-tab="receitas-saci" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16H4zM8 12h8m-4-4 4 4-4 4"/></svg><span>Receitas Saci</span></button>
+      <button class="tab-btn" data-tab="despesas" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16H4zM8 12h8m-4-4-4 4 4 4"/></svg><span>Despesas Saci</span></button>
+      <button class="tab-btn" data-tab="receitas-arcm" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21V3h11v18m0-12h5v12M8 7h3M8 11h3M8 15h3M2 21h20"/></svg><span>Receitas ARCM</span></button>
+      {% if is_admin %}<button class="tab-btn" data-tab="usuarios" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 4a3 3 0 0 1 0 6m2 4a5 5 0 0 1 3 4v3"/></svg><span>Usuários</span></button>{% endif %}
     </nav>
     <div class="sidebar-footer">
       <div class="mini-user"><span class="avatar">{{ nome_usuario[:1]|upper }}</span><div><strong>{{ nome_usuario }}</strong><span>{% if is_admin %}Administrador{% else %}Usuário{% endif %}</span></div></div>
@@ -152,7 +152,7 @@
 
       <section id="clientes" class="tab">
         <div class="page-head">
-          <div><span class="eyebrow">CADASTRO</span><h2>Clientes Loja</h2><p>Consulte os clientes cadastrados e abra a ficha somente quando precisar cadastrar ou editar.</p></div>
+          <div><span class="eyebrow">CADASTRO</span><h2>Controle de Clientes Bloqueados</h2><p>Consulte os clientes cadastrados e abra a ficha somente quando precisar cadastrar ou editar.</p></div>
           <button id="novoClienteBtn" class="primary new-client-btn" type="button">+ Novo cliente</button>
         </div>
         <div id="clienteCadastroCard" class="card client-card hidden">
@@ -244,7 +244,7 @@
       </section>
 
       <section id="orgaos" class="tab">
-        <div class="page-head"><div><span class="eyebrow">SETOR PÚBLICO</span><h2>Débitos de órgãos públicos</h2><p>Controle de valores devidos por prefeituras, câmaras municipais e outros órgãos públicos.</p></div></div>
+        <div class="page-head"><div><span class="eyebrow">SETOR PÚBLICO</span><h2>Controle de Pagamentos Órgãos Públicos</h2><p>Controle de valores devidos por prefeituras, câmaras municipais e outros órgãos públicos.</p></div></div>
 
         <div class="gov-summary-grid">
           <div class="card gov-kpi"><span>Registros</span><strong id="govQtd">0</strong><small>débitos cadastrados</small></div>

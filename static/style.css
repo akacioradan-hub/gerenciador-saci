@@ -271,3 +271,23 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 .rec-contract{border:1px solid var(--border);border-radius:10px;padding:12px;min-width:0}.rec-contract legend{font-size:12px;font-weight:700}.rec-contract-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.rec-preview{max-height:180px;overflow:auto}.rec-preview:has(tbody:empty){display:none}.rec-previsao-scroll{max-height:280px;overflow:auto}.rec-previsao-scroll thead{position:sticky;top:0}@media(max-width:700px){.rec-contract-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:460px){.rec-contract-grid{grid-template-columns:1fr}}
 
 .rec-status-actions{display:flex;flex-direction:column;align-items:flex-start;gap:3px}.rec-status-actions .rec-status-icon{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;font-size:19px;line-height:1}.rec-status-icon.rec-pago{background:#e3f3eb;color:#146846}.rec-status-icon.rec-reabrir{background:#ededf1;color:#38383e}.rec-status-icon:focus-visible{outline:2px solid var(--red);outline-offset:2px}.rec-status-icon:disabled{opacity:.5;cursor:wait}
+
+/* Menu lateral: títulos completos, ícones uniformes e seleção discreta. */
+.sidebar{background:#202023;padding:20px 12px 16px;box-shadow:none;border-right:1px solid #303034}
+.sidebar-brand{gap:10px;padding:0 8px 20px}
+.sidebar-brand img{width:44px;height:44px;border-radius:10px}
+.sidebar-brand strong{font-size:14px;letter-spacing:.15px}
+.sidebar-brand span{font-size:10px;color:#aaaab3}
+.sidebar .side-nav{display:flex;flex-direction:column;gap:5px;margin:16px 0;padding:0 2px;flex:1;scrollbar-width:thin;scrollbar-color:#505057 transparent}
+.side-nav .tab-btn{position:relative;flex-shrink:0;width:100%;min-height:44px;padding:11px 12px;gap:11px;border-radius:8px;color:#c5c5cd;font-size:12px;font-weight:500;line-height:1.45;box-shadow:none;transition:background .15s,color .15s}
+.side-nav .tab-btn span{min-width:0;white-space:normal;overflow-wrap:break-word}
+.side-nav .menu-icon{width:18px;height:18px;flex:0 0 18px;opacity:.8}
+.side-nav .tab-btn:hover{background:#2b2b30;color:#fff}
+.side-nav .tab-btn.active{background:#343035;color:#fff;font-weight:650;box-shadow:none}
+.side-nav .tab-btn.active::before{content:"";position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:3px;background:#ef514c}
+.side-nav .tab-btn.active .menu-icon{color:#ff8984;opacity:1}
+.side-nav .tab-btn:focus-visible,.side-logout:focus-visible{outline:2px solid #ff8984;outline-offset:2px}
+.sidebar-footer{flex-shrink:0;padding:14px 8px 0}
+.mini-user{margin-bottom:8px}.sidebar .avatar{width:30px;height:30px;font-size:12px;background:#36363d;color:#eee}
+.side-logout{padding:7px 0;color:#aaaab3;font-size:11px}
+@media(max-width:820px){.sidebar{width:min(280px,88vw)}}
