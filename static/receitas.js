@@ -19,7 +19,7 @@ async function recCarregar(u){
     st.clientes=clientes;st.registros=d.registros;recOpcoes(u);
     for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent=moeda(d.resumo[k]);
     recEl('rec-'+u+'-aviso').textContent=`${d.resumo.quantidade} receita(s) · Totais de todos os resultados filtrados pela data da receita.`;
-    recRender(u);recRenderClientes(u);if(u==='saci'&&typeof fluxoCarregar==='function')await fluxoCarregar();if(u==='arcm')await recCarregarPrevisao();
+    recRender(u);recRenderClientes(u);if(u==='saci'&&typeof fluxoCarregar==='function')await fluxoCarregar();if(u==='arcm'){await recCarregarPrevisao();if(typeof fluxoArcmCarregar==='function')await fluxoArcmCarregar();}
   }catch(e){if(consulta!==st.consulta)return;st.registros=[];recRender(u);for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent='—';recEl('rec-'+u+'-aviso').textContent='Não foi possível carregar: '+e.message}
 }
 function recRender(u){

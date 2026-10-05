@@ -1,5 +1,5 @@
 const fluxoEstado={dados:null,consulta:0,dias:1,mov:1,pendencias:1};
-const fluxoNomes={clientes:'Clientes bloqueados',orgaos:'Órgãos públicos',manual:'Entrada manual',despesas:'Despesas Saci'};
+const fluxoNomes={clientes:'Clientes bloqueados',orgaos:'Órgãos públicos',manual:'Entrada manual',despesas:'Despesas Gerais'};
 const fluxoEl=id=>document.getElementById(id);
 function fluxoPagina(tipo,rows,body,colunas,render){
   fluxoEstado[tipo]=Math.min(fluxoEstado[tipo],Math.max(1,Math.ceil(rows.length/5)));

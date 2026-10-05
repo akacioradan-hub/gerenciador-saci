@@ -7,9 +7,11 @@ from sqlalchemy import select, union_all, literal, func, case
 
 
 def registrar_fluxo_caixa(app, db, login_required):
-    @app.get('/api/fluxo-caixa/saci')
+    @app.get('/api/fluxo-caixa/<unidade>')
     @login_required
-    def fluxo_saci():
+    def fluxo_saci(unidade):
+        if unidade not in ('saci', 'arcm'):
+            return jsonify(erro='Unidade não encontrada.'), 404
         hoje = datetime.now(ZoneInfo('America/Fortaleza')).date()
         mes = request.args.get('mes') or hoje.strftime('%Y-%m')
         try:
@@ -31,13 +33,22 @@ def registrar_fluxo_caixa(app, db, login_required):
         orgaos = movimento(o, o.c.data_recebimento, o.c.valor_debito - func.coalesce(o.c.desconto, 0), 'orgaos', 'entrada', o.c.nome_orgao, o.c.numero_nota_fiscal, literal('')).where(o.c.pago.is_(True))
         manuais = movimento(r, r.c.data_recebimento, r.c.valor, 'manual', 'entrada', r.c.descricao, r.c.documento, r.c.forma_pagamento, r.c.categoria).where(r.c.unidade == 'saci', r.c.recebida.is_(True))
         despesas = movimento(d, d.c.data_pagamento, d.c.valor, 'despesas', 'saida', d.c.descricao, d.c.documento, literal('')).where(d.c.pago.is_(True))
-        movimentos = union_all(clientes, orgaos, manuais, despesas).subquery()
+        if unidade == 'arcm':
+            rc, contrato = t['clientes_receitas'], t['contratos_receitas_arcm']
+            receitas_arcm = movimento(r, r.c.data_recebimento, r.c.valor, 'arcm', 'entrada', r.c.descricao,
+                r.c.documento, r.c.forma_pagamento, r.c.categoria).add_columns(rc.c.nome.label('cliente_nome'),
+                contrato.c.numero.label('numero_contrato'), r.c.parcela, r.c.cliente_id).select_from(
+                    r.outerjoin(rc, r.c.cliente_id == rc.c.id).outerjoin(contrato, r.c.contrato_id == contrato.c.id)
+                ).where(r.c.unidade == 'arcm', r.c.recebida.is_(True))
+            movimentos = receitas_arcm.subquery()
+        else:
+            movimentos = union_all(clientes, orgaos, manuais, despesas).subquery()
         valido = (movimentos.c.valor > 0) & (movimentos.c.data <= hoje)
         sinal = case((movimentos.c.tipo == 'entrada', movimentos.c.valor), else_=-movimentos.c.valor)
         anterior = db.session.execute(select(func.coalesce(func.sum(sinal), 0)).where(valido, movimentos.c.data < inicio)).scalar_one()
         rows = db.session.execute(select(movimentos).where(valido, movimentos.c.data >= inicio, movimentos.c.data < fim).order_by(movimentos.c.data, movimentos.c.origem, movimentos.c.id)).mappings().all()
         entradas, saidas = Decimal(0), Decimal(0)
-        origens = dict(clientes=Decimal(0), orgaos=Decimal(0), manual=Decimal(0), despesas=Decimal(0))
+        origens = dict(clientes=Decimal(0), orgaos=Decimal(0), manual=Decimal(0), despesas=Decimal(0), arcm=Decimal(0))
         diario = {}
         registros = []
         for row in rows:
@@ -56,7 +67,7 @@ def registrar_fluxo_caixa(app, db, login_required):
             saldo = item['entradas'] - item['saidas']
             acumulado += saldo
             dias.append(dict(data=item['data'], entradas=float(item['entradas']), saidas=float(item['saidas']), saldo=float(saldo), acumulado=float(acumulado)))
-        sem_data = db.session.execute(select(o.c.id, o.c.nome_orgao, o.c.numero_nota_fiscal,
+        sem_data = [] if unidade == 'arcm' else db.session.execute(select(o.c.id, o.c.nome_orgao, o.c.numero_nota_fiscal,
             (o.c.valor_debito - func.coalesce(o.c.desconto, 0)).label('valor')).where(o.c.pago.is_(True), o.c.data_recebimento.is_(None)).order_by(o.c.nome_orgao, o.c.id)).mappings().all()
         return jsonify(mes=mes, resumo=dict(entradas=float(entradas), saidas=float(saidas), resultado=float(entradas-saidas),
             saldo_anterior=float(anterior), saldo_final=float(acumulado), origens={k:float(v) for k,v in origens.items()}),

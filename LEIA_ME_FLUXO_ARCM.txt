@@ -1,0 +1,27 @@
+FLUXO DE CAIXA ARCM E MENU
+
+Atualize todos os arquivos deste ZIP no GitHub, mantendo static e templates. Aguarde o deploy no Render e pressione Ctrl+F5.
+Novos arquivos: templates/fluxo_arcm.html e static/fluxo_arcm.js.
+Alterados: fluxo_caixa.py, templates/index.html, templates/fluxo_caixa.html, static/fluxo_caixa.js, static/receitas.js e static/style.css.
+
+MENU
+1. Fluxo de Caixa Saci
+2. Fluxo de Caixa ARCM
+3. Receitas ARCM
+4. Controle de Cliente Bloqueado Saci
+5. Controle de Pagamentos de Órgãos Públicos Saci
+Abaixo: Despesas Gerais, Dashboard e Usuários (administradores).
+
+ARCM
+O fluxo consulta diretamente as Receitas ARCM recebidas, inclusive parcelas de contratos, pela data efetiva do recebimento. Não cria lançamentos duplicados. Reabrir ou excluir uma receita remove a entrada; registrar o recebimento a inclui no dia informado. Pendências, previsões e recebimentos futuros ficam fora do fluxo realizado.
+Há totais de entradas no mês, anteriores ao mês e acumuladas; resumo diário; filtro de cliente e dia na tabela de recebimentos; paginação de cinco linhas.
+Para cadastrar, receber ou corrigir receitas, use o botão Receitas ARCM.
+
+DESPESAS
+Despesas Saci foi renomeado para Despesas Gerais. O vínculo anterior dessas despesas com o fluxo Saci foi preservado. Nesta versão o fluxo ARCM reúne somente entradas e não representa saldo líquido após despesas. Para incluir saídas ARCM será necessário atribuir as despesas à empresa, evitando contabilizá-las em ambos os fluxos.
+
+DADOS
+As receitas e despesas existentes foram preservadas. Este ajuste não exige novas colunas no banco. O pacote completo inclui as migrações anteriores para quem ainda não atualizou o fluxo Saci.
+
+VALIDAÇÃO
+Testes locais: isolamento entre Saci e ARCM, datas de recebimento, totais mensais e diários, acumulados, exclusão de pendências, reabertura e recebimento, integração Saci, ordem do menu, renderização e paginação/filtros em ambiente simulado. Deploy no Render não realizado aqui.
