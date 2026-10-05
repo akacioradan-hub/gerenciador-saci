@@ -296,6 +296,67 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             db.session.rollback()
             return jsonify(erro=str(e) if isinstance(e, ValueError) else 'Não foi possível salvar. Confira se o número do contrato já existe e atualize os cadastros.'), 400
 
+    @app.put('/api/receitas/arcm/contratos/<int:ident>')
+    @login_required
+    def editar_contrato_arcm(ident):
+        contrato = db.session.execute(db.select(ContratoReceita).where(ContratoReceita.id == ident).with_for_update()).scalar_one_or_none()
+        if not contrato: return jsonify(erro='Contrato não encontrado.'), 404
+        try:
+            d = payload()
+            if d.get('contrato_esperado') != contrato_dict(contrato):
+                return jsonify(erro='O contrato foi alterado. Atualize a lista e abra a edição novamente.'), 409
+            numero = texto(d, 'numero', 80, True).upper()
+            tipo = d.get('tipo_pagamento')
+            intervalos = {'avista':0, 'mensal':1, 'trimestral':3, 'semestral':6, 'anual':12}
+            if not isinstance(tipo, str) or tipo not in intervalos: raise ValueError('Tipo de pagamento inválido.')
+            prazo = d.get('prazo_meses')
+            if type(prazo) is not int or not 1 <= prazo <= 600: raise ValueError('Informe prazo de 1 a 600 meses.')
+            inicio = data_valida(d.get('inicio'))
+            primeiro = data_valida(d.get('primeiro_vencimento'))
+            valor = valor_monetario(d.get('valor_parcela'))
+            if valor <= 0: raise ValueError('Informe um valor positivo por pagamento.')
+            fim = adicionar_meses(inicio, prazo) - timedelta(days=1)
+            passo = intervalos[tipo]
+            quantidade = (prazo + passo - 1)//passo if passo else 1
+            datas = [adicionar_meses(primeiro, i*passo) for i in range(quantidade)]
+            if datas[0] < inicio or datas[-1] > fim: raise ValueError('Os vencimentos devem ficar dentro do período do contrato.')
+            if db.session.execute(db.select(ContratoReceita.id).where(ContratoReceita.numero == numero, ContratoReceita.id != ident)).first():
+                return jsonify(erro='Já existe um contrato com este número.'), 409
+            linhas = db.session.execute(db.select(Receita).where(Receita.contrato_id == ident).order_by(Receita.parcela).with_for_update()).scalars().all()
+            if not linhas: raise ValueError('Este contrato não possui receitas para atualizar.')
+            recalcular = (tipo, prazo, inicio, primeiro, valor) != (contrato.tipo_pagamento, contrato.prazo_meses, contrato.inicio, contrato.primeiro_vencimento, contrato.valor_parcela)
+            criadas = removidas = atualizadas = 0
+            if recalcular:
+                for r in linhas:
+                    if not r.parcela or not 1 <= r.parcela <= contrato.parcelas: raise ValueError('Numeração de parcelas inconsistente. Confira as receitas antes de alterar o contrato.')
+                    if r.recebida and (r.parcela > quantidade or r.vencimento != datas[r.parcela-1]):
+                        raise ValueError('A alteração removeria ou mudaria o vencimento de uma parcela já recebida. Mantenha essas parcelas no cronograma.')
+                modelo = linhas[-1]
+                modelo_campos = {k:getattr(modelo,k) for k in ('cliente_id','descricao','categoria','forma_pagamento','observacoes')}
+                for r in linhas:
+                    if r.recebida: continue
+                    if r.parcela > quantidade:
+                        db.session.delete(r); removidas += 1
+                    else:
+                        r.vencimento = datas[r.parcela-1]
+                        r.data = r.vencimento
+                        r.valor = valor
+                        atualizadas += 1
+                # Ampliações criam somente as novas posições; exclusões antigas não reaparecem.
+                for n in range(contrato.parcelas+1, quantidade+1):
+                    dia = datas[n-1]
+                    db.session.add(Receita(unidade='arcm', contrato_id=ident, parcela=n, data=dia, vencimento=dia,
+                        valor=valor, recebida=False, data_recebimento=None, documento='', **modelo_campos))
+                    criadas += 1
+            contrato.numero = numero; contrato.tipo_pagamento = tipo; contrato.prazo_meses = prazo
+            contrato.inicio = inicio; contrato.fim = fim; contrato.primeiro_vencimento = primeiro
+            contrato.valor_parcela = valor; contrato.parcelas = quantidade
+            db.session.commit()
+            return jsonify(contrato=contrato_dict(contrato), criadas=criadas, removidas=removidas, atualizadas=atualizadas)
+        except (ValueError, OverflowError, IntegrityError) as e:
+            db.session.rollback()
+            return jsonify(erro=str(e) if isinstance(e, ValueError) else 'Não foi possível salvar as informações do contrato.'), 400
+
     @app.get('/api/receitas/arcm/previsao')
     @login_required
     def previsao_receitas_arcm():

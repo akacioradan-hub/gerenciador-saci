@@ -125,8 +125,9 @@ function recConfigurarContrato(u,r){
   for(const id of ['recNumeroContrato','recTipoPagamento','recPrazoMeses','recInicioContrato'])recEl(id).disabled=!ativo||!!r;
   recEl('recNumeroContrato').value=c?.numero||'';recEl('recTipoPagamento').value=c?.tipo_pagamento||'avista';recEl('recPrazoMeses').value=c?.prazo_meses||1;recEl('recInicioContrato').value=c?.inicio||recHoje();
   recEl('recCliente').disabled=!!c;
+  recEl('recEditarContrato').classList.toggle('hidden',!c);
   if(r&&ativo){
-    recEl('recContratoResumo').textContent=c?`Contrato ${c.numero} · Prazo: ${c.prazo_meses} meses · ${dataBR(c.inicio)} a ${dataBR(c.fim)}. Editando somente a parcela ${r.parcela}/${c.parcelas}; salvar não gera novas parcelas.`:'Receita avulsa existente. Para gerar um contrato parcelado, use Nova receita.';
+    recEl('recContratoResumo').textContent=c?`Contrato ${c.numero} · Prazo: ${c.prazo_meses} meses · ${dataBR(c.inicio)} a ${dataBR(c.fim)}. Parcela ${r.parcela}/${c.parcelas}. Use Editar informações para alterar o contrato e suas parcelas em aberto.`:'Receita avulsa existente. Para gerar um contrato parcelado, use Nova receita.';
     recEl('recContratoPreview').innerHTML='';
   }
   recAtualizarContrato();

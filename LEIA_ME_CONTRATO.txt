@@ -1,0 +1,13 @@
+INFORMAÇÕES SOBRE CONTRATO
+
+Em Receitas ARCM, clique em editar uma receita vinculada a contrato. Na seção Informações sobre contrato (antes Contrato ARCM), clique em Editar informações.
+A janela permite alterar número, tipo de pagamento, prazo, início, primeiro vencimento e valor por pagamento. Confira e clique em Salvar contrato.
+
+Alterações de condições atualizam as parcelas em aberto. Ampliações criam as novas posições; reduções removem apenas parcelas pendentes fora do novo cronograma. Valores e datas de recebimentos já registrados são preservados. Alterações que removeriam ou mudariam o vencimento de uma parcela recebida são bloqueadas com explicação.
+Alterar somente o número mantém as parcelas como estão e não recria parcelas excluídas anteriormente. O cliente permanece o mesmo do contrato. Receitas avulsas sem contrato continuam editáveis como receitas avulsas.
+Salve eventuais alterações na receita antes de abrir a edição do contrato. Ao salvar o contrato, as duas janelas fecham e as receitas são atualizadas.
+
+Atualize todos os arquivos no GitHub. Arquivo novo obrigatório: static/contrato_edicao.js. Também alterados: receitas.py, static/receitas.js, templates/receitas.html e templates/index.html.
+Depois do deploy no Render, pressione Ctrl+F5. Nenhuma alteração de estrutura de banco é necessária.
+
+Testado localmente: extensão e redução de prazo, ajuste de pendentes, preservação de recebidos, bloqueio de alteração de parcelas recebidas, prevenção de edição com dados desatualizados, alteração de número sem recriar parcelas, reflexo no fluxo e autenticação. Sintaxe JavaScript e renderização HTML verificadas. Deploy no Render não executado aqui.

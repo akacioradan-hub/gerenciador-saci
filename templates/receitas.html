@@ -58,7 +58,8 @@
     <label>Forma de pagamento<select id="recForma"><option value="">Não informada</option><option>Pix</option><option>Dinheiro</option><option>Cartão</option><option>Transferência</option><option>Boleto</option><option>Outro</option></select></label>
     <label id="recDocumentoCampo">Documento / nota fiscal<input id="recDocumento" maxlength="80"></label>
     <fieldset id="recContratoCampos" class="rec-full rec-contract hidden">
-      <legend>Contrato ARCM</legend>
+      <legend>Informações sobre contrato</legend>
+      <button type="button" class="secondary hidden" id="recEditarContrato">Editar informações</button>
       <div class="rec-contract-grid">
         <label>Número do contrato<input id="recNumeroContrato" maxlength="80"></label>
         <label>Tipo de pagamento<select id="recTipoPagamento"><option value="avista">À vista</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option></select></label>
@@ -86,4 +87,19 @@
     <p id="recCliErro" class="rec-error rec-full" role="alert"></p>
     <div class="form-actions rec-full"><button type="submit" class="primary">Salvar</button><button type="button" class="secondary" data-rec-fechar="recClienteModal">Cancelar</button></div>
   </form>
+</dialog>
+
+<dialog id="contratoEdicaoModal" class="receita-modal" aria-labelledby="contratoEdicaoTitulo">
+ <div class="rec-modal-head"><h3 id="contratoEdicaoTitulo">Informações sobre contrato</h3><button type="button" class="secondary" id="contratoEdicaoFechar" aria-label="Fechar informações sobre contrato">×</button></div>
+ <form id="contratoEdicaoForm" class="rec-form">
+  <label>Número do contrato *<input id="contratoEdicaoNumero" maxlength="80" required></label>
+  <label>Tipo de pagamento<select id="contratoEdicaoTipo"><option value="avista">À vista</option><option value="mensal">Mensal</option><option value="trimestral">Trimestral</option><option value="semestral">Semestral</option><option value="anual">Anual</option></select></label>
+  <label>Prazo do contrato (meses) *<input id="contratoEdicaoPrazo" type="number" min="1" max="600" required></label>
+  <label>Início do contrato *<input id="contratoEdicaoInicio" type="date" required></label>
+  <label>Primeiro vencimento *<input id="contratoEdicaoVencimento" type="date" required></label>
+  <label>Valor por pagamento (R$) *<input id="contratoEdicaoValor" type="number" min="0.01" max="9999999999.99" step="0.01" required></label>
+  <p class="form-hint rec-full">Alterações de prazo, datas, tipo ou valor atualizam as parcelas em aberto. Aumentar o prazo pode criar parcelas; diminuir pode excluir parcelas pendentes. Valores e recebimentos já registrados são preservados. Salvar aqui fecha também a edição da receita; salve antes eventuais alterações feitas nela.</p>
+  <p id="contratoEdicaoErro" class="rec-error rec-full" role="alert"></p>
+  <div class="form-actions rec-full"><button type="submit" class="primary">Salvar contrato</button><button type="button" class="secondary" id="contratoEdicaoCancelar">Cancelar</button></div>
+ </form>
 </dialog>
