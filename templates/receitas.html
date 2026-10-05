@@ -11,8 +11,8 @@
   <div class="gov-summary-grid">
     <div class="card gov-kpi"><span>Total</span><strong id="rec-{{ unidade }}-total">R$ 0,00</strong></div>
     <div class="card gov-kpi gov-paid"><span>Recebido</span><strong id="rec-{{ unidade }}-recebido">R$ 0,00</strong></div>
-    <div class="card gov-kpi gov-open"><span>Pendente</span><strong id="rec-{{ unidade }}-pendente">R$ 0,00</strong></div>
-    <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="rec-{{ unidade }}-atrasado">R$ 0,00</strong><small>Incluído no pendente</small></div>
+    <div class="card gov-kpi gov-open"><span>Pendente</span><strong id="rec-{{ unidade }}-pendente">R$ 0,00</strong>{% if unidade == 'arcm' %}<small>Sem os valores em atraso</small>{% endif %}</div>
+    <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="rec-{{ unidade }}-atrasado">R$ 0,00</strong><small>{% if unidade == 'arcm' %}Vencidos e não recebidos{% else %}Incluído no pendente{% endif %}</small></div>
   </div>
   {% if unidade == 'arcm' %}</details>{% endif %}
   <div class="card mt">

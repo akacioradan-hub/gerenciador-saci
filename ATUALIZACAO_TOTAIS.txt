@@ -1,0 +1,4 @@
+Em Receitas ARCM, Totais dos lançamentos filtrados: Pendente agora desconta o valor Em atraso.
+Total = Recebido + Pendente + Em atraso.
+Arquivos alterados: static/receitas.js, templates/receitas.html, templates/index.html.
+Atualize no GitHub, aguarde o deploy no Render e pressione Ctrl+F5.

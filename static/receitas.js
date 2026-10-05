@@ -18,7 +18,7 @@ async function recCarregar(u){
     const [clientes,d]=await Promise.all([api('/api/receitas/'+u+'/clientes'),api('/api/receitas/'+u+'?'+new URLSearchParams(filtros))]);
     if(consulta!==st.consulta)return;
     st.clientes=clientes;st.registros=d.registros;recOpcoes(u);
-    for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent=moeda(d.resumo[k]);
+    for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent=moeda(u==='arcm'&&k==='pendente'?Math.max(0,d.resumo.pendente-d.resumo.atrasado):d.resumo[k]);
     recEl('rec-'+u+'-aviso').textContent=u==='arcm'?`${d.resumo.quantidade} receita(s) · Em aberto: ${moeda(d.resumo.pendente)} · De meses anteriores: ${moeda(d.resumo.pendencias_anteriores)} · ${filtros.status==='recebida'?'Recebidas em todo o histórico (mês de consulta não aplicado)':'Recebidas no mês'}: ${moeda(d.resumo.recebido)}. Totais conforme os filtros da tabela.`:`${d.resumo.quantidade} receita(s) · Totais de todos os resultados filtrados pela data da receita.`;
     recRender(u);recRenderClientes(u);if(u==='saci'&&typeof fluxoCarregar==='function')await fluxoCarregar();if(u==='arcm'){await recCarregarPrevisao();if(typeof fluxoCarregar==='function')await fluxoCarregar();}
   }catch(e){if(consulta!==st.consulta)return;st.registros=[];recRender(u);for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent='—';recEl('rec-'+u+'-aviso').textContent='Não foi possível carregar: '+e.message}
