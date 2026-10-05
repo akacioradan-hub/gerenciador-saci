@@ -1,0 +1,3 @@
+Correção: botão do Fluxo de Caixa renomeado para Nova entrada.
+
+Para aplicar apenas esta correção, atualize templates/fluxo_caixa.html no GitHub. O ZIP contém o projeto completo com a ordem de menu solicitada anteriormente. Após o deploy no Render, pressione Ctrl+F5.
