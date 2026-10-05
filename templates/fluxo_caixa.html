@@ -1,4 +1,4 @@
-<div class="page-head"><div><span class="eyebrow">RECEITAS E DESPESAS REALIZADAS</span><h2>Fluxo de Caixa Saci</h2><p>Recebimentos de clientes e órgãos públicos, entradas manuais e despesas pagas.</p></div><div class="rec-actions"><label>Mês do fluxo<input id="fluxoMes" type="month" required></label><button type="button" class="primary" data-rec-nova="saci">Nova entrada</button><button type="button" class="secondary" id="fluxoAtualizar">Atualizar</button></div></div>
+<div class="page-head"><div><span class="eyebrow">RECEITAS E DESPESAS REALIZADAS</span><h2>Fluxo de Caixa</h2><p>Entradas Saci e ARCM e saídas de Despesas Gerais, em um único caixa.</p></div><div class="rec-actions"><label>Mês do fluxo<input id="fluxoMes" type="month" required></label><button type="button" class="primary" data-rec-nova="saci">Nova entrada Saci</button><button type="button" class="secondary" data-go-tab="receitas-arcm">Receitas ARCM</button><button type="button" class="secondary" data-go-tab="despesas">Despesas Gerais</button><button type="button" class="secondary" id="fluxoAtualizar">Atualizar</button></div></div>
 <div class="gov-summary-grid">
  <div class="card gov-kpi gov-paid"><span>Entradas do mês</span><strong id="fluxoEntradas">—</strong></div>
  <div class="card gov-kpi gov-open"><span>Saídas do mês</span><strong id="fluxoSaidas">—</strong></div>
@@ -18,7 +18,7 @@
  <div class="table-pagination"><span id="fluxo-diasPaginaResumo"></span><nav id="fluxo-diasPaginas" aria-label="Páginas do resumo diário"></nav></div>
 </div>
 <details class="card compact-details mt" open><summary>Movimentações do mês</summary>
- <div class="fluxo-filtros"><label>Dia<input id="fluxoDia" type="date"></label><label>Origem<select id="fluxoOrigem"><option value="">Todas</option><option value="clientes">Clientes bloqueados</option><option value="orgaos">Órgãos públicos</option><option value="manual">Entradas manuais</option><option value="despesas">Despesas Gerais</option></select></label></div>
+ <div class="fluxo-filtros"><label>Dia<input id="fluxoDia" type="date"></label><label>Origem<select id="fluxoOrigem"><option value="">Todas</option><option value="clientes">Clientes bloqueados</option><option value="orgaos">Órgãos públicos</option><option value="manual">Entradas manuais Saci</option><option value="arcm">Receitas ARCM</option><option value="despesas">Despesas Gerais</option></select></label></div>
  <p class="form-hint">Filtros abaixo se aplicam somente às movimentações. Para corrigir um valor automático, edite ou reabra no controle de origem.</p>
  <div class="table-wrap"><table><thead><tr><th>Data</th><th>Origem</th><th>Descrição / documento</th><th>Tipo</th><th>Valor</th><th>Pagamento</th></tr></thead><tbody id="fluxoMovBody"></tbody></table></div>
  <div class="table-pagination"><span id="fluxo-movPaginaResumo"></span><nav id="fluxo-movPaginas" aria-label="Páginas das movimentações"></nav></div>

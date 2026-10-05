@@ -489,6 +489,8 @@ async function carregarResumoDashboard(){
     const d=await api('/api/dashboard/resumo?'+new URLSearchParams({mes:campo.value}));if(consulta!==consultaResumoDashboard)return;
     document.getElementById('dashReceber').textContent=moeda(d.receber.total);
     document.getElementById('dashPagar').textContent=moeda(d.pagar.total);
+    document.getElementById('dashRecebidoSaci').textContent=moeda(d.recebidos.saci);
+    document.getElementById('dashRecebidoArcm').textContent=moeda(d.recebidos.arcm);
     document.getElementById('dashPagarAtrasado').textContent='Em atraso: '+moeda(d.pagar.atrasado);
     document.getElementById('dashFaturamento').textContent=moeda(d.previsao[0].total);
     document.getElementById('dashFaturamentoMes').textContent=mesLabel(d.mes)+' · Receitas cadastradas por vencimento';
@@ -496,8 +498,8 @@ async function carregarResumoDashboard(){
     document.getElementById('dashReceberOrigens').innerHTML=Object.entries(d.receber.origens).map(([k,v])=>`<div class="status-row"><span>${nomes[k]||escaparFinanceiro(k)}</span><strong>${moeda(v)}</strong></div>`).join('');
     document.getElementById('dashPagarGrupos').innerHTML=Object.entries(d.pagar.grupos).map(([k,v])=>`<div class="status-row"><span>${escaparFinanceiro(k)}</span><strong>${moeda(v)}</strong></div>`).join('');
     graficoBarras('faturamento','chartFaturamento',d.previsao.map(r=>mesLabel(r.mes)),[{label:'Saci',data:d.previsao.map(r=>r.saci),backgroundColor:'#466886'},{label:'ARCM',data:d.previsao.map(r=>r.arcm),backgroundColor:'#177f58'}],false,true);
-    document.getElementById('dashResumoAviso').textContent='Saldos em aberto de todo o cadastro. O mês selecionado altera apenas a previsão de faturamento.';
-  }catch(e){if(consulta!==consultaResumoDashboard)return;for(const id of ['dashReceber','dashPagar','dashFaturamento','dashPagarAtrasado','dashFaturamentoMes'])document.getElementById(id).textContent='—';for(const id of ['dashReceberOrigens','dashPagarGrupos'])document.getElementById(id).innerHTML='';destroyChart('faturamento');const dados=document.getElementById('chartFaturamentoDados');if(dados)dados.innerHTML='';document.getElementById('dashResumoAviso').textContent='Não foi possível atualizar: '+e.message}
+    document.getElementById('dashResumoAviso').textContent='Saldos em aberto de todo o cadastro. O mês selecionado define os recebidos Saci/ARCM e a previsão de faturamento.';
+  }catch(e){if(consulta!==consultaResumoDashboard)return;for(const id of ['dashReceber','dashPagar','dashFaturamento','dashPagarAtrasado','dashFaturamentoMes','dashRecebidoSaci','dashRecebidoArcm'])document.getElementById(id).textContent='—';for(const id of ['dashReceberOrigens','dashPagarGrupos'])document.getElementById(id).innerHTML='';destroyChart('faturamento');const dados=document.getElementById('chartFaturamentoDados');if(dados)dados.innerHTML='';document.getElementById('dashResumoAviso').textContent='Não foi possível atualizar: '+e.message}
 }
 async function carregarDespesasDashboard(){await carregarResumoDashboard()}
 document.getElementById('dashPrevisaoMes').addEventListener('change',carregarResumoDashboard);

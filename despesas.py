@@ -46,6 +46,14 @@ def registrar_despesas(app, db, login_required):
         telefone = db.Column(db.String(30))
         observacoes = db.Column(db.Text)
 
+    class CategoriaDespesa(db.Model):
+        __tablename__ = 'categorias_despesas'
+        id = db.Column(db.Integer, primary_key=True)
+        grupo = db.Column(db.String(30), nullable=False)
+        nome = db.Column(db.String(100), nullable=False)
+        chave = db.Column(db.String(200), nullable=False)
+        __table_args__ = (db.UniqueConstraint('grupo', 'chave', name='uq_categoria_despesa_grupo_chave'),)
+
     class RecorrenciaDespesa(db.Model):
         __tablename__ = 'recorrencias_despesas'
         id = db.Column(db.Integer, primary_key=True)
@@ -83,6 +91,7 @@ def registrar_despesas(app, db, login_required):
 
     modelos = {'funcionarios': Funcionario, 'veiculos': Veiculo, 'fornecedores': Fornecedor, 'terceirizados': Terceirizado}
     grupos = ('Custos fixos', 'Fornecedores', 'Despesas variáveis')
+    categorias_padrao = {'Custos fixos': ['Salários', 'Encargos trabalhistas', 'Água', 'Luz', 'Telefone', 'Internet', 'Aluguel', 'Contabilidade', 'Seguros', 'Sistemas e assinaturas', 'Impostos e taxas', 'Outros custos fixos'], 'Fornecedores': ['Mercadorias', 'Materiais e insumos', 'Frete', 'Serviços contratados', 'Outros fornecedores'], 'Despesas variáveis': ['Manutenção de veículo', 'Combustível', 'Adiantamento de funcionário', 'Reembolso de funcionário', 'Manutenção da loja', 'Equipamentos', 'Material de escritório', 'Limpeza', 'Publicidade', 'Outras despesas variáveis']}
     prioridades = ('Baixa', 'Normal', 'Alta', 'Urgente')
 
     def hoje():
@@ -224,6 +233,36 @@ def registrar_despesas(app, db, login_required):
             stmt = stmt.where(or_(Despesa.descricao.ilike(f'%{busca}%'), Despesa.categoria.ilike(f'%{busca}%'), Despesa.documento.ilike(f'%{busca}%')))
         return db.session.execute(stmt.order_by(Despesa.vencimento, Despesa.id)).scalars().all()
 
+    def categorias_disponiveis():
+        dados = {g:list(nomes) for g,nomes in categorias_padrao.items()}
+        extras = list(db.session.execute(db.select(CategoriaDespesa.grupo, CategoriaDespesa.nome)).all())
+        extras += list(db.session.execute(db.select(Despesa.grupo, Despesa.categoria).distinct()).all())
+        for grupo, nome in extras:
+            if grupo in dados and nome and nome.casefold() not in {n.casefold() for n in dados[grupo]}:
+                dados[grupo].append(nome)
+        return dados
+
+    @app.route('/api/despesas/categorias', methods=['GET', 'POST'])
+    @login_required
+    def categorias_despesas():
+        if request.method == 'GET': return jsonify(categorias_disponiveis())
+        try:
+            d = request.get_json(silent=True) or {}
+            grupo = texto(d, 'grupo', 30)
+            nome = ' '.join(texto(d, 'nome', 100).split())
+            if grupo not in grupos or not nome: raise ValueError('Informe o grupo e o nome da categoria.')
+            for existente in categorias_disponiveis()[grupo]:
+                if existente.casefold() == nome.casefold(): return jsonify(grupo=grupo, nome=existente), 200
+            r = CategoriaDespesa(grupo=grupo, nome=nome, chave=nome.casefold())
+            db.session.add(r); db.session.commit()
+            return jsonify(grupo=r.grupo, nome=r.nome), 201
+        except (ValueError, TypeError) as e:
+            db.session.rollback(); return jsonify(erro=str(e)), 400
+        except IntegrityError:
+            db.session.rollback()
+            r = db.session.execute(db.select(CategoriaDespesa).where(CategoriaDespesa.grupo == grupo, CategoriaDespesa.chave == nome.casefold())).scalar_one()
+            return jsonify(grupo=r.grupo, nome=r.nome), 200
+
     @app.get('/api/despesas/cadastros')
     @login_required
     def cadastros_despesas():
@@ -356,7 +395,8 @@ def registrar_despesas(app, db, login_required):
         return send_file(io.BytesIO(out.getvalue().encode('utf-8-sig')), mimetype='text/csv', as_attachment=True, download_name='despesas_mes.csv')
 
     def backup():
-        return {'recorrencias_despesas': [dict(id=r.id, ativa=r.ativa, proxima_competencia=r.proxima_competencia, dia_vencimento=r.dia_vencimento) for r in db.session.execute(db.select(RecorrenciaDespesa)).scalars()],
+        return {'categorias_despesas': [dict(id=r.id, grupo=r.grupo, nome=r.nome) for r in db.session.execute(db.select(CategoriaDespesa)).scalars()],
+                'recorrencias_despesas': [dict(id=r.id, ativa=r.ativa, proxima_competencia=r.proxima_competencia, dia_vencimento=r.dia_vencimento) for r in db.session.execute(db.select(RecorrenciaDespesa)).scalars()],
                 'despesas_mensais': [despesa_dict(r) for r in db.session.execute(db.select(Despesa)).scalars()],
                 **{tipo: [cadastro_dict(r) for r in db.session.execute(db.select(modelo)).scalars()] for tipo, modelo in modelos.items()}}
     def migrar():

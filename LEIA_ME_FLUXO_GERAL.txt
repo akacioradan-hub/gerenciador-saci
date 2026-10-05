@@ -1,0 +1,25 @@
+FLUXO DE CAIXA GERAL — SACI, ARCM E DESPESAS
+
+Atualize todos os arquivos deste ZIP no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5.
+Alterados: fluxo_caixa.py, dashboard_resumo.py, despesas.py, templates/index.html, templates/receitas.html, templates/fluxo_caixa.html, static/app.js, static/receitas.js, static/despesas.js, static/fluxo_caixa.js e static/style.css.
+
+FLUXO ÚNICO
+A aba Fluxo de Caixa reúne entradas manuais Saci, recebimentos dos clientes bloqueados e órgãos públicos Saci, receitas ARCM recebidas e todas as Despesas Gerais pagas.
+Cada despesa é descontada uma única vez, pelo valor efetivamente pago, inclusive juros. Os recebimentos são considerados pela data real, descontando os descontos concedidos nos controles de origem. Reabrir ou excluir um registro na origem altera o fluxo quando atualizado.
+Permanecem os totais de entradas, saídas, resultado mensal, saldo anterior e saldo acumulado registrado; resumo diário; filtros de dia e origem; paginação de cinco linhas. O filtro de origem permite consultar ARCM, entradas manuais Saci, clientes, órgãos ou despesas separadamente.
+Não são copiadas movimentações entre módulos. As contas a receber e pagar que ainda estão em aberto não movimentam o caixa realizado. O saldo acumulado parte do histórico do sistema; ainda não há cadastro de saldo bancário inicial.
+A aba Receitas ARCM mantém clientes, contratos, parcelas, pendências de meses anteriores e ações de recebimento/reabertura. Agora o caixa realizado dessas receitas está no fluxo geral. Use os atalhos no fluxo para abrir Receitas ARCM e Despesas Gerais.
+Recebimentos antigos de órgãos públicos sem data continuam destacados para informar a data correta.
+
+CATEGORIAS DE DESPESAS
+Em Cadastrar despesa, escolha o grupo e clique em Nova categoria abaixo do seletor de categoria. Informe o nome; a categoria fica salva e selecionada, disponível nos próximos cadastros e nos filtros.
+Categorias de mesmo nome no mesmo grupo não são duplicadas, ignorando maiúsculas/minúsculas. Categorias existentes nas despesas são preservadas e também aparecem na lista. O sistema cria a nova tabela de categorias automaticamente, sem apagar dados.
+Urgência automática, juros no pagamento, repetição mensal de custos fixos e cadastros vinculados continuam funcionando.
+
+DASHBOARD
+Além de contas a receber, contas a pagar e previsão de faturamento, aparecem Recebido Saci no mês e Recebido ARCM no mês.
+Saci inclui entradas manuais e recebimentos de clientes bloqueados/órgãos públicos. ARCM inclui receitas e parcelas efetivamente recebidas. O mês de referência selecionado controla esses dois indicadores e a previsão.
+Os valores recebidos usam a data do recebimento e consideram apenas datas até hoje; pendências e órgãos pagos sem data ficam fora. A soma Saci + ARCM corresponde às entradas do fluxo geral no mesmo mês.
+
+VALIDAÇÃO
+Testes locais de somas do fluxo geral, despesas contadas uma vez, descontos, juros, saldo anterior, conciliação com dashboard, reabertura, categorias persistentes e sem duplicações, filtros, backup, autenticação e página. Fluxos da interface conferidos em ambiente simulado. Deploy no Render não executado aqui.

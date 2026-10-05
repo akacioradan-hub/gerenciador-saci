@@ -100,6 +100,7 @@ function despOpcoes(id,tipo,filtro=false){
 }
 async function carregarCadastrosDespesas(){
   despCadastros=await api('/api/despesas/cadastros');
+  await carregarCategoriasDespesas();
   for(const [tipo,campo] of [['funcionarios','Funcionario'],['veiculos','Veiculo'],['fornecedores','Fornecedor'],['terceirizados','Terceirizado']]){
     despOpcoes('desp'+campo,tipo);despOpcoes('despFiltro'+campo,tipo,true);
   }
@@ -107,7 +108,7 @@ async function carregarCadastrosDespesas(){
 }
 function despAtualizarCategoria(valor){
   const grupo=despEl('despGrupo').value;
-  despEl('despCategoria').innerHTML=despCategorias[grupo].map(c=>`<option>${c}</option>`).join('');
+  despEl('despCategoria').innerHTML=despCategorias[grupo].map(c=>`<option>${escaparFinanceiro(c)}</option>`).join('');
   if(valor&&despCategorias[grupo].includes(valor))despEl('despCategoria').value=valor;
   despEl('despFornecedor').required=grupo==='Fornecedores';
   despEl('despRepetirLabel').classList.toggle('hidden',grupo!=='Custos fixos');
@@ -270,3 +271,15 @@ if(despEl('despesas')){
   });
   atualizarFiltroCategoria();trocarCadastroDespesa('funcionarios');fecharCadastroDespesa();
 }
+
+async function carregarCategoriasDespesas(){
+  const dados=await api('/api/despesas/categorias');
+  for(const [grupo,nomes] of Object.entries(dados))despCategorias[grupo]=nomes;
+  const valor=despEl('despCategoria').value,repetir=despEl('despRepetir').checked;
+  despAtualizarCategoria(valor);despEl('despRepetir').checked=repetir;atualizarFiltroCategoria();
+}
+despEl('despNovaCategoria').addEventListener('click',async()=>{
+  const grupo=despEl('despGrupo').value,nome=prompt('Nome da nova categoria em '+grupo+':','');if(nome===null||!nome.trim())return;
+  const botao=despEl('despNovaCategoria');botao.disabled=true;
+  try{const d=await api('/api/despesas/categorias',{method:'POST',body:JSON.stringify({grupo,nome})});await carregarCategoriasDespesas();if(despEl('despGrupo').value===grupo)despEl('despCategoria').value=d.nome;msg('Categoria disponível para uso.')}catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
+});

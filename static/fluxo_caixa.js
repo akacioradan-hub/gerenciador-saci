@@ -1,5 +1,5 @@
 const fluxoEstado={dados:null,consulta:0,dias:1,mov:1,pendencias:1};
-const fluxoNomes={clientes:'Clientes bloqueados',orgaos:'Órgãos públicos',manual:'Entrada manual',despesas:'Despesas Gerais'};
+const fluxoNomes={clientes:'Clientes bloqueados',orgaos:'Órgãos públicos',manual:'Entrada manual Saci',arcm:'Receitas ARCM',despesas:'Despesas Gerais'};
 const fluxoEl=id=>document.getElementById(id);
 function fluxoPagina(tipo,rows,body,colunas,render){
   fluxoEstado[tipo]=Math.min(fluxoEstado[tipo],Math.max(1,Math.ceil(rows.length/5)));
@@ -26,11 +26,11 @@ async function fluxoCarregar(){
   const consulta=++fluxoEstado.consulta,mes=fluxoEl('fluxoMes').value;if(!mes)return;
   fluxoEl('fluxoAviso').textContent='Atualizando o fluxo de caixa…';
   try{
-    const d=await api('/api/fluxo-caixa/saci?'+new URLSearchParams({mes}));if(consulta!==fluxoEstado.consulta)return;
+    const d=await api('/api/fluxo-caixa/geral?'+new URLSearchParams({mes}));if(consulta!==fluxoEstado.consulta)return;
     fluxoEstado.dados=d;
     for(const [id,k] of Object.entries({fluxoEntradas:'entradas',fluxoSaidas:'saidas',fluxoResultado:'resultado',fluxoFinal:'saldo_final'}))fluxoEl(id).textContent=moeda(d.resumo[k]);
     fluxoEl('fluxoAnterior').textContent='Saldo anterior registrado: '+moeda(d.resumo.saldo_anterior);
-    fluxoEl('fluxoOrigens').textContent=`Entradas: clientes bloqueados ${moeda(d.resumo.origens.clientes)} · Órgãos públicos ${moeda(d.resumo.origens.orgaos)} · Manuais ${moeda(d.resumo.origens.manual)}`;
+    fluxoEl('fluxoOrigens').textContent=`Entradas: clientes bloqueados ${moeda(d.resumo.origens.clientes)} · Órgãos públicos ${moeda(d.resumo.origens.orgaos)} · Manuais Saci ${moeda(d.resumo.origens.manual)} · ARCM ${moeda(d.resumo.origens.arcm)}`;
     fluxoEl('fluxoAviso').textContent=`${d.registros.length} movimentação(ões) no mês · Integração automática com os controles de origem.`;
     fluxoRender();
   }catch(e){if(consulta!==fluxoEstado.consulta)return;fluxoEstado.dados=null;for(const id of ['fluxoEntradas','fluxoSaidas','fluxoResultado','fluxoFinal','fluxoAnterior'])fluxoEl(id).textContent='—';for(const id of ['fluxoDiasBody','fluxoMovBody','fluxoPendenciasBody','fluxoOrigens'])fluxoEl(id).textContent='';for(const tipo of ['dias','mov','pendencias']){fluxoEl('fluxo-'+tipo+'PaginaResumo').textContent='';fluxoEl('fluxo-'+tipo+'Paginas').textContent=''}fluxoEl('fluxoPendencias').classList.add('hidden');fluxoEl('fluxoAviso').textContent='Não foi possível atualizar: '+e.message}

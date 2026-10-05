@@ -10,7 +10,7 @@ def registrar_fluxo_caixa(app, db, login_required):
     @app.get('/api/fluxo-caixa/<unidade>')
     @login_required
     def fluxo_saci(unidade):
-        if unidade not in ('saci', 'arcm'):
+        if unidade not in ('saci', 'arcm', 'geral'):
             return jsonify(erro='Unidade não encontrada.'), 404
         hoje = datetime.now(ZoneInfo('America/Fortaleza')).date()
         mes = request.args.get('mes') or hoje.strftime('%Y-%m')
@@ -41,6 +41,13 @@ def registrar_fluxo_caixa(app, db, login_required):
                     r.outerjoin(rc, r.c.cliente_id == rc.c.id).outerjoin(contrato, r.c.contrato_id == contrato.c.id)
                 ).where(r.c.unidade == 'arcm', r.c.recebida.is_(True))
             movimentos = receitas_arcm.subquery()
+        elif unidade == 'geral':
+            rc = t['clientes_receitas']
+            descricao_arcm = func.coalesce(rc.c.nome, '') + literal(' · ') + r.c.descricao
+            arcm = movimento(r, r.c.data_recebimento, r.c.valor, 'arcm', 'entrada', descricao_arcm,
+                r.c.documento, r.c.forma_pagamento, r.c.categoria).select_from(r.outerjoin(rc, r.c.cliente_id == rc.c.id)
+                ).where(r.c.unidade == 'arcm', r.c.recebida.is_(True))
+            movimentos = union_all(clientes, orgaos, manuais, arcm, despesas).subquery()
         else:
             movimentos = union_all(clientes, orgaos, manuais, despesas).subquery()
         valido = (movimentos.c.valor > 0) & (movimentos.c.data <= hoje)

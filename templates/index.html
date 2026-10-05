@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261005-dashboard-essencial">
+<link rel="stylesheet" href="/static/style.css?v=20261005-fluxo-geral">
 </head>
 <body>
 <div class="app-shell">
@@ -18,8 +18,8 @@
       <div><strong>Administrator</strong><span>Saci Casa & Construção</span></div>
     </div>
     <nav class="side-nav" aria-label="Menu principal">
-      <button class="tab-btn" data-tab="receitas-saci" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16H4zM8 12h8m-4-4 4 4-4 4"/></svg><span>Fluxo de Caixa Saci</span></button>
-      <button class="tab-btn" data-tab="receitas-arcm" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21V3h11v18m0-12h5v12M8 7h3M8 11h3M8 15h3M2 21h20"/></svg><span>Fluxo de Caixa ARCM</span></button>
+      <button class="tab-btn" data-tab="receitas-saci" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16H4zM8 12h8m-4-4 4 4-4 4"/></svg><span>Fluxo de Caixa</span></button>
+      <button class="tab-btn" data-tab="receitas-arcm" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 21V3h11v18m0-12h5v12M8 7h3M8 11h3M8 15h3M2 21h20"/></svg><span>Receitas ARCM</span></button>
       <button class="tab-btn" data-tab="clientes" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="9" cy="7" r="3"/><path d="M3 20v-2a6 6 0 0 1 10-4"/><circle cx="18" cy="17" r="4"/><path d="m15 14 6 6"/></svg><span>Controle de Cliente Bloqueado Saci</span></button>
       <button class="tab-btn" data-tab="orgaos" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 9 9-6 9 6H3Zm2 3v6m7-6v6m7-6v6M3 21h18"/></svg><span>Controle de Pagamentos de Órgãos Públicos Saci</span></button>
       <button class="tab-btn" data-tab="despesas" type="button"><svg class="menu-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 4h16v16H4zM8 12h8m-4-4-4 4 4 4"/></svg><span>Despesas Gerais</span></button>
@@ -52,17 +52,21 @@
       <div id="mensagem" class="mensagem"></div>
 
       <section id="dashboard" class="tab active">
-        <div class="page-head"><div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Contas a receber, contas a pagar e previsão de faturamento.</p></div><button id="dashResumoAtualizar" type="button" class="secondary">Atualizar</button></div>
+        <div class="page-head"><div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Contas a receber, contas a pagar e previsão de faturamento.</p></div><label>Mês de referência<input id="dashPrevisaoMes" type="month" required></label><button id="dashResumoAtualizar" type="button" class="secondary">Atualizar</button></div>
         <p id="dashResumoAviso" class="form-hint" role="status"></p>
         <div class="dashboard-essencial">
           <div class="card kpi-card"><span>Contas a receber</span><strong id="dashReceber">—</strong><small>Todo o saldo em aberto cadastrado</small></div>
           <div class="card kpi-card"><span>Contas a pagar</span><strong id="dashPagar">—</strong><small id="dashPagarAtrasado">—</small></div>
           <div class="card kpi-card"><span>Previsão de faturamento</span><strong id="dashFaturamento">—</strong><small id="dashFaturamentoMes">Receitas cadastradas no mês selecionado</small></div>
         </div>
+        <div class="dashboard-recebidos mt">
+          <div class="card gov-kpi gov-paid"><span>Recebido Saci no mês</span><strong id="dashRecebidoSaci">—</strong><small>Entradas manuais, clientes bloqueados e órgãos públicos</small></div>
+          <div class="card gov-kpi gov-paid"><span>Recebido ARCM no mês</span><strong id="dashRecebidoArcm">—</strong><small>Receitas e parcelas efetivamente recebidas</small></div>
+        </div>
         <div class="dashboard-essencial mt">
           <div class="card compact-card"><h3>Contas a receber</h3><div id="dashReceberOrigens" class="status-list"></div><p class="form-hint">Clientes bloqueados, órgãos públicos e receitas Saci/ARCM ainda em aberto, inclusive vencimentos futuros.</p></div>
           <div class="card compact-card"><h3>Contas a pagar</h3><div id="dashPagarGrupos" class="status-list"></div><p class="form-hint">Todas as despesas gerais em aberto, incluindo contas atrasadas e futuras já cadastradas.</p><button type="button" class="secondary" data-go-tab="despesas">Abrir despesas gerais</button></div>
-          <div class="card compact-card"><h3>Previsão de faturamento</h3><label>A partir do mês<input id="dashPrevisaoMes" type="month" required></label><div class="chart-box"><canvas id="chartFaturamento"></canvas></div><p class="form-hint">Receitas Saci e ARCM por vencimento, incluindo parcelas de contratos e receitas já recebidas. Não inclui recuperação das dívidas de clientes bloqueados e órgãos públicos.</p></div>
+          <div class="card compact-card"><h3>Previsão de faturamento</h3><div class="chart-box"><canvas id="chartFaturamento"></canvas></div><p class="form-hint">Receitas Saci e ARCM por vencimento, incluindo parcelas de contratos e receitas já recebidas. Não inclui recuperação das dívidas de clientes bloqueados e órgãos públicos.</p></div>
         </div>
       </section>
 
@@ -223,7 +227,7 @@
             <input id="despId" type="hidden">
             <label>Descrição *<input id="despDescricao" maxlength="220" required placeholder="Ex.: Salário de outubro / compra de mercadorias"></label>
             <label>Grupo *<select id="despGrupo"><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
-            <label>Categoria *<select id="despCategoria" required></select></label>
+            <label>Categoria *<select id="despCategoria" required></select><button type="button" class="secondary" id="despNovaCategoria">Nova categoria</button></label>
             <label>Competência *<input id="despCompetencia" type="month" required></label>
             <label>Vencimento / previsão de pagamento *<input id="despVencimento" type="date" required></label>
             <label>Valor *<input id="despValor" type="number" min="0.01" max="999999999999.99" step="0.01" required></label>
@@ -326,10 +330,9 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261005-dashboard-essencial"></script>
-<script src="/static/despesas.js?v=20261005-recorrencia"></script>
-<script src="/static/receitas.js?v=20261005-arcm-unificado"></script>
-<script src="/static/fluxo_caixa.js?v=20261005-arcm"></script>
-<script src="/static/fluxo_arcm.js?v=20261005-arcm-unificado"></script>
+<script src="/static/app.js?v=20261005-fluxo-geral"></script>
+<script src="/static/despesas.js?v=20261005-fluxo-geral"></script>
+<script src="/static/receitas.js?v=20261005-fluxo-geral"></script>
+<script src="/static/fluxo_caixa.js?v=20261005-fluxo-geral"></script>
 </body>
 </html>

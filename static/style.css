@@ -307,3 +307,5 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 .dashboard-essencial{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}.dashboard-essencial .card{min-width:0;padding:14px}.dashboard-essencial .chart-box{height:190px}.dashboard-essencial .status-row{gap:10px}.dashboard-essencial .status-row strong{white-space:nowrap}.dashboard-essencial .form-hint{font-size:11px;line-height:1.45}.dashboard-essencial .kpi-card strong{font-size:25px}@media(max-width:1100px){.dashboard-essencial{grid-template-columns:1fr}.dashboard-essencial .chart-box{height:210px}}
 
 #dashboard .dashboard-essencial .chart-box{height:190px;min-height:190px}
+
+.dashboard-recebidos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.dashboard-recebidos .card{padding:12px}.dashboard-recebidos strong{font-size:23px}@media(max-width:600px){.dashboard-recebidos{grid-template-columns:1fr}}
