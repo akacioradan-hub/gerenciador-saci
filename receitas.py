@@ -4,7 +4,7 @@ from calendar import monthrange
 from zoneinfo import ZoneInfo
 from decimal import Decimal
 from flask import request, jsonify, abort
-from sqlalchemy import or_, inspect, text
+from sqlalchemy import or_, inspect, text, case
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.schema import CreateTable, CreateIndex
 
@@ -181,7 +181,10 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             inicio = data_valida(mes + '-01')
             fim = date(inicio.year + (inicio.month == 12), inicio.month % 12 + 1, 1)
             stmt = db.select(Receita).where(Receita.unidade == unidade)
-            if unidade == 'arcm':
+            situacao = request.args.get('status', '')
+            if unidade == 'arcm' and situacao == 'recebida':
+                pass  # Histórico completo; o mês de consulta não limita recebidas.
+            elif unidade == 'arcm':
                 # Carteira atual: pendências até o mês consultado + recebidos naquele mês.
                 stmt = stmt.where(or_(
                     (Receita.recebida.is_(False)) & (Receita.vencimento < fim),
@@ -198,10 +201,18 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                 stmt = stmt.where(Receita.recebida.is_(situacao == 'recebida'))
             if situacao == 'atrasada':
                 stmt = stmt.where(Receita.vencimento < hoje())
+            if unidade == 'arcm':
+                de = data_valida(request.args['data_inicio']) if request.args.get('data_inicio') else None
+                ate = data_valida(request.args['data_fim']) if request.args.get('data_fim') else None
+                if de and ate and de > ate:
+                    raise ValueError('A data inicial deve ser anterior à final.')
+                data_filtro = case((Receita.recebida.is_(True), Receita.data_recebimento), else_=Receita.vencimento)
+                if de: stmt = stmt.where(data_filtro >= de)
+                if ate: stmt = stmt.where(data_filtro <= ate)
             busca = (request.args.get('q') or '').strip()
             if busca:
                 stmt = stmt.outerjoin(ClienteReceita).outerjoin(ContratoReceita, Receita.contrato_id == ContratoReceita.id).where(or_(Receita.descricao.ilike('%'+busca+'%'), ClienteReceita.nome.ilike('%'+busca+'%'), Receita.documento.ilike('%'+busca+'%'), ContratoReceita.numero.ilike('%'+busca+'%')))
-            rows = db.session.execute(stmt.order_by(Receita.data.desc(), Receita.id.desc())).scalars().all()
+            rows = db.session.execute(stmt.order_by((Receita.data_recebimento if unidade == 'arcm' and situacao == 'recebida' else Receita.data).desc(), Receita.id.desc())).scalars().all()
             total = sum((r.valor for r in rows), Decimal(0))
             recebido = sum((r.valor for r in rows if r.recebida), Decimal(0))
             atraso = sum((r.valor for r in rows if not r.recebida and r.vencimento < hoje()), Decimal(0))
@@ -393,6 +404,11 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             data = data_valida(d.get('data_recebimento')) if recebida else None
             if data and data > hoje():
                 raise ValueError('A data do recebimento não pode ser futura.')
+            if unidade == 'arcm' and recebida and 'valor' in d:
+                valor = valor_monetario(d['valor'])
+                if valor <= 0:
+                    raise ValueError('O valor pago deve ser maior que zero.')
+                r.valor = valor
             r.recebida = recebida
             r.data_recebimento = data
             db.session.commit()

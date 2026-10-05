@@ -16,11 +16,15 @@
   </div>
   {% if unidade == 'arcm' %}</details>{% endif %}
   <div class="card mt">
-    {% if unidade == 'arcm' %}<h3>Receitas a receber e recebidas no mês</h3><p class="form-hint">Pendências dos meses anteriores continuam aqui até serem recebidas, com o vencimento original. Receitas pagas aparecem no mês do recebimento. A consulta usa a situação atual dos lançamentos.</p>{% endif %}
+    {% if unidade == 'arcm' %}<h3>Receitas a receber e recebidas</h3><p class="form-hint">Pendências dos meses anteriores continuam aqui até serem recebidas, com o vencimento original. Em Todas, receitas pagas aparecem no mês do recebimento. Selecione Recebida para consultar todo o histórico, independentemente do mês. O intervalo de datas filtra pelo recebimento das pagas e pelo vencimento das pendentes. A consulta usa a situação atual dos lançamentos.</p>{% endif %}
     <div class="rec-filtros">
       {% if unidade == 'saci' %}<label>Mês da receita<input type="month" id="rec-{{ unidade }}-mes" required></label>{% endif %}
       <label>Cliente<select id="rec-{{ unidade }}-cliente"><option value="">Todos</option></select></label>
       <label>Situação<select id="rec-{{ unidade }}-status"><option value="">Todas</option><option value="recebida">Recebida</option><option value="pendente">Pendente</option><option value="atrasada">Atrasada</option></select></label>
+      {% if unidade == 'arcm' %}
+      <label>Data inicial<input type="date" id="rec-arcm-data_inicio"></label>
+      <label>Data final<input type="date" id="rec-arcm-data_fim"></label>
+      {% endif %}
       <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento{% if unidade == 'arcm' %}, contrato{% endif %}"></label>
     </div>
     <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>

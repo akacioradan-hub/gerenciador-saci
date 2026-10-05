@@ -11,6 +11,7 @@ function recOpcoes(u){
 async function recCarregar(u){
   const st=recEstados[u],consulta=++st.consulta;
   const filtros={mes:recEl('rec-'+u+'-mes').value,cliente_id:recEl('rec-'+u+'-cliente').value,status:recEl('rec-'+u+'-status').value,q:recEl('rec-'+u+'-busca').value.trim()};
+  if(u==='arcm'){filtros.data_inicio=recEl('rec-arcm-data_inicio').value;filtros.data_fim=recEl('rec-arcm-data_fim').value}
   if(!filtros.mes)return;
   recEl('rec-'+u+'-aviso').textContent='Carregando…';
   try{
@@ -18,7 +19,7 @@ async function recCarregar(u){
     if(consulta!==st.consulta)return;
     st.clientes=clientes;st.registros=d.registros;recOpcoes(u);
     for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent=moeda(d.resumo[k]);
-    recEl('rec-'+u+'-aviso').textContent=u==='arcm'?`${d.resumo.quantidade} receita(s) · Em aberto: ${moeda(d.resumo.pendente)} · De meses anteriores: ${moeda(d.resumo.pendencias_anteriores)} · Recebidas no mês: ${moeda(d.resumo.recebido)}. Totais conforme os filtros da tabela.`:`${d.resumo.quantidade} receita(s) · Totais de todos os resultados filtrados pela data da receita.`;
+    recEl('rec-'+u+'-aviso').textContent=u==='arcm'?`${d.resumo.quantidade} receita(s) · Em aberto: ${moeda(d.resumo.pendente)} · De meses anteriores: ${moeda(d.resumo.pendencias_anteriores)} · ${filtros.status==='recebida'?'Recebidas em todo o histórico (mês de consulta não aplicado)':'Recebidas no mês'}: ${moeda(d.resumo.recebido)}. Totais conforme os filtros da tabela.`:`${d.resumo.quantidade} receita(s) · Totais de todos os resultados filtrados pela data da receita.`;
     recRender(u);recRenderClientes(u);if(u==='saci'&&typeof fluxoCarregar==='function')await fluxoCarregar();if(u==='arcm'){await recCarregarPrevisao();if(typeof fluxoCarregar==='function')await fluxoCarregar();}
   }catch(e){if(consulta!==st.consulta)return;st.registros=[];recRender(u);for(const k of ['total','recebido','pendente','atrasado'])recEl('rec-'+u+'-'+k).textContent='—';recEl('rec-'+u+'-aviso').textContent='Não foi possível carregar: '+e.message}
 }
@@ -98,7 +99,7 @@ document.querySelectorAll('[data-rec-fechar]').forEach(b=>b.addEventListener('cl
 for(const id of ['recModal','recClienteModal']){const modal=recEl(id);modal.addEventListener('cancel',e=>{if(recSalvando)e.preventDefault()});modal.addEventListener('click',e=>{if(e.target!==modal||recSalvando)return;const r=modal.getBoundingClientRect();if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)modal.close()})}
 for(const u of ['arcm','saci']){
   recEl('rec-'+u+'-mes').value=recHoje().slice(0,7);
-  for(const campo of ['mes','cliente','status','busca'])recEl('rec-'+u+'-'+campo).addEventListener(campo==='busca'?'input':'change',()=>{recEstados[u].pagina=1;recCarregar(u)});
+  for(const campo of ['mes','cliente','status','busca',...(u==='arcm'?['data_inicio','data_fim']:[])])recEl('rec-'+u+'-'+campo).addEventListener(campo==='busca'?'input':'change',()=>{recEstados[u].pagina=1;recCarregar(u)});
   document.querySelector('[data-tab="receitas-'+u+'"]').addEventListener('click',()=>recCarregar(u));
 }
 
@@ -158,11 +159,18 @@ async function recCarregarPrevisao(){
 
 async function recMudarStatus(u,id,botao){
   const r=recEstados[u].registros.find(r=>r.id===id);if(!r||botao.disabled)return;
-  const recebida=!r.recebida;let data=null;
+  const recebida=!r.recebida;let data=null,valor;
   if(recebida){data=prompt('Data do recebimento (AAAA-MM-DD):',recHoje());if(data===null)return;data=data.trim()}
   else if(!confirm('Reabrir esta receita e remover a data do recebimento? Somente esta parcela será alterada.'))return;
+  if(recebida&&u==='arcm'){
+    const informado=prompt('Valor pago (R$). Este valor quitará esta receita/parcela:',Number(r.valor).toFixed(2).replace('.',','));
+    if(informado===null)return;
+    const texto=informado.trim();
+    valor=Number(texto.includes(',')?texto.replace(/\./g,'').replace(',','.'):texto);
+    if(!Number.isFinite(valor)||valor<=0||valor>9999999999.99||Math.abs(valor*100-Math.round(valor*100))>0.0001){msg('Informe um valor positivo, com até duas casas decimais.','erro');return}
+  }
   botao.disabled=true;
-  try{await api('/api/receitas/'+u+'/'+id+'/status',{method:'PATCH',body:JSON.stringify({recebida,data_recebimento:data})});await recCarregar(u);msg(recebida?'Receita marcada como paga.':'Receita reaberta.')}catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
+  try{await api('/api/receitas/'+u+'/'+id+'/status',{method:'PATCH',body:JSON.stringify({recebida,data_recebimento:data,valor})});await recCarregar(u);msg(recebida?'Receita marcada como paga.':'Receita reaberta.')}catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
 }
 
 document.getElementById('arcmFluxoAtualizar').addEventListener('click',()=>recCarregar('arcm'));

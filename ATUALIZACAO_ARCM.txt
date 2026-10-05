@@ -1,0 +1,7 @@
+Atualize os arquivos do projeto no GitHub e aguarde o deploy no Render.
+Arquivos alterados: receitas.py, static/receitas.js, templates/receitas.html, templates/index.html.
+Depois atualize a página com Ctrl+F5.
+Recebida: todo o histórico, sem limite do mês consultado. Datas inicial e final são opcionais e inclusivas.
+Data filtra recebimento nas receitas pagas e vencimento nas pendentes. Todas/Pendente/Atrasada mantêm a consulta mensal com pendências anteriores.
+Ao marcar como pago, informe a data e o valor pago. O valor substitui o desta receita/parcela, quitando-a integralmente; não cria saldo parcial nem altera outras parcelas. Reabrir mantém o valor informado e retira a receita das entradas realizadas.
+Testes locais: filtros, valores inválidos, fluxo de caixa, dashboard, reabertura e edição de contratos.
