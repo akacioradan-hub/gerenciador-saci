@@ -1144,6 +1144,9 @@ backup_receitas, migrar_receitas = registrar_receitas(app, db, login_required, v
 from fluxo_caixa import registrar_fluxo_caixa
 registrar_fluxo_caixa(app, db, login_required)
 
+from dashboard_resumo import registrar_dashboard_resumo
+registrar_dashboard_resumo(app, db, login_required)
+
 init_db()
 
 if __name__ == "__main__":

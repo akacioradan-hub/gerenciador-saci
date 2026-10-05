@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261005-arcm-unificado">
+<link rel="stylesheet" href="/static/style.css?v=20261005-dashboard-essencial">
 </head>
 <body>
 <div class="app-shell">
@@ -52,101 +52,17 @@
       <div id="mensagem" class="mensagem"></div>
 
       <section id="dashboard" class="tab active">
-        <div class="page-head dashboard-main-head">
-          <div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Clientes, órgãos públicos e despesas em um só lugar.</p></div>
-          <div class="date-chip" id="dataHoje"></div>
+        <div class="page-head"><div><span class="eyebrow">VISÃO GERAL</span><h2>Dashboard financeiro</h2><p>Contas a receber, contas a pagar e previsão de faturamento.</p></div><button id="dashResumoAtualizar" type="button" class="secondary">Atualizar</button></div>
+        <p id="dashResumoAviso" class="form-hint" role="status"></p>
+        <div class="dashboard-essencial">
+          <div class="card kpi-card"><span>Contas a receber</span><strong id="dashReceber">—</strong><small>Todo o saldo em aberto cadastrado</small></div>
+          <div class="card kpi-card"><span>Contas a pagar</span><strong id="dashPagar">—</strong><small id="dashPagarAtrasado">—</small></div>
+          <div class="card kpi-card"><span>Previsão de faturamento</span><strong id="dashFaturamento">—</strong><small id="dashFaturamentoMes">Receitas cadastradas no mês selecionado</small></div>
         </div>
-
-        <div id="dueTodayBanner" class="due-banner hidden">
-          <div class="due-banner-icon">!</div>
-          <div class="due-banner-text"><strong id="dueTodayTitle">Há pagamentos previstos para hoje</strong><span id="dueTodayText"></span></div>
-          <button id="openDueAlerts" type="button">Ver avisos</button>
-        </div>
-
-        <div class="dashboard-section-head">
-          <div><span class="section-dot client-dot"></span><h3>Despesas</h3></div>
-          <label>Mês de competência<input type="month" id="dashDespMes" required></label>
-          <button class="section-link" type="button" data-go-tab="despesas">Abrir despesas</button>
-        </div>
-        <p id="dashDespAviso" class="form-hint" aria-live="polite"></p>
-        <div class="grid kpis">
-          <div class="card kpi-card"><span>Total do mês</span><strong id="dashDespTotal">—</strong><small>Por competência</small></div>
-          <div class="card kpi-card"><span>Pago</span><strong id="dashDespPago">—</strong><small>Despesas quitadas</small></div>
-          <div class="card kpi-card"><span>Em aberto</span><strong id="dashDespAberto">—</strong><small>A pagar no período</small></div>
-          <div class="card kpi-card"><span>Em atraso</span><strong id="dashDespAtrasado">—</strong><small>Incluído no valor em aberto</small></div>
-        </div>
-        <div class="dashboard-grid mt">
-          <div class="card compact-card"><h3>Despesas por grupo</h3><div class="chart-box"><canvas id="chartDespGrupos"></canvas></div><div id="dashDespGruposValores" class="chart-values"></div></div>
-          <div class="card compact-card"><h3>Pago e em aberto</h3><div class="chart-box"><canvas id="chartDespStatus"></canvas></div><div id="dashDespStatusValores" class="chart-values"></div></div>
-        </div>
-        <div class="dashboard-divider"></div>
-        <div class="dashboard-section-head">
-          <div><span class="section-dot client-dot"></span><div><span class="eyebrow">CLIENTES</span><h3>Carteira de clientes</h3></div></div>
-          <span class="section-hint">Recebimentos, saldo e previsão</span>
-        </div>
-
-        <div class="grid kpis dashboard-client-kpis">
-          <div class="card kpi-card"><div class="kpi-accent red"></div><span>Total em carteira</span><strong id="kpiReceber">R$ 0,00</strong><small>Valor total cadastrado</small></div>
-          <div class="card kpi-card"><div class="kpi-accent dark"></div><span>Total recebido</span><strong id="kpiRecebido">R$ 0,00</strong><small id="kpiPercentual">0% da carteira</small></div>
-          <div class="card kpi-card"><div class="kpi-accent orange"></div><span>Falta receber</span><strong id="kpiSaldo">R$ 0,00</strong><small>Saldo devedor atual</small></div>
-          <div class="card kpi-card"><div class="kpi-accent overdue"></div><span>Clientes em atraso</span><strong id="kpiAtraso">0</strong><small id="kpiAtrasadoValor">R$ 0,00 em atraso</small></div>
-        </div>
-
-        <div class="dashboard-grid mt">
-          <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Recebido x saldo</h3></div></div>
-            <div class="chart-box compact-donut"><canvas id="chartCarteira"></canvas></div>
-          </div>
-          <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">HISTÓRICO</span><h3>Recebimentos</h3></div><span class="chart-note">6 meses</span></div>
-            <div class="chart-box compact-chart"><canvas id="chartRecebimentos"></canvas></div>
-          </div>
-          <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">PREVISÃO</span><h3>Próximos recebimentos</h3></div><strong id="kpiPrevisto" class="forecast-number">R$ 0,00</strong></div>
-            <div class="chart-box compact-chart"><canvas id="chartPrevisao"></canvas></div>
-            <div id="previsaoAviso" class="forecast-warning hidden"></div>
-          </div>
-        </div>
-
-        <details class="compact-details dashboard-agenda mt"><summary>Ver agenda de clientes e resumo por status</summary><div class="two-col mt">
-          <div class="card">
-            <div class="card-head"><div><span class="eyebrow">AGENDA FINANCEIRA</span><h3>Próximos vencimentos e saldos</h3></div></div>
-            <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Previsão</th><th>Saldo</th><th>Status</th></tr></thead><tbody id="dashClientes"></tbody></table></div>
-          </div>
-          <div class="card">
-            <div class="card-head"><div><span class="eyebrow">CARTEIRA</span><h3>Resumo por status</h3></div></div>
-            <div id="statusResumo" class="status-list"></div>
-          </div>
-        </div>
-
-        </details>
-        <div class="dashboard-divider"></div>
-
-        <div class="dashboard-section-head org-section-head">
-          <div><span class="section-dot org-dot"></span><div><span class="eyebrow">ÓRGÃOS PÚBLICOS</span><h3>Débitos de prefeituras e câmaras</h3></div></div>
-          <button class="section-link" type="button" data-go-tab="orgaos">Abrir controle completo</button>
-        </div>
-
-        <div class="grid kpis org-dashboard-kpis">
-          <div class="card kpi-card org-kpi"><div class="kpi-accent red"></div><span>Total de débitos</span><strong id="orgDashTotal">R$ 0,00</strong><small>Valor registrado</small></div>
-          <div class="card kpi-card org-kpi"><div class="kpi-accent dark"></div><span>Total pago</span><strong id="orgDashPago">R$ 0,00</strong><small id="orgDashPagoQtd">0 registros pagos</small></div>
-          <div class="card kpi-card org-kpi"><div class="kpi-accent overdue"></div><span>Em aberto</span><strong id="orgDashAberto">R$ 0,00</strong><small id="orgDashAbertoQtd">0 registros em aberto</small></div>
-          <div class="card kpi-card org-kpi"><div class="kpi-accent orange"></div><span>Registros</span><strong id="orgDashQtd">0</strong><small>Notas / débitos cadastrados</small></div>
-        </div>
-
-        <div class="org-dashboard-grid mt">
-          <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">SITUAÇÃO</span><h3>Pago x em aberto</h3></div></div>
-            <div class="chart-box org-mini-donut"><canvas id="chartOrgaosStatus"></canvas></div>
-          </div>
-          <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">EVOLUÇÃO</span><h3>Débitos por ano</h3></div><span class="chart-note">Até 6 anos</span></div>
-            <div class="chart-box org-mini-chart"><canvas id="chartOrgaosAno"></canvas></div>
-          </div>
-          <div class="card compact-card">
-            <div class="card-head"><div><span class="eyebrow">MAIORES SALDOS</span><h3>Órgãos com valores em aberto</h3></div></div>
-            <div class="chart-box org-mini-chart"><canvas id="chartOrgaosTop"></canvas></div>
-          </div>
+        <div class="dashboard-essencial mt">
+          <div class="card compact-card"><h3>Contas a receber</h3><div id="dashReceberOrigens" class="status-list"></div><p class="form-hint">Clientes bloqueados, órgãos públicos e receitas Saci/ARCM ainda em aberto, inclusive vencimentos futuros.</p></div>
+          <div class="card compact-card"><h3>Contas a pagar</h3><div id="dashPagarGrupos" class="status-list"></div><p class="form-hint">Todas as despesas gerais em aberto, incluindo contas atrasadas e futuras já cadastradas.</p><button type="button" class="secondary" data-go-tab="despesas">Abrir despesas gerais</button></div>
+          <div class="card compact-card"><h3>Previsão de faturamento</h3><label>A partir do mês<input id="dashPrevisaoMes" type="month" required></label><div class="chart-box"><canvas id="chartFaturamento"></canvas></div><p class="form-hint">Receitas Saci e ARCM por vencimento, incluindo parcelas de contratos e receitas já recebidas. Não inclui recuperação das dívidas de clientes bloqueados e órgãos públicos.</p></div>
         </div>
       </section>
 
@@ -410,7 +326,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261005-fluxo"></script>
+<script src="/static/app.js?v=20261005-dashboard-essencial"></script>
 <script src="/static/despesas.js?v=20261005-recorrencia"></script>
 <script src="/static/receitas.js?v=20261005-arcm-unificado"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-arcm"></script>

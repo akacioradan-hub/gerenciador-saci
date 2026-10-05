@@ -1,0 +1,15 @@
+DASHBOARD ESSENCIAL
+
+Atualize todos os arquivos deste ZIP no GitHub. Aguarde o deploy no Render e pressione Ctrl+F5.
+Arquivo novo obrigatório: dashboard_resumo.py.
+Arquivos alterados: app.py, templates/index.html, static/app.js e static/style.css.
+
+O dashboard agora mostra somente:
+1. Contas a receber: saldo atual de clientes bloqueados, órgãos públicos e receitas pendentes Saci/ARCM. Considera pagamentos e descontos dos clientes. Inclui todos os vencimentos, mesmo futuros.
+2. Contas a pagar: todas as despesas gerais em aberto, separadas por grupo, com indicação do valor atrasado.
+3. Previsão de faturamento: receitas Saci e ARCM cadastradas por mês de vencimento, incluindo parcelas dos contratos e valores já recebidos. Mostra o mês escolhido e gráfico dos seis meses a partir dele. Não inclui recuperação de dívidas de clientes bloqueados e órgãos públicos como faturamento novo.
+
+O seletor de mês altera apenas a previsão. Os saldos a receber e a pagar representam todo o cadastro em aberto. O botão Atualizar recarrega os indicadores. As notificações continuam acessíveis no botão Avisos.
+A previsão usa os lançamentos existentes; não estima vendas futuras não cadastradas. Cada lançamento manual é considerado uma vez; evite registrar manualmente recebimentos que já constam dos controles integrados.
+
+Verificado localmente: cálculos de saldos e descontos, exclusão de contas pagas, atrasos, previsão por vencimento, virada de ano, filtro de mês, autenticação, página e notificações. Sintaxe Python e JavaScript conferida. Deploy no Render não executado aqui.

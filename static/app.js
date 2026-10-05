@@ -5,6 +5,7 @@ let paginaClientes=1,paginaOrgaos=1;
 const LINHAS_TABELA=5;
 let pagamentos=[];
 let charts={};
+let consultaResumoDashboard=0;
 
 function statusClass(s){return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'_')}
 function msg(texto,tipo='ok'){const el=document.getElementById('mensagem');el.textContent=texto;el.className='mensagem '+tipo;setTimeout(()=>el.className='mensagem',3500)}
@@ -51,16 +52,6 @@ function graficoBarras(nome,id,labels,datasets,horizontal=false,empilhado=false)
   if(typeof Chart!=='function')return;
   charts[nome]=new Chart(canvas,{type:'bar',data:{labels,datasets:datasets.map(d=>({...d,borderRadius:4,maxBarThickness:28}))},options:{...chartBase(),indexAxis:horizontal?'y':'x',animation:false,plugins:{...chartBase().plugins,legend:{display:datasets.length>1,position:'bottom',labels:{usePointStyle:true,font:{size:12}}}},scales:{x:{stacked:empilhado,beginAtZero:true,grid:{display:!horizontal?false:true},ticks:{maxRotation:0,font:{size:12},...(horizontal?{callback:v=>new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v)}:{})}},y:{stacked:empilhado,beginAtZero:true,grid:{display:!horizontal},ticks:{font:{size:12},...(!horizontal?{callback:v=>new Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v)}:{})}}}}});
 }
-function renderGraficos(d){
-  const o=d.orgaos||{};
-  graficoBarras('carteira','chartCarteira',['Recebido','Falta receber','Descontos'],[{label:'Valor (R$)',data:[d.total_recebido,d.saldo_devedor,d.total_desconto||0],backgroundColor:['#177f58','#d9682d','#89939e']}],true);
-  graficoBarras('recebimentos','chartRecebimentos',d.recebimentos_mensais.map(x=>mesLabel(x.mes)),[{label:'Recebido (R$)',data:d.recebimentos_mensais.map(x=>x.valor),backgroundColor:'#177f58'}]);
-  graficoBarras('previsao','chartPrevisao',d.previsao_mensal.map(x=>mesLabel(x.mes)),[{label:'Previsão (R$)',data:d.previsao_mensal.map(x=>x.valor),backgroundColor:'#466886'}]);
-  graficoBarras('orgaosStatus','chartOrgaosStatus',['Pago','Em aberto','Descontos'],[{label:'Valor (R$)',data:[o.total_pago||0,o.total_nao_pago||0,o.total_desconto||0],backgroundColor:['#177f58','#d9682d','#89939e']}],true);
-  graficoBarras('orgaosAno','chartOrgaosAno',(o.por_ano||[]).map(x=>x.ano),[{label:'Pago',data:(o.por_ano||[]).map(x=>x.pago),backgroundColor:'#177f58'},{label:'Em aberto',data:(o.por_ano||[]).map(x=>x.nao_pago),backgroundColor:'#d9682d'},{label:'Descontos',data:(o.por_ano||[]).map(x=>x.desconto||0),backgroundColor:'#89939e'}],false,true);
-  graficoBarras('orgaosTop','chartOrgaosTop',(o.top_devedores||[]).map(x=>x.nome),[{label:'Em aberto (R$)',data:(o.top_devedores||[]).map(x=>x.valor),backgroundColor:'#d9682d'}],true);
-}
-
 function botaoExcluirAviso(a){
   return `<button type="button" class="danger aviso-excluir" data-aviso="${escaparFinanceiro(a.aviso_chave)}" title="Excluir notificação" aria-label="Excluir notificação">🗑</button>`;
 }
@@ -160,30 +151,7 @@ function renderAvisosDashboard(d){
 }
 
 async function carregarDashboard(){
-  const d=await api('/api/dashboard');
-  renderAvisosDashboard(d);
-  document.getElementById('kpiReceber').textContent=moeda(d.total_receber);
-  document.getElementById('kpiRecebido').textContent=moeda(d.total_recebido);
-  document.getElementById('kpiSaldo').textContent=moeda(d.saldo_devedor);
-  document.getElementById('kpiAtraso').textContent=d.clientes_atraso;
-  document.getElementById('kpiAtrasadoValor').textContent=moeda(d.valor_atrasado)+' em atraso';
-  const pct=d.total_receber>0?(d.total_recebido/d.total_receber)*100:0;
-  document.getElementById('kpiPercentual').textContent=pct.toLocaleString('pt-BR',{maximumFractionDigits:1})+'% da carteira';
-  document.getElementById('kpiPrevisto').textContent=moeda(d.total_previsto_futuro);
-  document.getElementById('statusResumo').innerHTML=Object.entries(d.status).map(([k,v])=>`<div class="status-row"><span>${k}</span><strong>${v}</strong></div>`).join('');
-  document.getElementById('dashClientes').innerHTML=d.proximos.length?d.proximos.map(c=>`<tr><td>${c.nome}</td><td>${dataBR(c.previsao)}</td><td>${moeda(c.saldo)}</td><td><span class="badge ${statusClass(c.status)}">${c.status}</span></td></tr>`).join(''):'<tr><td colspan="4" class="empty">Nenhum cliente cadastrado.</td></tr>';
-  const aviso=document.getElementById('previsaoAviso');
-  if(d.valor_atrasado>0){aviso.textContent=`Além da previsão futura, existem ${moeda(d.valor_atrasado)} em saldos vencidos.`;aviso.classList.remove('hidden')}else{aviso.classList.add('hidden')}
-
-  const o=d.orgaos||{};
-  document.getElementById('orgDashTotal').textContent=moeda(o.total||0);
-  document.getElementById('orgDashPago').textContent=moeda(o.total_pago||0);
-  document.getElementById('orgDashAberto').textContent=moeda(o.total_nao_pago||0);
-  document.getElementById('orgDashQtd').textContent=o.quantidade||0;
-  document.getElementById('orgDashPagoQtd').textContent=`${o.quantidade_pago||0} registros pagos · Descontos: ${moeda(o.total_desconto)}`;
-  document.getElementById('orgDashAbertoQtd').textContent=`${o.quantidade_nao_pago||0} registros em aberto`;
-  renderGraficos(d);
-  await carregarDespesasDashboard();
+  await Promise.all([carregarResumoDashboard(), api('/api/dashboard').then(renderAvisosDashboard)]);
 }
 
 function documentoFormatado(v){
@@ -287,7 +255,7 @@ document.querySelectorAll('[data-go-tab]').forEach(btn=>btn.addEventListener('cl
   const target=btn.dataset.goTab;
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===target));
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.id===target));
-  if(target==='orgaos' && typeof carregarOrgaosPublicos==='function') carregarOrgaosPublicos();
+  document.querySelector('.tab-btn[data-tab="'+target+'"]')?.click();
   window.scrollTo({top:0,behavior:'smooth'});
 }));
 document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));btn.classList.add('active');document.getElementById(btn.dataset.tab).classList.add('active');if(btn.dataset.tab==='dashboard')setTimeout(()=>Object.values(charts).forEach(c=>c.resize()),80)}))
@@ -512,22 +480,26 @@ function renderPaginacaoTabela(prefixo,pagina,total,mudar){
 }
 function mudarPaginaClientes(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(clientes.length/LINHAS_TABELA))return;paginaClientes=n;renderClientes()}
 function mudarPaginaOrgaos(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(orgaosPublicos.length/LINHAS_TABELA))return;paginaOrgaos=n;renderOrgaosPublicos()}
-let consultaDespDashboard=0;
-async function carregarDespesasDashboard(){
-  const campo=document.getElementById('dashDespMes');
-  if(!campo.value){const partes=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit'}).formatToParts(new Date());campo.value=partes.find(p=>p.type==='year').value+'-'+partes.find(p=>p.type==='month').value}
-  const consulta=++consultaDespDashboard;
-  document.getElementById('dashDespAviso').textContent='Carregando despesas…';
+async function carregarResumoDashboard(){
+  const campo=document.getElementById('dashPrevisaoMes');
+  if(!campo.value){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit'}).formatToParts(new Date());campo.value=p.find(x=>x.type==='year').value+'-'+p.find(x=>x.type==='month').value}
+  const consulta=++consultaResumoDashboard;
+  document.getElementById('dashResumoAviso').textContent='Atualizando…';
   try{
-    const d=await api('/api/despesas?mes='+encodeURIComponent(campo.value));if(consulta!==consultaDespDashboard)return;
-    const r=d.resumo||{};
-    for(const [id,chave] of [['Total','total'],['Pago','pago'],['Aberto','aberto'],['Atrasado','atrasado']])document.getElementById('dashDesp'+id).textContent=moeda(r[chave]);
-    document.getElementById('dashDespAviso').textContent=`${r.quantidade||0} despesa(s) no período de competência selecionado.`;
-    const grupos=Object.entries(r.por_grupo||{});
-    graficoBarras('despGrupos','chartDespGrupos',grupos.map(x=>x[0]),[{label:'Total',data:grupos.map(x=>x[1]),backgroundColor:'#466886'}],true);
-    graficoBarras('despStatus','chartDespStatus',['Pago','Em aberto'],[{label:'Valor',data:[r.pago||0,r.aberto||0],backgroundColor:['#177f58','#d9682d']}],true);
-    document.getElementById('dashDespGruposValores').innerHTML=grupos.map(([nome,valor])=>`<span>${escaparFinanceiro(nome)}: <strong>${moeda(valor)}</strong></span>`).join('');
-    document.getElementById('dashDespStatusValores').textContent=`Pago: ${moeda(r.pago)} · Em aberto: ${moeda(r.aberto)}`;
-  }catch(e){if(consulta!==consultaDespDashboard)return;for(const id of ['Total','Pago','Aberto','Atrasado'])document.getElementById('dashDesp'+id).textContent='—';destroyChart('despGrupos');destroyChart('despStatus');for(const id of ['chartDespGruposDados','chartDespStatusDados']){const el=document.getElementById(id);if(el)el.innerHTML=''}document.getElementById('dashDespGruposValores').textContent='';document.getElementById('dashDespStatusValores').textContent='';document.getElementById('dashDespAviso').textContent='Não foi possível carregar as despesas: '+e.message}
+    const d=await api('/api/dashboard/resumo?'+new URLSearchParams({mes:campo.value}));if(consulta!==consultaResumoDashboard)return;
+    document.getElementById('dashReceber').textContent=moeda(d.receber.total);
+    document.getElementById('dashPagar').textContent=moeda(d.pagar.total);
+    document.getElementById('dashPagarAtrasado').textContent='Em atraso: '+moeda(d.pagar.atrasado);
+    document.getElementById('dashFaturamento').textContent=moeda(d.previsao[0].total);
+    document.getElementById('dashFaturamentoMes').textContent=mesLabel(d.mes)+' · Receitas cadastradas por vencimento';
+    const nomes={clientes:'Clientes bloqueados Saci',orgaos:'Órgãos públicos Saci',saci:'Receitas Saci',arcm:'Receitas ARCM'};
+    document.getElementById('dashReceberOrigens').innerHTML=Object.entries(d.receber.origens).map(([k,v])=>`<div class="status-row"><span>${nomes[k]||escaparFinanceiro(k)}</span><strong>${moeda(v)}</strong></div>`).join('');
+    document.getElementById('dashPagarGrupos').innerHTML=Object.entries(d.pagar.grupos).map(([k,v])=>`<div class="status-row"><span>${escaparFinanceiro(k)}</span><strong>${moeda(v)}</strong></div>`).join('');
+    graficoBarras('faturamento','chartFaturamento',d.previsao.map(r=>mesLabel(r.mes)),[{label:'Saci',data:d.previsao.map(r=>r.saci),backgroundColor:'#466886'},{label:'ARCM',data:d.previsao.map(r=>r.arcm),backgroundColor:'#177f58'}],false,true);
+    document.getElementById('dashResumoAviso').textContent='Saldos em aberto de todo o cadastro. O mês selecionado altera apenas a previsão de faturamento.';
+  }catch(e){if(consulta!==consultaResumoDashboard)return;for(const id of ['dashReceber','dashPagar','dashFaturamento','dashPagarAtrasado','dashFaturamentoMes'])document.getElementById(id).textContent='—';for(const id of ['dashReceberOrigens','dashPagarGrupos'])document.getElementById(id).innerHTML='';destroyChart('faturamento');const dados=document.getElementById('chartFaturamentoDados');if(dados)dados.innerHTML='';document.getElementById('dashResumoAviso').textContent='Não foi possível atualizar: '+e.message}
 }
-document.getElementById('dashDespMes').addEventListener('change',carregarDespesasDashboard);
+async function carregarDespesasDashboard(){await carregarResumoDashboard()}
+document.getElementById('dashPrevisaoMes').addEventListener('change',carregarResumoDashboard);
+document.getElementById('dashResumoAtualizar').addEventListener('click',carregarResumoDashboard);
+document.querySelector('[data-tab="dashboard"]').addEventListener('click',carregarResumoDashboard);
