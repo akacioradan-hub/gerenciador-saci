@@ -5,26 +5,34 @@
   <details id="fluxoManuais" class="card compact-details mt"><summary>Lançamentos manuais e pendentes</summary>
   <p class="form-hint">Gerencie entradas avulsas de Caixa, Fiado e Serviço. Só as recebidas entram no fluxo, na data do recebimento. Não relance valores já registrados nos controles de clientes e órgãos públicos.</p>
   {% else %}
-  <div class="page-head"><div><span class="eyebrow">CONTROLE DE RECEITAS</span><h2>Receitas {{ nome }}</h2><p>Clientes e receitas da {{ nome }}.</p></div><div class="rec-actions"><button type="button" class="primary" data-rec-nova="{{ unidade }}">Nova receita</button><button type="button" class="secondary" data-rec-cliente="{{ unidade }}">Novo cliente</button></div></div>
+  <div class="page-head"><div><span class="eyebrow">RECEITAS E RECEBIMENTOS</span><h2>Fluxo de Caixa ARCM</h2><p>Cadastre contratos, receba receitas e acompanhe o caixa em um só lugar.</p></div><div class="rec-actions"><label>Mês de consulta<input type="month" id="rec-arcm-mes" required></label><button id="arcmFluxoAtualizar" class="secondary" type="button">Atualizar</button><button type="button" class="primary" data-rec-nova="arcm">Nova receita</button><button type="button" class="secondary" data-rec-cliente="arcm">Novo cliente</button></div></div>
+  {% include "fluxo_arcm.html" %}
   {% endif %}
+  {% if unidade == 'arcm' %}<details class="card compact-details mt"><summary>Totais dos lançamentos filtrados</summary>{% endif %}
   <div class="gov-summary-grid">
     <div class="card gov-kpi"><span>Total</span><strong id="rec-{{ unidade }}-total">R$ 0,00</strong></div>
     <div class="card gov-kpi gov-paid"><span>Recebido</span><strong id="rec-{{ unidade }}-recebido">R$ 0,00</strong></div>
     <div class="card gov-kpi gov-open"><span>Pendente</span><strong id="rec-{{ unidade }}-pendente">R$ 0,00</strong></div>
     <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="rec-{{ unidade }}-atrasado">R$ 0,00</strong><small>Incluído no pendente</small></div>
   </div>
-  <div class="card">
+  {% if unidade == 'arcm' %}</details>{% endif %}
+  <div class="card mt">
+    {% if unidade == 'arcm' %}<h3>Receitas a receber e recebidas no mês</h3><p class="form-hint">Pendências dos meses anteriores continuam aqui até serem recebidas, com o vencimento original. Receitas pagas aparecem no mês do recebimento. A consulta usa a situação atual dos lançamentos.</p>{% endif %}
     <div class="rec-filtros">
-      <label>Mês da receita<input type="month" id="rec-{{ unidade }}-mes" required></label>
+      {% if unidade == 'saci' %}<label>Mês da receita<input type="month" id="rec-{{ unidade }}-mes" required></label>{% endif %}
       <label>Cliente<select id="rec-{{ unidade }}-cliente"><option value="">Todos</option></select></label>
       <label>Situação<select id="rec-{{ unidade }}-status"><option value="">Todas</option><option value="recebida">Recebida</option><option value="pendente">Pendente</option><option value="atrasada">Atrasada</option></select></label>
       <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento{% if unidade == 'arcm' %}, contrato{% endif %}"></label>
     </div>
     <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>
-    <div class="table-wrap"><table><thead><tr><th>{% if unidade == 'saci' %}Descrição / cliente{% else %}Cliente / descrição{% endif %}</th><th>{% if unidade == 'saci' %}Fonte da receita{% else %}Categoria{% endif %}</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>{% if unidade == 'saci' %}Descrição / cliente{% else %}Cliente / descrição{% endif %}</th><th>{% if unidade == 'saci' %}Fonte da receita{% else %}Categoria{% endif %}</th><th>{% if unidade == 'arcm' %}Recebimento{% else %}Data{% endif %}</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
     <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
   </div>
   {% if unidade == 'arcm' %}
+  <details class="card compact-details mt"><summary>Resumo diário do caixa</summary>
+    <div class="table-wrap"><table><thead><tr><th>Dia</th><th>Recebido no dia</th><th>Entradas acumuladas</th></tr></thead><tbody id="arcmFluxoDiasBody"></tbody></table></div>
+    <div class="table-pagination"><span id="arcm-fluxo-diasPaginaResumo"></span><nav id="arcm-fluxo-diasPaginas" aria-label="Páginas do resumo diário ARCM"></nav></div>
+  </details>
   <details class="card compact-details mt"><summary>Previsão de receitas — próximos 12 meses</summary>
     <p class="form-hint">Por vencimento, a partir do mês selecionado e para o cliente filtrado. Inclui todas as situações, sem aplicar a pesquisa de texto.</p>
     <p id="recPrevisaoAviso" class="form-hint" aria-live="polite"></p>

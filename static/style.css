@@ -301,5 +301,5 @@ body:has(#despVinculadosCard[open]){overflow:hidden}
 #fluxoPendencias{border-color:#e9c985;background:#fffcf5}
 #fluxoManuais>summary{font-size:13px}
 .arcm-fluxo-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-#fluxo-arcm .rec-actions{align-items:end}#fluxo-arcm .rec-actions label{font-size:11px;gap:4px}
+#receitas-arcm .rec-actions{align-items:end}#receitas-arcm .rec-actions label{font-size:11px;gap:4px}
 @media(max-width:600px){.arcm-fluxo-cards{grid-template-columns:1fr}}

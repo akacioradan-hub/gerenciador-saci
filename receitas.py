@@ -180,7 +180,14 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             mes = request.args.get('mes') or hoje().strftime('%Y-%m')
             inicio = data_valida(mes + '-01')
             fim = date(inicio.year + (inicio.month == 12), inicio.month % 12 + 1, 1)
-            stmt = db.select(Receita).where(Receita.unidade == unidade, Receita.data >= inicio, Receita.data < fim)
+            stmt = db.select(Receita).where(Receita.unidade == unidade)
+            if unidade == 'arcm':
+                # Carteira atual: pendências até o mês consultado + recebidos naquele mês.
+                stmt = stmt.where(or_(
+                    (Receita.recebida.is_(False)) & (Receita.vencimento < fim),
+                    (Receita.recebida.is_(True)) & (Receita.data_recebimento >= inicio) & (Receita.data_recebimento < fim)))
+            else:
+                stmt = stmt.where(Receita.data >= inicio, Receita.data < fim)
             cliente_id = request.args.get('cliente_id')
             if cliente_id:
                 stmt = stmt.where(Receita.cliente_id == int(cliente_id))
@@ -198,7 +205,9 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             total = sum((r.valor for r in rows), Decimal(0))
             recebido = sum((r.valor for r in rows if r.recebida), Decimal(0))
             atraso = sum((r.valor for r in rows if not r.recebida and r.vencimento < hoje()), Decimal(0))
-            return jsonify(registros=[receita_dict(r) for r in rows], resumo=dict(total=float(total), recebido=float(recebido), pendente=float(total-recebido), atrasado=float(atraso), quantidade=len(rows)))
+            registros = [dict(receita_dict(r), pendencia_anterior=unidade == 'arcm' and not r.recebida and r.vencimento < inicio) for r in rows]
+            anteriores = sum((r.valor for r in rows if not r.recebida and r.vencimento < inicio), Decimal(0))
+            return jsonify(registros=registros, resumo=dict(total=float(total), recebido=float(recebido), pendente=float(total-recebido), atrasado=float(atraso), pendencias_anteriores=float(anteriores), quantidade=len(rows)))
         except (ValueError, OverflowError) as e:
             return jsonify(erro='Confira o mês e os filtros informados.'), 400
 

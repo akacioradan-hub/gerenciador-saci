@@ -1,0 +1,17 @@
+ARCM UNIFICADA — FLUXO DE CAIXA E RECEITAS
+
+Atualize todos os arquivos deste ZIP no GitHub e aguarde o deploy no Render. Pressione Ctrl+F5 no navegador.
+Alterados nesta versão: receitas.py, templates/index.html, templates/receitas.html, templates/fluxo_arcm.html, static/receitas.js, static/fluxo_arcm.js e static/style.css.
+
+UMA SÓ ABA
+Fluxo de Caixa ARCM reúne clientes, cadastro de receitas, contratos, previsão de parcelas, recebimento/reabertura, entradas do mês, histórico acumulado e resumo diário. A antiga aba separada Receitas ARCM foi incorporada. Todos os dados existentes são preservados.
+O mês de consulta é compartilhado pelo fluxo de caixa, tabela de receitas e previsão. Resumo diário, totais dos filtros, previsões e clientes ficam em seções expansíveis para reduzir a rolagem.
+
+PENDÊNCIAS DOS MESES ANTERIORES
+A tabela inclui todas as receitas em aberto com vencimento até o fim do mês consultado, inclusive as antigas. Elas são identificadas como Pendente de mês anterior e mantêm o vencimento original.
+Não são criadas cópias nem alteradas as datas para levar uma conta ao mês seguinte. Parcelas futuras entram a partir do mês de vencimento. A consulta representa a situação atual dos registros, não um fechamento histórico imutável.
+Ao receber, o lançamento sai das pendências e aparece como recebido no mês da data informada. Só então entra no fluxo realizado. Reabrir devolve o mesmo registro às pendências e retira sua entrada do caixa.
+Os filtros de cliente, situação e pesquisa afetam a tabela e seus totais. Os cartões de caixa e o resumo diário consideram todos os recebimentos ARCM no mês, pela data efetiva. Despesas Gerais continuam vinculadas ao fluxo Saci nesta versão.
+
+VALIDAÇÃO
+Testado localmente: pendências transportadas entre meses sem criar registros, exclusão de parcelas futuras, seleção por data de recebimento, filtros, reabertura, atualização do fluxo, aba única, renderização e funcionamento integrado em ambiente simulado. Deploy no Render não executado aqui.

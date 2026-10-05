@@ -1,19 +1,7 @@
-<section id="fluxo-arcm" class="tab receitas-tab">
- <div class="page-head"><div><span class="eyebrow">RECEBIMENTOS REALIZADOS</span><h2>Fluxo de Caixa ARCM</h2><p>Entradas diárias integradas às Receitas ARCM, pela data do recebimento.</p></div><div class="rec-actions"><label>Mês do fluxo<input id="arcmFluxoMes" type="month" required></label><button id="arcmFluxoAtualizar" class="secondary" type="button">Atualizar</button><button id="arcmFluxoReceitas" class="primary" type="button">Receitas ARCM</button></div></div>
- <div class="arcm-fluxo-cards">
-  <div class="card gov-kpi gov-paid"><span>Recebido no mês</span><strong id="arcmFluxoTotal">—</strong></div>
-  <div class="card gov-kpi"><span>Recebido antes do mês</span><strong id="arcmFluxoAnterior">—</strong></div>
-  <div class="card gov-kpi"><span>Entradas acumuladas</span><strong id="arcmFluxoAcumulado">—</strong><small>Histórico até o fim do período</small></div>
- </div>
- <p class="form-hint">Somente receitas e parcelas recebidas, com data até hoje. Pendências e previsões de contrato ficam em Receitas ARCM. As despesas gerais continuam no fluxo Saci nesta versão; os totais acima representam entradas, sem descontar despesas ARCM.</p>
- <p id="arcmFluxoAviso" class="form-hint" role="status"></p>
- <div class="card mt"><h3>Resumo diário</h3><div class="table-wrap"><table><thead><tr><th>Dia</th><th>Recebido no dia</th><th>Entradas acumuladas</th></tr></thead><tbody id="arcmFluxoDiasBody"></tbody></table></div>
-  <div class="table-pagination"><span id="arcm-fluxo-diasPaginaResumo"></span><nav id="arcm-fluxo-diasPaginas" aria-label="Páginas do resumo diário ARCM"></nav></div>
- </div>
- <div class="card mt"><h3>Recebimentos do mês</h3>
-  <div class="fluxo-filtros"><label>Dia<input id="arcmFluxoDia" type="date"></label><label>Cliente<select id="arcmFluxoCliente"><option value="">Todos</option></select></label></div>
-  <p class="form-hint">Filtros aplicados apenas à tabela abaixo. Corrija ou reabra o lançamento em Receitas ARCM; o fluxo acompanha a alteração automaticamente.</p>
-  <div class="table-wrap"><table><thead><tr><th>Recebimento</th><th>Cliente</th><th>Descrição / contrato</th><th>Valor recebido</th><th>Pagamento</th></tr></thead><tbody id="arcmFluxoMovBody"></tbody></table></div>
-  <div class="table-pagination"><span id="arcm-fluxo-movPaginaResumo"></span><nav id="arcm-fluxo-movPaginas" aria-label="Páginas dos recebimentos ARCM"></nav></div>
- </div>
-</section>
+<div class="arcm-fluxo-cards">
+ <div class="card gov-kpi gov-paid"><span>Recebido no mês</span><strong id="arcmFluxoTotal">—</strong></div>
+ <div class="card gov-kpi"><span>Recebido antes do mês</span><strong id="arcmFluxoAnterior">—</strong></div>
+ <div class="card gov-kpi"><span>Entradas acumuladas</span><strong id="arcmFluxoAcumulado">—</strong></div>
+</div>
+<p class="form-hint">Caixa de todos os clientes, pela data efetiva do recebimento. As pendências ficam na tabela abaixo. As despesas gerais continuam no fluxo Saci; estes totais representam entradas ARCM.</p>
+<p id="arcmFluxoAviso" class="form-hint" role="status"></p>
