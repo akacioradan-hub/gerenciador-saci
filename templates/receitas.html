@@ -15,7 +15,7 @@
       <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento{% if unidade == 'arcm' %}, contrato{% endif %}"></label>
     </div>
     <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>
-    <div class="table-wrap"><table><thead><tr><th>Cliente / descrição</th><th>Categoria</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>{% if unidade == 'saci' %}Descrição / cliente{% else %}Cliente / descrição{% endif %}</th><th>{% if unidade == 'saci' %}Fonte da receita{% else %}Categoria{% endif %}</th><th>Data</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
     <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
   </div>
   {% if unidade == 'arcm' %}
@@ -35,9 +35,9 @@
   <div class="rec-modal-head"><h3 id="recTitulo">Nova receita</h3><button type="button" class="secondary" data-rec-fechar="recModal" aria-label="Fechar cadastro de receita">×</button></div>
   <form id="recForm" class="rec-form">
     <input id="recId" type="hidden">
-    <label>Cliente *<select id="recCliente" required></select></label>
+    <label><span id="recClienteLabel">Cliente *</span><select id="recCliente" required></select></label>
     <label class="rec-wide">Descrição *<input id="recDescricao" required maxlength="220"></label>
-    <label>Categoria<select id="recCategoria"><option>Vendas</option><option>Serviços</option><option>Outras receitas</option></select></label>
+    <label><span id="recCategoriaLabel">Categoria</span><select id="recCategoria"><option>Vendas</option><option>Serviços</option><option>Outras receitas</option></select></label>
     <label><span id="recValorLabel">Valor (R$) *</span><input id="recValor" type="number" min="0.01" max="9999999999.99" step="0.01" required></label>
     <label><span id="recDataLabel">Data da receita *</span><input id="recData" type="date" required></label>
     <label><span id="recVencimentoLabel">Vencimento *</span><input id="recVencimento" type="date" required></label>

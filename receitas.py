@@ -6,6 +6,7 @@ from decimal import Decimal
 from flask import request, jsonify, abort
 from sqlalchemy import or_, inspect, text
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.schema import CreateTable, CreateIndex
 
 
 def registrar_receitas(app, db, login_required, valor_monetario):
@@ -37,7 +38,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         __tablename__ = 'receitas_unidades'
         id = db.Column(db.Integer, primary_key=True)
         unidade = db.Column(db.String(10), nullable=False, index=True)
-        cliente_id = db.Column(db.Integer, db.ForeignKey('clientes_receitas.id'), nullable=False, index=True)
+        cliente_id = db.Column(db.Integer, db.ForeignKey('clientes_receitas.id'), nullable=True, index=True)
         descricao = db.Column(db.String(220), nullable=False)
         categoria = db.Column(db.String(40), nullable=False)
         valor = db.Column(db.Numeric(14, 2), nullable=False)
@@ -63,6 +64,29 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             if nome not in colunas:
                 db.session.execute(text(f'ALTER TABLE receitas_unidades ADD COLUMN {nome} {tipo}'))
         db.session.commit()
+        info = {c['name']: c for c in inspect(db.engine).get_columns('receitas_unidades')}
+        if not info['cliente_id']['nullable']:
+            if db.engine.dialect.name == 'postgresql':
+                db.session.execute(text('ALTER TABLE receitas_unidades ALTER COLUMN cliente_id DROP NOT NULL'))
+                db.session.commit()
+            elif db.engine.dialect.name == 'sqlite':
+                # SQLite exige recriar a tabela para remover NOT NULL; cópia atômica.
+                tabela = Receita.__table__
+                ddl = str(CreateTable(tabela).compile(db.engine)).replace('CREATE TABLE receitas_unidades', 'CREATE TABLE receitas_unidades_migracao', 1)
+                nomes = ', '.join('"'+c.name+'"' for c in tabela.columns)
+                with db.engine.connect() as conn:
+                    conn.exec_driver_sql('BEGIN IMMEDIATE')
+                    try:
+                        conn.exec_driver_sql(ddl)
+                        conn.exec_driver_sql(f'INSERT INTO receitas_unidades_migracao ({nomes}) SELECT {nomes} FROM receitas_unidades')
+                        conn.exec_driver_sql('DROP TABLE receitas_unidades')
+                        conn.exec_driver_sql('ALTER TABLE receitas_unidades_migracao RENAME TO receitas_unidades')
+                        for indice in tabela.indexes:
+                            conn.execute(CreateIndex(indice))
+                        conn.commit()
+                    except Exception:
+                        conn.rollback()
+                        raise
 
     def contrato_dict(c):
         return dict(id=c.id, numero=c.numero, cliente_id=c.cliente_id, tipo_pagamento=c.tipo_pagamento,
@@ -101,7 +125,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         return {k: getattr(c, k) for k in ('id', 'unidade', 'nome', 'documento', 'telefone', 'email', 'endereco', 'observacoes')}
 
     def receita_dict(r):
-        return dict(id=r.id, unidade=r.unidade, cliente_id=r.cliente_id, cliente_nome=r.cliente.nome,
+        return dict(id=r.id, unidade=r.unidade, cliente_id=r.cliente_id, cliente_nome=r.cliente.nome if r.cliente else None,
                     descricao=r.descricao, categoria=r.categoria, valor=float(r.valor), data=r.data.isoformat(),
                     vencimento=r.vencimento.isoformat(), recebida=r.recebida,
                     status='RECEBIDA' if r.recebida else ('ATRASADA' if r.vencimento < hoje() else 'PENDENTE'),
@@ -169,7 +193,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                 stmt = stmt.where(Receita.vencimento < hoje())
             busca = (request.args.get('q') or '').strip()
             if busca:
-                stmt = stmt.join(ClienteReceita).outerjoin(ContratoReceita, Receita.contrato_id == ContratoReceita.id).where(or_(Receita.descricao.ilike('%'+busca+'%'), ClienteReceita.nome.ilike('%'+busca+'%'), Receita.documento.ilike('%'+busca+'%'), ContratoReceita.numero.ilike('%'+busca+'%')))
+                stmt = stmt.outerjoin(ClienteReceita).outerjoin(ContratoReceita, Receita.contrato_id == ContratoReceita.id).where(or_(Receita.descricao.ilike('%'+busca+'%'), ClienteReceita.nome.ilike('%'+busca+'%'), Receita.documento.ilike('%'+busca+'%'), ContratoReceita.numero.ilike('%'+busca+'%')))
             rows = db.session.execute(stmt.order_by(Receita.data.desc(), Receita.id.desc())).scalars().all()
             total = sum((r.valor for r in rows), Decimal(0))
             recebido = sum((r.valor for r in rows if r.recebida), Decimal(0))
@@ -191,16 +215,21 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         try:
             d = payload()
             cid = d.get('cliente_id')
-            if type(cid) is not int:
-                raise ValueError('Selecione um cliente.')
-            c = db.session.get(ClienteReceita, cid)
-            if not c or c.unidade != unidade:
-                raise ValueError('Selecione um cliente desta unidade.')
+            if cid is None and unidade == 'saci':
+                c = None
+            else:
+                if type(cid) is not int:
+                    raise ValueError('Selecione um cliente.')
+                c = db.session.get(ClienteReceita, cid)
+                if not c or c.unidade != unidade:
+                    raise ValueError('Selecione um cliente desta unidade.')
             campos = {campo: texto(d, campo, limite, campo in ('descricao', 'categoria')) for campo, limite in
                       [('descricao', 220), ('categoria', 40), ('forma_pagamento', 40), ('documento', 80), ('observacoes', 2000)]}
-            if campos['categoria'] not in ('Vendas', 'Serviços', 'Outras receitas'):
-                raise ValueError('Selecione uma categoria válida.')
-            if campos['forma_pagamento'] not in ('', 'Pix', 'Dinheiro', 'Cartão', 'Transferência', 'Boleto', 'Outro'):
+            categorias = ('Caixa', 'Fiado', 'Serviço') if unidade == 'saci' else ('Vendas', 'Serviços', 'Outras receitas')
+            formas = ('', 'Pix', 'Dinheiro', 'Cartão crédito', 'Cartão débito') if unidade == 'saci' else ('', 'Pix', 'Dinheiro', 'Cartão', 'Transferência', 'Boleto', 'Outro')
+            if campos['categoria'] not in categorias and not (r and campos['categoria'] == r.categoria):
+                raise ValueError('Selecione uma fonte de receita válida.')
+            if campos['forma_pagamento'] not in formas and not (r and campos['forma_pagamento'] == r.forma_pagamento):
                 raise ValueError('Forma de pagamento inválida.')
             valor = valor_monetario(d.get('valor'))
             if valor <= 0:

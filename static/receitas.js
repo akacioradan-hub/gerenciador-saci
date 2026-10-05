@@ -24,7 +24,7 @@ async function recCarregar(u){
 }
 function recRender(u){
   const st=recEstados[u];st.pagina=Math.min(st.pagina,Math.max(1,Math.ceil(st.registros.length/5)));
-  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(r.descricao)}</div>${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · Parcela ${r.parcela}/${r.contrato.parcelas}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
+  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(u==='saci'?r.descricao:r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(u==='saci'?(r.cliente_nome||'Sem cliente'):r.descricao)}</div>${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · Parcela ${r.parcela}/${r.contrato.parcelas}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
   renderPaginacaoTabela('rec-'+u,st.pagina,st.registros.length,n=>{st.pagina=n;recRender(u)});
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-status]').forEach(b=>b.addEventListener('click',()=>recMudarStatus(u,Number(b.dataset.recStatus),b)));
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-edit]').forEach(b=>b.addEventListener('click',()=>recAbrir(u,Number(b.dataset.recEdit))));
@@ -41,10 +41,19 @@ function recAtualizarSituacao(){const recebido=recEl('recRecebida').value==='tru
 const recCampos={cliente_id:'Cliente',descricao:'Descricao',categoria:'Categoria',valor:'Valor',data:'Data',vencimento:'Vencimento',data_recebimento:'DataRecebimento',forma_pagamento:'Forma',documento:'Documento',observacoes:'Observacoes'};
 const recCliCampos={nome:'Nome',documento:'Documento',telefone:'Telefone',email:'Email',endereco:'Endereco',observacoes:'Observacoes'};
 function recAbrir(u,id){
-  if(!recEstados[u].clientes.length){msg('Cadastre um cliente para lançar a receita.');recAbrirCliente(u);return}
+  if(u==='arcm'&&!recEstados[u].clientes.length){msg('Cadastre um cliente para lançar a receita.');recAbrirCliente(u);return}
   recUnidade=u;recEl('recForm').reset();recEl('recId').value=id||'';recEl('recErro').textContent='';
   recEl('recTitulo').textContent=(id?'Editar receita':'Nova receita')+' — '+recNome(u);
-  recEl('recCliente').innerHTML='<option value="">Selecione...</option>'+recEstados[u].clientes.map(c=>`<option value="${c.id}">${escaparFinanceiro(c.nome)}</option>`).join('');
+  recEl('recCliente').required=u==='arcm';recEl('recClienteLabel').textContent=u==='saci'?'Cliente (opcional)':'Cliente *';
+  recEl('recCategoriaLabel').textContent=u==='saci'?'Fonte da receita':'Categoria';
+  const atual=id?recEstados[u].registros.find(r=>r.id===id):null;
+  const categorias=u==='saci'?['Caixa','Fiado','Serviço']:['Vendas','Serviços','Outras receitas'];
+  const formas=u==='saci'?['Pix','Dinheiro','Cartão crédito','Cartão débito']:['Pix','Dinheiro','Cartão','Transferência','Boleto','Outro'];
+  if(atual?.categoria&&!categorias.includes(atual.categoria))categorias.push(atual.categoria);
+  if(atual?.forma_pagamento&&!formas.includes(atual.forma_pagamento))formas.push(atual.forma_pagamento);
+  recEl('recCategoria').innerHTML=categorias.map(v=>`<option>${escaparFinanceiro(v)}</option>`).join('');
+  recEl('recForma').innerHTML='<option value="">Não informada</option>'+formas.map(v=>`<option>${escaparFinanceiro(v)}</option>`).join('');
+  recEl('recCliente').innerHTML=`<option value="">${u==='saci'?'Sem cliente':'Selecione...'}</option>`+recEstados[u].clientes.map(c=>`<option value="${c.id}">${escaparFinanceiro(c.nome)}</option>`).join('');
   recEl('recData').value=recHoje();recEl('recVencimento').value=recHoje();
   if(id){const r=recEstados[u].registros.find(r=>r.id===id);if(!r)return;for(const [k,v] of Object.entries(recCampos))recEl('rec'+v).value=r[k]??'';recEl('recRecebida').value=String(r.recebida)}
   recConfigurarContrato(u,id?recEstados[u].registros.find(r=>r.id===id):null);recAtualizarSituacao();recEl('recModal').showModal();recEl('recCliente').focus();
@@ -62,7 +71,7 @@ async function recSalvar(e,cliente){
   e.preventDefault();if(recSalvando)return;
   const u=recUnidade,id=recEl(cliente?'recCliId':'recId').value,form=e.target,botao=form.querySelector('[type="submit"]'),erro=recEl(cliente?'recCliErro':'recErro');
   const dados=Object.fromEntries(Object.entries(cliente?recCliCampos:recCampos).map(([k,v])=>[k,recEl((cliente?'recCli':'rec')+v).value]));
-  if(!cliente){dados.cliente_id=Number(dados.cliente_id);dados.valor=Number(dados.valor);dados.recebida=recEl('recRecebida').value==='true'}
+  if(!cliente){dados.cliente_id=dados.cliente_id?Number(dados.cliente_id):null;dados.valor=Number(dados.valor);dados.recebida=recEl('recRecebida').value==='true'}
   if(!cliente&&u==='arcm'&&!id){
     dados.numero_contrato=recEl('recNumeroContrato').value.trim();dados.tipo_pagamento=recEl('recTipoPagamento').value;dados.prazo_meses=Number(recEl('recPrazoMeses').value);dados.inicio_contrato=recEl('recInicioContrato').value;
     const previsao=recPlanejarContrato();

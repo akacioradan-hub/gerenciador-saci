@@ -1,0 +1,6 @@
+Receitas Saci: fontes Caixa, Fiado e Serviço. Formas de pagamento: Pix, Dinheiro, Cartão crédito e Cartão débito. Cliente opcional.
+
+Atualize no GitHub: receitas.py, static/receitas.js, templates/receitas.html e templates/index.html. O ZIP contém o projeto completo.
+Aguarde o deploy do Render e pressione Ctrl+F5 no navegador. A migração do vínculo opcional ocorre na inicialização. Não exclua nem recrie o banco de dados. Registros antigos mantêm seus dados.
+
+Verificado localmente: migração SQLite com preservação de registros, salvamento sem cliente, fontes, formas de pagamento, busca, totais e renderização da página. Deploy no Render não executado por este pacote.
