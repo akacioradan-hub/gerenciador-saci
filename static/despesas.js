@@ -7,7 +7,7 @@ const despCategorias={
 let despesasMes=[],despCadastros={funcionarios:[],veiculos:[],fornecedores:[],terceirizados:[]},despTipoCadastro='funcionarios';
 const despEl=id=>document.getElementById(id);
 const despNomes={funcionarios:'Funcionários',veiculos:'Veículos',fornecedores:'Fornecedores',terceirizados:'Terceirizados'};
-const despHoje=()=>{const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+const despHoje=()=>{const partes=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(k=>partes.find(p=>p.type===k).value).join('-')};
 function despParametros(){
   const params=new URLSearchParams({mes:despEl('despMes').value});
   const campos={despFiltroGrupo:'grupo',despFiltroCategoria:'categoria',despFiltroStatus:'status',despFiltroPrioridade:'prioridade',despFiltroFuncionario:'funcionario_id',despFiltroVeiculo:'veiculo_id',despFiltroFornecedor:'fornecedor_id',despFiltroTerceirizado:'terceirizado_id'};
@@ -59,10 +59,10 @@ function renderContasMes(){
   const inicio=(despPagina-1)*DESP_POR_PAGINA;
   despEl('despesasBody').innerHTML=despesasMes.length?despesasMes.slice(inicio,inicio+DESP_POR_PAGINA).map(r=>{
     const vinculos=[r.fornecedor_nome,r.funcionario_nome,r.veiculo_nome,r.terceirizado_nome].filter(Boolean);
-    return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
+    return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}${r.repetir_mensal?' · Mensal':''}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
       <td>${vinculos.map(v=>`<div class="table-sub">${escaparFinanceiro(v)}</div>`).join('')||'—'}</td>
-      <td><span class="desp-priority ${escaparFinanceiro(r.prioridade)}">${escaparFinanceiro(r.prioridade)}</span></td>
-      <td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td>
+      <td><span title="${r.urgente_automatico?'Urgente automaticamente: conta vencida':'Prioridade cadastrada'}" class="desp-priority ${escaparFinanceiro(r.prioridade)}">${escaparFinanceiro(r.prioridade)}</span></td>
+      <td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}${r.juros>0?`<div class="table-sub">Base: ${moeda(r.valor_base)}<br>Juros/acréscimos: ${moeda(r.juros)}</div>`:''}</td>
       <td class="desp-status-cell"><span class="badge ${statusClass(r.status)}">${escaparFinanceiro(r.status)}</span></td>
       <td><div class="desp-payment-cell">${r.pago?`<span class="table-sub">${dataBR(r.data_pagamento)}</span>`:''}<button type="button" class="secondary desp-payment-icon ${r.pago?'desp-reopen':'desp-confirm'}" title="${r.pago?'Reabrir despesa':'Marcar como paga'}" aria-label="${r.pago?'Reabrir despesa':'Marcar como paga'}" onclick="pagarDespesa(${r.id},${!r.pago})"><span aria-hidden="true">${r.pago?'↶':'✓'}</span></button></div></td>
       <td><div class="acoes icon-actions"><button type="button" class="edit icon-btn" aria-label="Editar despesa" title="Editar despesa" onclick="editarDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" aria-label="Excluir despesa" title="Excluir despesa" onclick="excluirDespesa(${r.id})">🗑</button></div></td></tr>`;
@@ -110,6 +110,8 @@ function despAtualizarCategoria(valor){
   despEl('despCategoria').innerHTML=despCategorias[grupo].map(c=>`<option>${c}</option>`).join('');
   if(valor&&despCategorias[grupo].includes(valor))despEl('despCategoria').value=valor;
   despEl('despFornecedor').required=grupo==='Fornecedores';
+  despEl('despRepetirLabel').classList.toggle('hidden',grupo!=='Custos fixos');
+  despEl('despRepetir').checked=grupo==='Custos fixos';
 }
 function despAtualizarPago(){
   const pago=despEl('despPago').checked;
@@ -139,16 +141,28 @@ function editarDespesa(id){
   novaDespesa();despEl('despGrupo').value=r.grupo;despAtualizarCategoria(r.categoria);
   const campos={despId:'id',despDescricao:'descricao',despCompetencia:'competencia',despVencimento:'vencimento',despValor:'valor',despPrioridade:'prioridade',despFornecedor:'fornecedor_id',despTerceirizado:'terceirizado_id',despFuncionario:'funcionario_id',despVeiculo:'veiculo_id',despDocumento:'documento',despObservacoes:'observacoes',despDataPagamento:'data_pagamento'};
   Object.entries(campos).forEach(([id,campo])=>despEl(id).value=r[campo]??'');
+  despEl('despPrioridade').value=r.prioridade_cadastro||r.prioridade;
+  despEl('despRepetir').checked=!!r.repetir_mensal;
   despEl('despPago').checked=r.pago;despAtualizarPago();despEl('despTitulo').textContent='Editar despesa';
 }
 async function pagarDespesa(id,pago){
-  let data=null;
-  if(pago){data=prompt('Data do pagamento (AAAA-MM-DD):',despHoje());if(data===null)return}
-  else if(!confirm('Reabrir esta conta e remover a data de pagamento?'))return;
-  try{await api('/api/despesas/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago,data_pagamento:data})});await carregarDespesas();await carregarDespesasDashboard();msg(pago?'Despesa marcada como paga.':'Despesa reaberta.')}catch(e){msg(e.message,'erro')}
+  const r=despesasMes.find(x=>x.id===id);if(!r)return;
+  let data=null,valor=r.valor;
+  if(pago){
+    data=prompt('Data do pagamento (AAAA-MM-DD):',despHoje());if(data===null)return;
+    if(r.status==='ATRASADO'||data>r.vencimento){
+      const entrada=prompt(`Valor total pago, incluindo juros ou multa (valor base: ${moeda(r.valor_base??r.valor)}). Mantenha o valor se não houver acréscimo:`,Number(r.valor).toFixed(2));
+      if(entrada===null)return;
+      if(!/^\d+(?:[.,]\d{1,2})?$/.test(entrada.trim())){msg('Informe o valor sem separador de milhar e com até duas casas decimais.','erro');return}
+      valor=Number(entrada.trim().replace(',','.'));
+      if(valor<Number(r.valor_base??r.valor)){msg('O total deve ser igual ou maior que o valor base.','erro');return}
+    }
+  }else if(!confirm('Reabrir esta conta? A data de pagamento e os juros serão removidos, restaurando o valor base.'))return;
+  try{await api('/api/despesas/'+id+'/status',{method:'PATCH',body:JSON.stringify({pago,data_pagamento:data,valor})});await carregarDespesas();await carregarDespesasDashboard();msg(pago?'Despesa marcada como paga.':'Despesa reaberta.')}catch(e){msg(e.message,'erro')}
 }
 async function excluirDespesa(id){
-  if(!confirm('Excluir esta despesa?'))return;
+  const r=despesasMes.find(x=>x.id===id);
+  if(!confirm(r?.repetir_mensal?'Excluir esta despesa e interromper as próximas repetições? Os outros meses já cadastrados serão mantidos.':'Excluir esta despesa?'))return;
   try{await api('/api/despesas/'+id,{method:'DELETE'});await carregarDespesas();await carregarDespesasDashboard();msg('Despesa excluída.')}catch(e){msg(e.message,'erro')}
 }
 function limparCadastroDespesa(){despEl('despCadForm').reset();despEl('despCadId').value=''}
@@ -229,7 +243,7 @@ if(despEl('despesas')){
   despEl('despForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despId').value;
     const campos={descricao:'Descricao',grupo:'Grupo',categoria:'Categoria',competencia:'Competencia',vencimento:'Vencimento',valor:'Valor',prioridade:'Prioridade',fornecedor_id:'Fornecedor',terceirizado_id:'Terceirizado',funcionario_id:'Funcionario',veiculo_id:'Veiculo',documento:'Documento',observacoes:'Observacoes',data_pagamento:'DataPagamento'};
-    const payload=Object.fromEntries(Object.entries(campos).map(([k,v])=>[k,despEl('desp'+v).value]));payload.pago=despEl('despPago').checked;
+    const payload=Object.fromEntries(Object.entries(campos).map(([k,v])=>[k,despEl('desp'+v).value]));payload.pago=despEl('despPago').checked;payload.repetir_mensal=despEl('despGrupo').value==='Custos fixos'&&despEl('despRepetir').checked;
     try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;fecharCadastroDespesa();await carregarDespesas();await carregarDespesasDashboard();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
   ['despMes','despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>{if(id==='despFiltroGrupo')atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'))}));

@@ -1,0 +1,24 @@
+DESPESAS GERAIS — ATRASO, JUROS E REPETIÇÃO MENSAL
+
+Atualize todos os arquivos do ZIP no GitHub e aguarde o deploy do Render. Depois pressione Ctrl+F5.
+Nesta atualização foram alterados despesas.py, static/despesas.js e templates/index.html. O pacote inclui o sistema completo com os fluxos Saci e ARCM.
+
+URGENTE AUTOMÁTICO
+Uma despesa em aberto cujo vencimento já passou aparece como Urgente automaticamente. O filtro de prioridade e a exportação consideram essa urgência. No dia do vencimento ainda não é atraso. Ao pagar ou mudar o vencimento, volta a valer a prioridade cadastrada. Datas calculadas no horário de Brasília/RN.
+
+PAGAMENTO COM JUROS
+Clique no ícone de pagar. Em contas atrasadas ou pagas após o vencimento, informe a data e o valor total pago, incluindo juros/multa. Se não houve juros, mantenha o mesmo valor. A tabela separa valor base e juros/acréscimos. O total efetivamente pago é usado nas despesas e na saída do fluxo Saci.
+Reabrir a conta remove data e juros e restaura o valor base. Não soma juros novamente se o mesmo pagamento for confirmado duas vezes.
+
+CUSTOS FIXOS
+Novos custos fixos vêm com Repetir nos próximos meses marcado. Desmarque para não repetir ou encerrar a repetição de uma série existente.
+No primeiro acesso autenticado ao sistema no novo mês, as contas são geradas em aberto. Não é necessário manter o navegador aberto nem cadastrar as contas novamente. Se houve meses sem acesso após ativar a repetição, as competências faltantes são criadas até o mês atual.
+Cada conta mantém descrição, categoria, vínculos e valor base. Juros, pagamento e documento fiscal do mês anterior não são copiados. O vencimento mantém o dia; dia 31 é ajustado ao último dia de meses mais curtos e volta ao dia original nos meses seguintes.
+Cada série tem apenas uma conta por competência. Alterar a conta mais recente atualiza a base para os próximos meses. Não altera contas de meses já gerados. Desativar a repetição não exclui contas já existentes.
+Excluir uma despesa recorrente interrompe as próximas repetições da série. Os outros meses já cadastrados ficam preservados.
+
+MIGRAÇÃO DOS DADOS EXISTENTES
+A aplicação acrescenta campos e uma tabela de recorrências automaticamente, sem apagar o histórico. Os custos fixos do último mês cadastrado até a data atual são ativados para repetição; os meses anteriores permanecem como histórico. Na instalação inicial, não são criadas contas para lacunas antigas: começa no mês atual, ou no próximo se o atual já está cadastrado. Revise a opção Repetir nos próximos meses nas despesas ativas caso algum custo não deva continuar.
+
+VALIDAÇÃO
+Testes locais de migração, prioridade automática e filtros, pagamento com juros e reabertura, reflexo no fluxo de caixa, geração mensal sem duplicação, ajuste de datas, cancelamento da repetição, exclusão, backup e exportação. Fluxos da interface verificados em ambiente simulado. Deploy no Render não executado aqui.

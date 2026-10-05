@@ -313,6 +313,7 @@
             <label>Competência *<input id="despCompetencia" type="month" required></label>
             <label>Vencimento / previsão de pagamento *<input id="despVencimento" type="date" required></label>
             <label>Valor *<input id="despValor" type="number" min="0.01" max="999999999999.99" step="0.01" required></label>
+            <label class="check-label" id="despRepetirLabel" title="Cria uma conta em aberto por mês, com o valor base. Desmarque para encerrar as próximas repetições."><input id="despRepetir" type="checkbox" checked> Repetir nos próximos meses</label>
             <label>Prioridade<select id="despPrioridade"><option>Baixa</option><option selected>Normal</option><option>Alta</option><option>Urgente</option></select></label>
             <label>Fornecedor<select id="despFornecedor"></select></label>
             <label>Terceirizado vinculado<select id="despTerceirizado"></select></label>
@@ -345,7 +346,7 @@
           <div class="desp-catalog-nav"><button type="button" class="secondary" id="despExibirCadastros" aria-expanded="false" aria-controls="despListaCadastros">Exibir cadastrados</button></div>
           <div class="table-wrap mt hidden" id="despListaCadastros"><table><thead id="despCadHead"><tr><th>Nome</th><th>Cargo</th><th>Data de nascimento</th><th>Endereço</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
         </dialog>
-        <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Valores conforme os filtros selecionados.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
+        <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Contas vencidas ficam urgentes. Custos fixos com repetição ativa são criados em aberto ao acessar o sistema no novo mês.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
           <div class="desp-filters desp-main-filters">
           <label>Grupo<select id="despFiltroGrupo"><option value="">Todos</option><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
           <label>Situação<select id="despFiltroStatus"><option value="">Todas</option><option value="aberto">Em aberto</option><option value="atrasado">Atrasadas</option><option value="pago">Pagas</option></select></label>
@@ -412,7 +413,7 @@
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261005-fluxo"></script>
-<script src="/static/despesas.js?v=20261003-icones-pagamento"></script>
+<script src="/static/despesas.js?v=20261005-recorrencia"></script>
 <script src="/static/receitas.js?v=20261005-arcm"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-arcm"></script>
 <script src="/static/fluxo_arcm.js?v=20261005-arcm"></script>
