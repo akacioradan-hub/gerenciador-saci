@@ -24,6 +24,7 @@ async function carregarDespesas(){
   despesasMes=d.registros||[];
   const r=d.resumo||{};
   for(const [id,campo] of Object.entries({despTotal:'total',despPagoTotal:'pago',despAberto:'aberto',despAtrasado:'atrasado'}))despEl(id).textContent=moeda(r[campo]);
+  despEl('despJurosMes').textContent=moeda(r.juros_pagos_mes||0);
   despEl('despContagem').textContent=`${r.quantidade||0} conta(s) · Totais conforme o mês de competência e os filtros.`;
   despEl('despGrupos').innerHTML=Object.entries(r.por_grupo||{}).map(([g,v])=>`<div><span>${escaparFinanceiro(g)}</span><strong>${moeda(v)}</strong></div>`).join('');
   despEl('despExportar').href='/api/exportar/despesas.csv?'+params;

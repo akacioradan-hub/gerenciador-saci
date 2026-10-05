@@ -221,6 +221,7 @@
           <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="despPagoTotal" class="ui-positive">R$ 0,00</strong></div>
           <div class="card gov-kpi gov-open"><span>A pagar</span><strong id="despAberto" class="ui-negative">R$ 0,00</strong></div>
           <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="despAtrasado" class="ui-negative">R$ 0,00</strong></div>
+          <div class="card gov-kpi gov-open"><span>Juros pagos no mês</span><strong id="despJurosMes" class="ui-negative">R$ 0,00</strong><small>Pela data do pagamento · Todas as despesas do mês selecionado</small></div>
         </div>
         <div class="desp-group-summary mt" id="despGrupos"></div>
         <dialog class="desp-modal hidden" id="despCadastro" aria-labelledby="despTitulo"><div class="desp-modal-head"><h3 id="despTitulo">Cadastrar despesa</h3><button id="despModalFechar" type="button" aria-label="Fechar cadastro de despesa">×</button></div>
@@ -338,7 +339,7 @@
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261005-fluxo-geral"></script>
-<script src="/static/despesas.js?v=20261005-juros-pagos"></script>
+<script src="/static/despesas.js?v=20261005-quadro-juros"></script>
 <script src="/static/receitas.js?v=20261005-pendente-sem-atraso"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-padrao"></script>
 <script src="/static/contrato_edicao.js?v=20261005-edicao-contrato"></script>

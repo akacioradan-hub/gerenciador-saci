@@ -316,12 +316,19 @@ def registrar_despesas(app, db, login_required):
     def listar_despesas():
         try: registros = consultar()
         except (ValueError, TypeError): return jsonify(erro='Filtro de mês ou cadastro inválido.'), 400
+        competencia = mes(request.args.get('mes') or hoje().strftime('%Y-%m'))
+        inicio_pagamento = date.fromisoformat(competencia + '-01')
+        fim_pagamento = date.fromisoformat(proximo_mes(competencia) + '-01')
+        pagos_mes = db.session.execute(db.select(Despesa).where(
+            Despesa.pago.is_(True), Despesa.data_pagamento >= inicio_pagamento,
+            Despesa.data_pagamento < fim_pagamento)).scalars().all()
+        juros_pagos_mes = sum((max(Decimal(0), r.valor - valor_base(r)) for r in pagos_mes), Decimal(0))
         total = sum((r.valor for r in registros), Decimal(0))
         pago = sum((r.valor for r in registros if r.pago), Decimal(0))
         atrasado = sum((r.valor for r in registros if not r.pago and r.vencimento < hoje()), Decimal(0))
         por_grupo = {g: float(sum((r.valor for r in registros if r.grupo == g), Decimal(0))) for g in grupos}
         return jsonify(registros=[despesa_dict(r) for r in registros], resumo={
-            'total': float(total), 'pago': float(pago), 'aberto': float(total-pago),
+            'juros_pagos_mes': float(juros_pagos_mes), 'total': float(total), 'pago': float(pago), 'aberto': float(total-pago),
             'atrasado': float(atrasado), 'quantidade': len(registros), 'por_grupo': por_grupo})
 
     @app.route('/api/despesas', methods=['POST'])

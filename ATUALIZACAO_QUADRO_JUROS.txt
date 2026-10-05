@@ -1,0 +1,3 @@
+Quadro fixo Juros pagos no mês em Despesas Gerais. Considera a data do pagamento no mês selecionado, incluindo contas de competências anteriores. Total de todas as despesas, independente dos filtros da tabela.
+Arquivos alterados: despesas.py, static/despesas.js e templates/index.html.
+Atualize no GitHub e aguarde o deploy no Render. Depois pressione Ctrl+F5.
