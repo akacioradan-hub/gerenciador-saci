@@ -278,6 +278,12 @@
           </div></details><button class="secondary" type="button" id="despLimparFiltros">Limpar filtros</button></div>
           <div class="table-wrap"><table><thead><tr><th>Descrição / categoria</th><th>Vínculos</th><th>Prioridade</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Pagamento</th><th>Ações</th></tr></thead><tbody id="despesasBody"></tbody></table></div>
           <div class="desp-pagination"><span id="despPaginaResumo" aria-live="polite"></span><nav id="despPaginas" aria-label="Páginas de contas do mês"></nav></div>
+          <details class="compact-details mt" id="despJurosPainel">
+            <summary>Juros pagos — <strong class="ui-negative" id="despJurosTotal">R$ 0,00</strong></summary>
+            <p class="form-hint">Diferença entre o valor pago e o original, incluindo multas e acréscimos. Já incluída no total pago. Conforme o mês de competência e os filtros acima.</p>
+            <div class="table-wrap"><table><thead><tr><th>Despesa</th><th>Pagamento</th><th>Valor original</th><th>Valor pago</th><th>Juros</th></tr></thead><tbody id="despJurosBody"></tbody></table></div>
+            <div class="table-pagination"><span id="despJurosPaginaResumo" aria-live="polite"></span><nav id="despJurosPaginas" aria-label="Páginas de juros pagos"></nav></div>
+          </details>
           <div id="despResumoVinculado" class="hidden mt" aria-live="polite">
             <h4 id="despResumoVinculadoNome">Despesas do cadastro</h4>
             <div class="gov-summary-grid">
@@ -332,7 +338,7 @@
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261005-fluxo-geral"></script>
-<script src="/static/despesas.js?v=20261005-fluxo-geral"></script>
+<script src="/static/despesas.js?v=20261005-juros-pagos"></script>
 <script src="/static/receitas.js?v=20261005-pendente-sem-atraso"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-padrao"></script>
 <script src="/static/contrato_edicao.js?v=20261005-edicao-contrato"></script>

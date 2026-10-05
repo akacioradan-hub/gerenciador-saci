@@ -1,0 +1,5 @@
+Despesas Gerais: área Juros pagos abaixo da tabela de contas, com total e detalhamento em páginas de 5 linhas.
+Segue o mês de competência e os filtros das contas. Juros = valor pago menos valor original; inclui multas e acréscimos. Valores já incluídos no total pago.
+Ao marcar qualquer conta como paga, permite informar o valor total pago. Reabrir remove juros e restaura o valor base.
+Arquivos alterados: static/despesas.js e templates/index.html.
+Atualize no GitHub, aguarde o deploy no Render e pressione Ctrl+F5.

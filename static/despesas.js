@@ -29,6 +29,7 @@ async function carregarDespesas(){
   despEl('despExportar').href='/api/exportar/despesas.csv?'+params;
   renderResumoVinculado(r,params);
   renderContasMes();
+  despJurosPagina=1;renderJurosPagos();
 }
 function renderResumoVinculado(resumo,params){
   const selecionados=[];
@@ -151,7 +152,7 @@ async function pagarDespesa(id,pago){
   let data=null,valor=r.valor;
   if(pago){
     data=prompt('Data do pagamento (AAAA-MM-DD):',despHoje());if(data===null)return;
-    if(r.status==='ATRASADO'||data>r.vencimento){
+    {
       const entrada=prompt(`Valor total pago, incluindo juros ou multa (valor base: ${moeda(r.valor_base??r.valor)}). Mantenha o valor se não houver acréscimo:`,Number(r.valor).toFixed(2));
       if(entrada===null)return;
       if(!/^\d+(?:[.,]\d{1,2})?$/.test(entrada.trim())){msg('Informe o valor sem separador de milhar e com até duas casas decimais.','erro');return}
@@ -283,3 +284,14 @@ despEl('despNovaCategoria').addEventListener('click',async()=>{
   const botao=despEl('despNovaCategoria');botao.disabled=true;
   try{const d=await api('/api/despesas/categorias',{method:'POST',body:JSON.stringify({grupo,nome})});await carregarCategoriasDespesas();if(despEl('despGrupo').value===grupo)despEl('despCategoria').value=d.nome;msg('Categoria disponível para uso.')}catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
 });
+
+// Juros pagos: valores já incluídos no pagamento, sem somar novamente às despesas.
+let despJurosPagina=1;
+function renderJurosPagos(){
+  const rows=despesasMes.filter(r=>r.pago&&Number(r.juros)>0);
+  const jurosCentavos=rows.reduce((s,r)=>s+Math.round(Number(r.juros)*100),0);
+  despEl('despJurosTotal').textContent=moeda(jurosCentavos/100);
+  despJurosPagina=Math.max(1,Math.min(despJurosPagina,Math.max(1,Math.ceil(rows.length/5))));
+  despEl('despJurosBody').innerHTML=rows.slice((despJurosPagina-1)*5,despJurosPagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.fornecedor_nome||r.categoria||'')}</div></td><td>${dataBR(r.data_pagamento)}</td><td>${moeda(r.valor_base)}</td><td>${moeda(r.valor)}</td><td><strong class="ui-negative">${moeda(r.juros)}</strong></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Nenhum pagamento com juros para o mês e os filtros selecionados.</td></tr>';
+  renderPaginacaoTabela('despJuros',despJurosPagina,rows.length,n=>{despJurosPagina=n;renderJurosPagos()});
+}
