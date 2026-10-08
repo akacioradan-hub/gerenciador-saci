@@ -24,7 +24,7 @@ function fluxoRender(){
 }
 async function fluxoCarregar(){
   const consulta=++fluxoEstado.consulta,mes=fluxoEl('fluxoMes').value;if(!mes)return;
-  fluxoEl('fluxoAviso').textContent='Atualizando o fluxo de caixa…';
+  fluxoEl('fluxoAviso').textContent='Atualizando as entradas…';
   try{
     const d=await api('/api/fluxo-caixa/geral?'+new URLSearchParams({mes}));if(consulta!==fluxoEstado.consulta)return;
     fluxoEstado.dados=d;

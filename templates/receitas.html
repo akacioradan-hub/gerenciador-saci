@@ -5,7 +5,7 @@
   <details id="fluxoManuais" class="card compact-details mt"><summary>Lançamentos manuais e pendentes</summary>
   <p class="form-hint">Gerencie entradas avulsas de Caixa, Fiado e Serviço. Só as recebidas entram no fluxo, na data do recebimento. Não relance valores já registrados nos controles de clientes e órgãos públicos.</p>
   {% else %}
-  <div class="page-head"><div><span class="eyebrow">RECEITAS E RECEBIMENTOS</span><h2>Receitas ARCM</h2><p>Cadastre contratos e receba receitas. Os recebimentos entram automaticamente no Fluxo de Caixa.</p></div><div class="rec-actions"><label>Mês de consulta<input type="month" id="rec-arcm-mes" required></label><button id="arcmFluxoAtualizar" class="secondary" type="button">Atualizar</button><button type="button" class="primary" data-rec-nova="arcm">Nova receita</button><button type="button" class="secondary" data-rec-cliente="arcm">Novo cliente</button></div></div>
+  <div class="page-head"><div><span class="eyebrow">RECEITAS E RECEBIMENTOS</span><h2>Receitas ARCM</h2><p>Cadastre contratos e receba receitas. Os recebimentos entram automaticamente na página Entradas.</p></div><div class="rec-actions"><label>Mês de consulta<input type="month" id="rec-arcm-mes" required></label><button id="arcmFluxoAtualizar" class="secondary" type="button">Atualizar</button><button type="button" class="primary" data-rec-nova="arcm">Nova receita</button><button type="button" class="secondary" data-rec-cliente="arcm">Novo cliente</button></div></div>
   {% endif %}
   {% if unidade == 'arcm' %}<details class="card compact-details mt"><summary>Totais dos lançamentos filtrados</summary>{% endif %}
   <div class="gov-summary-grid">

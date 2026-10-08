@@ -1,0 +1,3 @@
+Nome Fluxo de Caixa alterado para Entradas no menu, título e referências da interface.
+Arquivos alterados: templates/index.html, templates/fluxo_caixa.html, templates/receitas.html e static/fluxo_caixa.js.
+Atualize no GitHub, aguarde o deploy e pressione Ctrl+F5.
