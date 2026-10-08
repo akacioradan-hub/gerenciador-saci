@@ -129,6 +129,12 @@
           </form>
         </div>
         <div id="clienteFinanceiro" class="card mt client-finance-card">
+          <div class="section-label">Totais dos clientes filtrados</div>
+          <div class="dashboard-recebidos mt">
+            <div class="card gov-kpi gov-open"><span>Total a receber</span><strong id="clientesTotalReceber" class="ui-negative">R$ 0,00</strong></div>
+            <div class="card gov-kpi gov-paid"><span>Total recebido</span><strong id="clientesTotalRecebido" class="ui-positive">R$ 0,00</strong></div>
+          </div>
+          <p id="clientesTotaisAviso" class="form-hint" aria-live="polite"></p>
           <div class="card-head finance-head">
             <div><h3>Recebimentos e histórico do cliente</h3></div>
             <label class="finance-client-select">Cliente<select id="pagCliente" required><option value="">Selecione...</option></select></label>
@@ -169,11 +175,7 @@
             <label>Previsão até<input type="date" id="clientePrevisaoAte"></label>
           </div>
           <div class="form-actions"><button type="button" class="secondary" id="clienteLimparFiltros">Limpar filtros</button></div>
-          <div class="dashboard-recebidos mt">
-            <div class="card gov-kpi gov-open"><span>Total a receber</span><strong id="clientesTotalReceber" class="ui-negative">R$ 0,00</strong></div>
-            <div class="card gov-kpi gov-paid"><span>Valor recebido</span><strong id="clientesTotalRecebido" class="ui-positive">R$ 0,00</strong></div>
-          </div>
-          <p id="clientesTotaisAviso" class="form-hint" aria-live="polite"></p>
+
 
           <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div><div class="table-pagination"><span id="clientesPaginaResumo" aria-live="polite"></span><nav id="clientesPaginas" aria-label="Páginas de clientes"></nav></div>
         </div>

@@ -1,0 +1,3 @@
+Total a receber e Total recebido movidos para o topo do quadro Recebimentos e histórico do cliente. Continuam considerando todos os clientes filtrados.
+Arquivo alterado: templates/index.html.
+Atualize no GitHub, aguarde o deploy no Render e pressione Ctrl+F5.
