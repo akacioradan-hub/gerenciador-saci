@@ -40,11 +40,19 @@ def registrar_dashboard_resumo(app, db, login_required):
         recebidos['saci'] += db.session.execute(select(func.coalesce(func.sum(o.c.valor_debito - func.coalesce(o.c.desconto, 0)), 0)).where(
             o.c.pago.is_(True), o.c.data_recebimento >= inicio, o.c.data_recebimento < fim, o.c.data_recebimento <= hoje)).scalar_one()
         despesas = t['despesas_mensais']
+        total_pago = Decimal(0)
+        juros_pagos = Decimal(0)
+        for r in db.session.execute(select(despesas.c.valor, despesas.c.valor_base).where(
+                despesas.c.pago.is_(True), despesas.c.data_pagamento >= inicio,
+                despesas.c.data_pagamento < fim, despesas.c.data_pagamento <= hoje)).mappings():
+            total_pago += r['valor']
+            base = r['valor_base'] if r['valor_base'] is not None else r['valor']
+            juros_pagos += max(Decimal(0), r['valor'] - base)
         pagar = {'Custos fixos':Decimal(0), 'Fornecedores':Decimal(0), 'Despesas variáveis':Decimal(0)}
         atraso = Decimal(0)
         for r in db.session.execute(select(despesas.c.grupo, despesas.c.valor, despesas.c.vencimento).where(despesas.c.pago.is_(False))).mappings():
             pagar[r['grupo']] = pagar.get(r['grupo'], Decimal(0)) + r['valor']
             if r['vencimento'] < hoje: atraso += r['valor']
-        return jsonify(mes=mes, recebidos={**{k:float(v) for k,v in recebidos.items()}, 'total':float(sum(recebidos.values()))}, receber=dict(total=float(sum(receber.values())), origens={k:float(v) for k,v in receber.items()}),
+        return jsonify(mes=mes, pagamentos=dict(total=float(total_pago), juros=float(juros_pagos)), recebidos={**{k:float(v) for k,v in recebidos.items()}, 'total':float(sum(recebidos.values()))}, receber=dict(total=float(sum(receber.values())), origens={k:float(v) for k,v in receber.items()}),
             pagar=dict(total=float(sum(pagar.values())), atrasado=float(atraso), grupos={k:float(v) for k,v in pagar.items()}),
             previsao=[dict(mes=m, saci=float(v['saci']), arcm=float(v['arcm']), total=float(v['saci']+v['arcm'])) for m,v in previsao.items()])

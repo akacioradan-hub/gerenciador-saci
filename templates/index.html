@@ -63,6 +63,8 @@
         <div class="dashboard-recebidos mt">
           <div class="card gov-kpi gov-paid"><span>Recebido Saci no mês</span><strong id="dashRecebidoSaci" class="ui-positive">—</strong><small>Entradas manuais, clientes bloqueados e órgãos públicos</small></div>
           <div class="card gov-kpi gov-paid"><span>Recebido ARCM no mês</span><strong id="dashRecebidoArcm" class="ui-positive">—</strong><small>Receitas e parcelas efetivamente recebidas</small></div>
+          <div class="card gov-kpi gov-open"><span>Contas pagas no mês</span><strong id="dashContasPagas" class="ui-negative">—</strong><small>Despesas pagas pela data do pagamento, incluindo juros</small></div>
+          <div class="card gov-kpi gov-open"><span>Juros pagos no mês</span><strong id="dashJurosPagos" class="ui-negative">—</strong><small>Juros e acréscimos já incluídos nas contas pagas</small></div>
         </div>
         <div class="dashboard-essencial mt">
           <div class="card compact-card"><h3>Contas a receber</h3><div id="dashReceberOrigens" class="status-list"></div><p class="form-hint">Clientes bloqueados, órgãos públicos e receitas Saci/ARCM ainda em aberto, inclusive vencimentos futuros.</p></div>
@@ -160,6 +162,19 @@
 
 <div class="card mt">
           <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
+          <div class="rec-filtros mt">
+            <label>Situação<select id="clienteFiltroStatus"><option value="">Todas</option><option value="DEVEDOR">Com saldo a receber</option><option value="ATRASADO">Atrasado</option><option value="EM ABERTO">Em aberto (no prazo)</option><option value="SEM PREVISÃO">Sem previsão</option><option value="QUITADO">Quitado</option></select></label>
+            <label>Tipo de pessoa<select id="clienteFiltroTipo"><option value="">Todas</option><option value="PF">Pessoa física</option><option value="PJ">Pessoa jurídica</option></select></label>
+            <label>Previsão de<input type="date" id="clientePrevisaoDe"></label>
+            <label>Previsão até<input type="date" id="clientePrevisaoAte"></label>
+          </div>
+          <div class="form-actions"><button type="button" class="secondary" id="clienteLimparFiltros">Limpar filtros</button></div>
+          <div class="dashboard-recebidos mt">
+            <div class="card gov-kpi gov-open"><span>Total a receber</span><strong id="clientesTotalReceber" class="ui-negative">R$ 0,00</strong></div>
+            <div class="card gov-kpi gov-paid"><span>Valor recebido</span><strong id="clientesTotalRecebido" class="ui-positive">R$ 0,00</strong></div>
+          </div>
+          <p id="clientesTotaisAviso" class="form-hint" aria-live="polite"></p>
+
           <div class="table-wrap"><table><thead><tr><th>Cliente</th><th>Telefone</th><th>Dívida</th><th>Previsão</th><th>Saldo</th><th>Status</th><th>Ações</th></tr></thead><tbody id="clientesBody"></tbody></table></div><div class="table-pagination"><span id="clientesPaginaResumo" aria-live="polite"></span><nav id="clientesPaginas" aria-label="Páginas de clientes"></nav></div>
         </div>
       </section>
@@ -338,7 +353,7 @@
 
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
-<script src="/static/app.js?v=20261005-fluxo-geral"></script>
+<script src="/static/app.js?v=20261008-clientes-filtros"></script>
 <script src="/static/despesas.js?v=20261005-quadro-juros"></script>
 <script src="/static/receitas.js?v=20261005-pendente-sem-atraso"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>

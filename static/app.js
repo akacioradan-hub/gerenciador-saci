@@ -39,7 +39,7 @@ function renderFinanceiroCliente(){
   body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td>${escaparFinanceiro(p.observacao||'-')}</td><td><button class="danger icon-btn" title="Excluir pagamento" aria-label="Excluir pagamento" onclick="excluirPagamento(${Number(p.id)})">🗑</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
 }
 
-async function carregarClientes(){paginaClientes=1;const q=document.getElementById('buscaCliente').value.trim();clientes=await api('/api/clientes'+(q?'?q='+encodeURIComponent(q):''));renderClientes();preencherClientes()}
+async function carregarClientes(){paginaClientes=1;clientes=await api('/api/clientes');renderClientes();preencherClientes()}
 async function carregarPagamentos(){pagamentos=await api('/api/pagamentos');renderFinanceiroCliente()}
 
 function graficoBarras(nome,id,labels,datasets,horizontal=false,empilhado=false){
@@ -162,11 +162,23 @@ function documentoFormatado(v){
 }
 function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
 
+function clientesFiltrados(){
+  const valor=id=>document.getElementById(id).value;
+  const busca=valor('buscaCliente').trim().toLocaleLowerCase('pt-BR'),situacao=valor('clienteFiltroStatus'),tipo=valor('clienteFiltroTipo'),de=valor('clientePrevisaoDe'),ate=valor('clientePrevisaoAte');
+  if(de&&ate&&de>ate)return [];
+  return clientes.filter(c=>(!busca||[c.nome,c.cpf_cnpj,c.telefone,c.whatsapp,c.email].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(busca)))&&(!tipo||c.tipo_pessoa===tipo)&&(!situacao||(situacao==='DEVEDOR'?Number(c.saldo)>0:c.status===situacao))&&(!de||(c.previsao&&c.previsao>=de))&&(!ate||(c.previsao&&c.previsao<=ate)));
+}
+function atualizarFiltrosClientes(){paginaClientes=1;renderClientes()}
 function renderClientes(){
-  const body=document.getElementById('clientesBody');
-  paginaClientes=Math.min(paginaClientes,Math.max(1,Math.ceil(clientes.length/LINHAS_TABELA)));
-  renderPaginacaoTabela('clientes',paginaClientes,clientes.length,mudarPaginaClientes);
-  body.innerHTML=clientes.length?clientes.slice((paginaClientes-1)*LINHAS_TABELA,paginaClientes*LINHAS_TABELA).map(c=>`<tr>
+  const body=document.getElementById('clientesBody'),filtrados=clientesFiltrados();
+  const somar=campo=>filtrados.reduce((total,c)=>total+Math.round(Number(c[campo]||0)*100),0)/100;
+  document.getElementById('clientesTotalReceber').textContent=moeda(somar('saldo'));
+  document.getElementById('clientesTotalRecebido').textContent=moeda(somar('total_pago'));
+  const de=document.getElementById('clientePrevisaoDe').value,ate=document.getElementById('clientePrevisaoAte').value;
+  document.getElementById('clientesTotaisAviso').textContent=de&&ate&&de>ate?'A data inicial deve ser anterior ou igual à final.':`${filtrados.length} cliente(s) · Totais de todos os clientes filtrados. Recebido considera todo o histórico, sem descontos. Datas filtram a previsão de pagamento.`;
+  paginaClientes=Math.min(paginaClientes,Math.max(1,Math.ceil(filtrados.length/LINHAS_TABELA)));
+  renderPaginacaoTabela('clientes',paginaClientes,filtrados.length,mudarPaginaClientes);
+  body.innerHTML=filtrados.length?filtrados.slice((paginaClientes-1)*LINHAS_TABELA,paginaClientes*LINHAS_TABELA).map(c=>`<tr>
     <td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td>
     <td>${c.whatsapp||c.telefone||'-'}</td>
     <td>${moeda(c.divida)}</td>
@@ -180,7 +192,7 @@ function renderClientes(){
         <button class="danger icon-btn" title="Excluir cliente" aria-label="Excluir cliente" onclick="excluirCliente(${c.id})">🗑</button>
       </div>
     </td>
-  </tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum cliente cadastrado.</td></tr>';
+  </tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum cliente para os filtros selecionados.</td></tr>';
 }
 function abrirFinanceiroCliente(id){
   const sel=document.getElementById('pagCliente');if(!sel)return;
@@ -248,7 +260,9 @@ document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.p
 async function excluirPagamento(id){if(!confirm('Excluir este pagamento e estornar também o desconto vinculado?'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento excluído.');await atualizarTudo();if(clienteId){document.getElementById('pagCliente').value=clienteId;renderFinanceiroCliente()}}catch(err){msg(err.message,'erro')}}
 document.getElementById('pagCliente')?.addEventListener('change',renderFinanceiroCliente);
 
-document.getElementById('buscaCliente').addEventListener('input',()=>{clearTimeout(window._b);window._b=setTimeout(carregarClientes,250)})
+for(const id of ['clienteFiltroStatus','clienteFiltroTipo','clientePrevisaoDe','clientePrevisaoAte'])document.getElementById(id).addEventListener('change',atualizarFiltrosClientes);
+document.getElementById('clienteLimparFiltros').addEventListener('click',()=>{for(const id of ['buscaCliente','clienteFiltroStatus','clienteFiltroTipo','clientePrevisaoDe','clientePrevisaoAte'])document.getElementById(id).value='';atualizarFiltrosClientes()});
+document.getElementById('buscaCliente').addEventListener('input',()=>{clearTimeout(window._b);window._b=setTimeout(atualizarFiltrosClientes,250)})
 
 // Atalhos internos do dashboard
 document.querySelectorAll('[data-go-tab]').forEach(btn=>btn.addEventListener('click',()=>{
@@ -478,7 +492,7 @@ function renderPaginacaoTabela(prefixo,pagina,total,mudar){
   nav.innerHTML=html+`<button type="button" class="secondary" data-pagina="${pagina+1}" ${pagina===paginas?'disabled':''}>Próxima</button>`;
   nav.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>mudar(Number(b.dataset.pagina))));
 }
-function mudarPaginaClientes(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(clientes.length/LINHAS_TABELA))return;paginaClientes=n;renderClientes()}
+function mudarPaginaClientes(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(clientesFiltrados().length/LINHAS_TABELA))return;paginaClientes=n;renderClientes()}
 function mudarPaginaOrgaos(n){if(!Number.isInteger(n)||n<1||n>Math.ceil(orgaosPublicos.length/LINHAS_TABELA))return;paginaOrgaos=n;renderOrgaosPublicos()}
 async function carregarResumoDashboard(){
   const campo=document.getElementById('dashPrevisaoMes');
@@ -491,6 +505,8 @@ async function carregarResumoDashboard(){
     document.getElementById('dashPagar').textContent=moeda(d.pagar.total);
     document.getElementById('dashRecebidoSaci').textContent=moeda(d.recebidos.saci);
     document.getElementById('dashRecebidoArcm').textContent=moeda(d.recebidos.arcm);
+    document.getElementById('dashContasPagas').textContent=moeda(d.pagamentos.total);
+    document.getElementById('dashJurosPagos').textContent=moeda(d.pagamentos.juros);
     document.getElementById('dashPagarAtrasado').textContent='Em atraso: '+moeda(d.pagar.atrasado);
     document.getElementById('dashFaturamento').textContent=moeda(d.previsao[0].total);
     document.getElementById('dashFaturamentoMes').textContent=mesLabel(d.mes)+' · Receitas cadastradas por vencimento';
@@ -498,8 +514,8 @@ async function carregarResumoDashboard(){
     document.getElementById('dashReceberOrigens').innerHTML=Object.entries(d.receber.origens).map(([k,v])=>`<div class="status-row"><span>${nomes[k]||escaparFinanceiro(k)}</span><strong>${moeda(v)}</strong></div>`).join('');
     document.getElementById('dashPagarGrupos').innerHTML=Object.entries(d.pagar.grupos).map(([k,v])=>`<div class="status-row"><span>${escaparFinanceiro(k)}</span><strong>${moeda(v)}</strong></div>`).join('');
     graficoBarras('faturamento','chartFaturamento',d.previsao.map(r=>mesLabel(r.mes)),[{label:'Saci',data:d.previsao.map(r=>r.saci),backgroundColor:'#466886'},{label:'ARCM',data:d.previsao.map(r=>r.arcm),backgroundColor:'#177f58'}],false,true);
-    document.getElementById('dashResumoAviso').textContent='Saldos em aberto de todo o cadastro. O mês selecionado define os recebidos Saci/ARCM e a previsão de faturamento.';
-  }catch(e){if(consulta!==consultaResumoDashboard)return;for(const id of ['dashReceber','dashPagar','dashFaturamento','dashPagarAtrasado','dashFaturamentoMes','dashRecebidoSaci','dashRecebidoArcm'])document.getElementById(id).textContent='—';for(const id of ['dashReceberOrigens','dashPagarGrupos'])document.getElementById(id).innerHTML='';destroyChart('faturamento');const dados=document.getElementById('chartFaturamentoDados');if(dados)dados.innerHTML='';document.getElementById('dashResumoAviso').textContent='Não foi possível atualizar: '+e.message}
+    document.getElementById('dashResumoAviso').textContent='Saldos em aberto de todo o cadastro. O mês selecionado define os recebidos Saci/ARCM, as contas e juros pagos pela data do pagamento e a previsão de faturamento.';
+  }catch(e){if(consulta!==consultaResumoDashboard)return;for(const id of ['dashReceber','dashPagar','dashFaturamento','dashPagarAtrasado','dashFaturamentoMes','dashRecebidoSaci','dashRecebidoArcm','dashContasPagas','dashJurosPagos'])document.getElementById(id).textContent='—';for(const id of ['dashReceberOrigens','dashPagarGrupos'])document.getElementById(id).innerHTML='';destroyChart('faturamento');const dados=document.getElementById('chartFaturamentoDados');if(dados)dados.innerHTML='';document.getElementById('dashResumoAviso').textContent='Não foi possível atualizar: '+e.message}
 }
 async function carregarDespesasDashboard(){await carregarResumoDashboard()}
 document.getElementById('dashPrevisaoMes').addEventListener('change',carregarResumoDashboard);

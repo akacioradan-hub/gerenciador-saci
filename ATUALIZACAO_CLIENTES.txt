@@ -1,0 +1,3 @@
+Clientes bloqueados Saci: filtros por situação, tipo de pessoa, previsão de pagamento e busca. Totais de saldo a receber e dinheiro recebido para todos os clientes filtrados, com paginação de 5 linhas. Recebido considera todo o histórico e exclui descontos. Datas filtram previsão, não recebimento.
+Arquivos alterados: static/app.js e templates/index.html.
+Atualize no GitHub, aguarde o deploy e pressione Ctrl+F5.
