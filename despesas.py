@@ -172,7 +172,8 @@ def registrar_despesas(app, db, login_required):
                 'competencia': r.competencia, 'vencimento': r.vencimento.isoformat(), 'valor': float(r.valor),
                 'prioridade': prioridade_efetiva(r), 'prioridade_cadastro': r.prioridade, 'pago': r.pago,
                 'urgente_automatico': not r.pago and r.vencimento < hoje(),
-                'valor_base': float(valor_base(r)), 'juros': float(r.valor - valor_base(r)),
+                'valor_base': float(valor_base(r)), 'juros': float(max(Decimal(0), r.valor - valor_base(r))),
+                'desconto': float(max(Decimal(0), valor_base(r) - r.valor)),
                 'recorrencia_id': r.recorrencia_id, 'repetir_mensal': bool(r.recorrencia and r.recorrencia.ativa),
                 'data_pagamento': r.data_pagamento.isoformat() if r.data_pagamento else None,
                 'documento': r.documento, 'observacoes': r.observacoes,
@@ -214,6 +215,15 @@ def registrar_despesas(app, db, login_required):
     def consultar():
         competencia = mes(request.args.get('mes') or hoje().strftime('%Y-%m'))
         stmt = db.select(Despesa).where(Despesa.competencia == competencia)
+        pagamento_de = date.fromisoformat(request.args['pagamento_de']) if request.args.get('pagamento_de') else None
+        pagamento_ate = date.fromisoformat(request.args['pagamento_ate']) if request.args.get('pagamento_ate') else None
+        if pagamento_de and pagamento_ate and pagamento_de > pagamento_ate:
+            raise ValueError('Período de pagamento inválido.')
+        if pagamento_de or pagamento_ate:
+            stmt = stmt.where(Despesa.pago.is_(True))
+        if pagamento_de: stmt = stmt.where(Despesa.data_pagamento >= pagamento_de)
+        if pagamento_ate: stmt = stmt.where(Despesa.data_pagamento <= pagamento_ate)
+
         for campo in ('grupo', 'categoria', 'prioridade', 'funcionario_id', 'veiculo_id', 'fornecedor_id', 'terceirizado_id'):
             valor = request.args.get(campo)
             if valor:
@@ -315,7 +325,7 @@ def registrar_despesas(app, db, login_required):
     @login_required
     def listar_despesas():
         try: registros = consultar()
-        except (ValueError, TypeError): return jsonify(erro='Filtro de mês ou cadastro inválido.'), 400
+        except (ValueError, TypeError): return jsonify(erro='Confira o mês, o cadastro e o período de pagamento informado.'), 400
         competencia = mes(request.args.get('mes') or hoje().strftime('%Y-%m'))
         inicio_pagamento = date.fromisoformat(competencia + '-01')
         fim_pagamento = date.fromisoformat(proximo_mes(competencia) + '-01')
@@ -354,7 +364,7 @@ def registrar_despesas(app, db, login_required):
         base_anterior = valor_base(r) if ident else p['valor']
         if ident and r.pago and not p['pago'] and p['valor'] == r.valor:
             p['valor'] = base_anterior
-        r.valor_base = min(base_anterior, p['valor']) if ident and p['pago'] else p['valor']
+        r.valor_base = base_anterior if ident and p['pago'] else p['valor']
         dia_alterado = not ident or r.vencimento != p['vencimento']
         for c, v in p.items(): setattr(r, c, v)
         if r.recorrencia:
@@ -379,8 +389,8 @@ def registrar_despesas(app, db, login_required):
         try:
             base = valor_base(r)
             valor = Decimal(str(d.get('valor', r.valor))) if d['pago'] else base
-            if not valor.is_finite() or valor < base or valor >= Decimal('1000000000000') or valor != valor.quantize(Decimal('.01')):
-                raise ValueError('O total pago deve ser igual ou maior que o valor base, com até duas casas decimais.')
+            if not valor.is_finite() or valor <= 0 or valor >= Decimal('1000000000000') or valor != valor.quantize(Decimal('.01')):
+                raise ValueError('O total pago deve ser maior que zero, com até duas casas decimais.')
             if data and data > hoje(): raise ValueError('A data do pagamento não pode ser futura.')
         except (InvalidOperation, TypeError, ValueError) as exc:
             return jsonify(erro=str(exc) if isinstance(exc, ValueError) else 'Informe um valor de pagamento válido.'), 400
@@ -394,10 +404,10 @@ def registrar_despesas(app, db, login_required):
         try: registros = consultar()
         except (ValueError, TypeError): return jsonify(erro='Filtro inválido.'), 400
         out = io.StringIO(); writer = csv.writer(out, delimiter=';')
-        writer.writerow(['Competência','Descrição','Grupo','Categoria','Fornecedor','Funcionário','Veículo','Terceirizado','Prioridade','Vencimento','Valor','Situação','Pagamento','Documento','Observações','Valor base','Juros / acréscimos','Repetição mensal'])
+        writer.writerow(['Competência','Descrição','Grupo','Categoria','Fornecedor','Funcionário','Veículo','Terceirizado','Prioridade','Vencimento','Valor','Situação','Pagamento','Documento','Observações','Valor base','Juros / acréscimos','Repetição mensal','Desconto / redução'])
         for r in registros:
             d = despesa_dict(r)
-            row = [r.competencia,r.descricao,r.grupo,r.categoria,d['fornecedor_nome'],d['funcionario_nome'],d['veiculo_nome'],d['terceirizado_nome'],d['prioridade'],r.vencimento.isoformat(),f'{r.valor:.2f}',d['status'],d['data_pagamento'] or '',r.documento or '',r.observacoes or '',f'{valor_base(r):.2f}',f'{r.valor-valor_base(r):.2f}','Sim' if d['repetir_mensal'] else 'Não']
+            row = [r.competencia,r.descricao,r.grupo,r.categoria,d['fornecedor_nome'],d['funcionario_nome'],d['veiculo_nome'],d['terceirizado_nome'],d['prioridade'],r.vencimento.isoformat(),f'{r.valor:.2f}',d['status'],d['data_pagamento'] or '',r.documento or '',r.observacoes or '',f'{valor_base(r):.2f}',f"{d['juros']:.2f}",'Sim' if d['repetir_mensal'] else 'Não',f"{d['desconto']:.2f}"]
             writer.writerow(["'"+v if isinstance(v,str) and v.startswith(('=','+','-','@')) else v for v in row])
         return send_file(io.BytesIO(out.getvalue().encode('utf-8-sig')), mimetype='text/csv', as_attachment=True, download_name='despesas_mes.csv')
 

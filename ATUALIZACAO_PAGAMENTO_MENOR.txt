@@ -1,0 +1,3 @@
+Ao marcar despesa como paga, pode informar valor positivo menor que o programado. A conta fica quitada, com diferença em Desconto/redução. Não gera saldo parcial. Valor original preservado; ao reabrir, restaura o original. Juros nunca negativos. Fluxo e dashboard usam o valor efetivamente pago. CSV inclui desconto/redução.
+Arquivos alterados: despesas.py, static/despesas.js, templates/index.html.
+Atualize no GitHub, aguarde o deploy no Render e pressione Ctrl+F5.
