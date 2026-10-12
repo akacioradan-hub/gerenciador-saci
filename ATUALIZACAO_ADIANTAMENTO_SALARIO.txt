@@ -1,0 +1,7 @@
+Em Despesas Gerais, categoria Salários, clique no ícone de pagamento e selecione Adiantamento de salário. Informe data e valor positivo menor que o saldo.
+O adiantamento vira uma conta paga vinculada ao salário e funcionário; o saldo do salário diminui e fica em aberto. Pode haver vários adiantamentos. Para pagar o restante, escolha Quitação do saldo.
+O fluxo e dashboard somam cada pagamento uma única vez, na data efetiva. A repetição mensal preserva o salário integral.
+Para cancelar um adiantamento, exclua sua linha pela lixeira. O valor volta ao saldo do salário. Se o saldo estiver quitado, reabra-o antes. Para corrigir data ou valor do adiantamento, cancele e registre novamente.
+Não exclua o salário principal enquanto houver adiantamentos vinculados.
+Arquivos alterados: despesas.py, static/despesas.js e templates/index.html. A coluna de vínculo é criada automaticamente na atualização.
+Atualize no GitHub, aguarde o deploy no Render e pressione Ctrl+F5.

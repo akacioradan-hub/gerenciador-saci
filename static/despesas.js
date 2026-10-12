@@ -62,10 +62,10 @@ function renderContasMes(){
   const inicio=(despPagina-1)*DESP_POR_PAGINA;
   despEl('despesasBody').innerHTML=despesasMes.length?despesasMes.slice(inicio,inicio+DESP_POR_PAGINA).map(r=>{
     const vinculos=[r.fornecedor_nome,r.funcionario_nome,r.veiculo_nome,r.terceirizado_nome].filter(Boolean);
-    return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}${r.repetir_mensal?' · Mensal':''}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
+    return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}${r.repetir_mensal?' · Mensal':''}${r.adiantamento_de_id?' · Salário #'+r.adiantamento_de_id:''}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
       <td>${vinculos.map(v=>`<div class="table-sub">${escaparFinanceiro(v)}</div>`).join('')||'—'}</td>
       <td><span title="${r.urgente_automatico?'Urgente automaticamente: conta vencida':'Prioridade cadastrada'}" class="desp-priority ${escaparFinanceiro(r.prioridade)}">${escaparFinanceiro(r.prioridade)}</span></td>
-      <td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}${r.juros>0?`<div class="table-sub">Base: ${moeda(r.valor_base)}<br>Juros/acréscimos: ${moeda(r.juros)}</div>`:''}${r.desconto>0?`<div class="table-sub">Programado: ${moeda(r.valor_base)}<br>Desconto/redução: ${moeda(r.desconto)}</div>`:''}</td>
+      <td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}${r.total_adiantado>0?`<div class="table-sub">Salário programado: ${moeda(r.salario_programado)}<br>Adiantado: ${moeda(r.total_adiantado)}<br>${r.pago?'Saldo quitado':'Saldo a pagar'}</div>`:''}${r.juros>0?`<div class="table-sub">Base: ${moeda(r.valor_base)}<br>Juros/acréscimos: ${moeda(r.juros)}</div>`:''}${r.desconto>0?`<div class="table-sub">Programado: ${moeda(r.valor_base)}<br>Desconto/redução: ${moeda(r.desconto)}</div>`:''}</td>
       <td class="desp-status-cell"><span class="badge ${statusClass(r.status)}">${escaparFinanceiro(r.status)}</span></td>
       <td><div class="desp-payment-cell">${r.pago?`<span class="table-sub">${dataBR(r.data_pagamento)}</span>`:''}<button type="button" class="secondary desp-payment-icon ${r.pago?'desp-reopen':'desp-confirm'}" title="${r.pago?'Reabrir despesa':'Marcar como paga'}" aria-label="${r.pago?'Reabrir despesa':'Marcar como paga'}" onclick="pagarDespesa(${r.id},${!r.pago})"><span aria-hidden="true">${r.pago?'↶':'✓'}</span></button></div></td>
       <td><div class="acoes icon-actions"><button type="button" class="edit icon-btn" aria-label="Editar despesa" title="Editar despesa" onclick="editarDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" aria-label="Excluir despesa" title="Excluir despesa" onclick="excluirDespesa(${r.id})">🗑</button></div></td></tr>`;
@@ -151,6 +151,8 @@ function editarDespesa(id){
 }
 async function pagarDespesa(id,pago){
   const r=despesasMes.find(x=>x.id===id);if(!r)return;
+  if(r.adiantamento_de_id){msg('Para cancelar o adiantamento, use a lixeira. O valor volta ao saldo do salário.');return}
+  if(pago&&r.permite_adiantamento){abrirPagamentoSalario(r);return}
   let data=null,valor=r.valor;
   if(pago){
     data=prompt('Data do pagamento (AAAA-MM-DD):',despHoje());if(data===null)return;
@@ -166,7 +168,8 @@ async function pagarDespesa(id,pago){
 }
 async function excluirDespesa(id){
   const r=despesasMes.find(x=>x.id===id);
-  if(!confirm(r?.repetir_mensal?'Excluir esta despesa e interromper as próximas repetições? Os outros meses já cadastrados serão mantidos.':'Excluir esta despesa?'))return;
+  if(r?.adiantamento_de_id){if(!confirm('Cancelar este adiantamento e devolver seu valor ao saldo do salário?'))return}
+  else if(!confirm(r?.repetir_mensal?'Excluir esta despesa e interromper as próximas repetições? Os outros meses já cadastrados serão mantidos.':'Excluir esta despesa?'))return;
   try{await api('/api/despesas/'+id,{method:'DELETE'});await carregarDespesas();await carregarDespesasDashboard();msg('Despesa excluída.')}catch(e){msg(e.message,'erro')}
 }
 function limparCadastroDespesa(){despEl('despCadForm').reset();despEl('despCadId').value=''}
@@ -297,3 +300,35 @@ function renderJurosPagos(){
   despEl('despJurosBody').innerHTML=rows.slice((despJurosPagina-1)*5,despJurosPagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.fornecedor_nome||r.categoria||'')}</div></td><td>${dataBR(r.data_pagamento)}</td><td>${moeda(r.valor_base)}</td><td>${moeda(r.valor)}</td><td><strong class="ui-negative">${moeda(r.juros)}</strong></td></tr>`).join('')||'<tr><td colspan="5" class="empty">Nenhum pagamento com juros para o mês e os filtros selecionados.</td></tr>';
   renderPaginacaoTabela('despJuros',despJurosPagina,rows.length,n=>{despJurosPagina=n;renderJurosPagos()});
 }
+
+let salarioPagamentoAtual=null,salarioPagamentoSalvando=false;
+function abrirPagamentoSalario(r){
+  salarioPagamentoAtual=r;
+  despEl('salarioPagamentoForm').reset();
+  despEl('salarioPagamentoTipo').value='quitacao';
+  despEl('salarioPagamentoData').value=despHoje();despEl('salarioPagamentoData').max=despHoje();
+  despEl('salarioPagamentoValor').value=Number(r.valor).toFixed(2);
+  despEl('salarioPagamentoErro').textContent='';
+  despEl('salarioPagamentoNome').textContent=r.descricao+(r.funcionario_nome?' · '+r.funcionario_nome:'');
+  atualizarResumoSalario();despEl('salarioPagamentoModal').showModal();
+}
+function atualizarResumoSalario(){
+  const r=salarioPagamentoAtual;if(!r)return;
+  const valor=Number(despEl('salarioPagamentoValor').value),parcial=despEl('salarioPagamentoTipo').value==='adiantamento';
+  despEl('salarioPagamentoResumo').textContent=`Saldo atual: ${moeda(r.valor)}. `+(parcial?`Saldo após o adiantamento: ${moeda(Math.max(0,r.valor-valor))}. O restante continuará em aberto.`:'Quitação do saldo restante. Valor menor será desconto; valor maior será juros.');
+}
+despEl('salarioPagamentoTipo').addEventListener('change',()=>{despEl('salarioPagamentoValor').value=despEl('salarioPagamentoTipo').value==='adiantamento'?'':Number(salarioPagamentoAtual.valor).toFixed(2);atualizarResumoSalario()});
+despEl('salarioPagamentoValor').addEventListener('input',atualizarResumoSalario);
+despEl('salarioPagamentoCancelar').addEventListener('click',()=>{if(!salarioPagamentoSalvando)despEl('salarioPagamentoModal').close()});
+despEl('salarioPagamentoModal').addEventListener('cancel',e=>{if(salarioPagamentoSalvando)e.preventDefault()});
+despEl('salarioPagamentoForm').addEventListener('submit',async e=>{
+  e.preventDefault();if(salarioPagamentoSalvando)return;
+  const r=salarioPagamentoAtual,parcial=despEl('salarioPagamentoTipo').value==='adiantamento',valor=Number(despEl('salarioPagamentoValor').value);
+  if(parcial&&valor>=Number(r.valor)){despEl('salarioPagamentoErro').textContent='O adiantamento deve ser menor que o saldo. Para pagar todo o saldo, escolha Quitação.';return}
+  salarioPagamentoSalvando=true;despEl('salarioPagamentoSalvar').disabled=true;despEl('salarioPagamentoErro').textContent='';
+  try{
+    await api('/api/despesas/'+r.id+(parcial?'/adiantamentos':'/status'),{method:parcial?'POST':'PATCH',body:JSON.stringify({pago:true,valor,data_pagamento:despEl('salarioPagamentoData').value,saldo_esperado:r.valor})});
+    despEl('salarioPagamentoModal').close();await carregarDespesas();await carregarDespesasDashboard();
+    msg(parcial?'Adiantamento registrado. O restante continua em aberto.':'Saldo do salário quitado.');
+  }catch(err){despEl('salarioPagamentoErro').textContent=err.message}finally{salarioPagamentoSalvando=false;despEl('salarioPagamentoSalvar').disabled=false}
+});

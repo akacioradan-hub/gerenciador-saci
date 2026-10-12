@@ -356,10 +356,22 @@
   <div id="alertPanelBody" class="alert-panel-body"><div class="empty">Nenhum aviso.</div></div>
 </aside>
 
+<dialog id="salarioPagamentoModal" class="receita-modal" aria-labelledby="salarioPagamentoTitulo">
+  <h3 id="salarioPagamentoTitulo">Pagamento de salário</h3>
+  <p id="salarioPagamentoNome" class="form-hint"></p>
+  <form id="salarioPagamentoForm" class="rec-form">
+    <label class="rec-full">Tipo de pagamento<select id="salarioPagamentoTipo"><option value="quitacao">Quitação do saldo</option><option value="adiantamento">Adiantamento de salário</option></select></label>
+    <label>Data do pagamento<input type="date" id="salarioPagamentoData" required></label>
+    <label>Valor pago (R$)<input type="number" min="0.01" max="999999999999.99" step="0.01" id="salarioPagamentoValor" required></label>
+    <p id="salarioPagamentoResumo" class="form-hint rec-full" aria-live="polite"></p>
+    <p id="salarioPagamentoErro" class="rec-error rec-full" role="alert"></p>
+    <div class="form-actions rec-full"><button type="submit" class="primary" id="salarioPagamentoSalvar">Salvar</button><button type="button" class="secondary" id="salarioPagamentoCancelar">Cancelar</button></div>
+  </form>
+</dialog>
 <script>window.IS_ADMIN = {{ 'true' if is_admin else 'false' }};</script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script src="/static/app.js?v=20261008-clientes-filtros"></script>
-<script src="/static/despesas.js?v=20261012-pagamento-menor"></script>
+<script src="/static/despesas.js?v=20261012-adiantamento-salario"></script>
 <script src="/static/receitas.js?v=20261005-pendente-sem-atraso"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>
 <script src="/static/contrato_edicao.js?v=20261005-edicao-contrato"></script>

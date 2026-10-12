@@ -87,6 +87,8 @@ def registrar_despesas(app, db, login_required):
         fornecedor = db.relationship(Fornecedor)
         terceirizado_id = db.Column(db.Integer, db.ForeignKey("terceirizados_despesas.id", ondelete="RESTRICT"), index=True)
         terceirizado = db.relationship(Terceirizado)
+        adiantamento_de_id = db.Column(db.Integer, db.ForeignKey('despesas_mensais.id', ondelete='RESTRICT'), index=True)
+        adiantamentos = db.relationship('Despesa', foreign_keys=[adiantamento_de_id])
         criado_em = db.Column(db.DateTime, server_default=func.now(), nullable=False)
 
     modelos = {'funcionarios': Funcionario, 'veiculos': Veiculo, 'fornecedores': Fornecedor, 'terceirizados': Terceirizado}
@@ -103,6 +105,12 @@ def registrar_despesas(app, db, login_required):
 
     def valor_base(r):
         return r.valor_base if r.valor_base is not None else r.valor
+
+    def total_adiantado(r):
+        return sum((a.valor for a in r.adiantamentos), Decimal(0))
+
+    def salario(r):
+        return r.categoria.strip().casefold() in ('salários', 'salarios', 'salário', 'salario') and not r.adiantamento_de_id
 
     def prioridade_efetiva(r):
         return 'Urgente' if not r.pago and r.vencimento < hoje() else r.prioridade
@@ -133,7 +141,7 @@ def registrar_despesas(app, db, login_required):
                         'funcionario_id','veiculo_id','fornecedor_id','terceirizado_id','observacoes')}
                     db.session.add(Despesa(**campos, competencia=competencia,
                         vencimento=date(ano, mes_num, min(serie.dia_vencimento, monthrange(ano, mes_num)[1])),
-                        valor=valor_base(modelo), valor_base=valor_base(modelo), pago=False, data_pagamento=None,
+                        valor=valor_base(modelo)+total_adiantado(modelo), valor_base=valor_base(modelo)+total_adiantado(modelo), pago=False, data_pagamento=None,
                         documento='', recorrencia_id=serie.id))
                 serie.proxima_competencia = proximo_mes(competencia)
         db.session.commit()
@@ -172,6 +180,8 @@ def registrar_despesas(app, db, login_required):
                 'competencia': r.competencia, 'vencimento': r.vencimento.isoformat(), 'valor': float(r.valor),
                 'prioridade': prioridade_efetiva(r), 'prioridade_cadastro': r.prioridade, 'pago': r.pago,
                 'urgente_automatico': not r.pago and r.vencimento < hoje(),
+                'adiantamento_de_id': r.adiantamento_de_id, 'permite_adiantamento': salario(r),
+                'total_adiantado': float(total_adiantado(r)), 'salario_programado': float(valor_base(r)+total_adiantado(r)),
                 'valor_base': float(valor_base(r)), 'juros': float(max(Decimal(0), r.valor - valor_base(r))),
                 'desconto': float(max(Decimal(0), valor_base(r) - r.valor)),
                 'recorrencia_id': r.recorrencia_id, 'repetir_mensal': bool(r.recorrencia and r.recorrencia.ativa),
@@ -348,11 +358,23 @@ def registrar_despesas(app, db, login_required):
         r = db.session.get(Despesa, ident) if ident else Despesa()
         if r is None: return jsonify(erro='Despesa não encontrada.'), 404
         if request.method == 'DELETE':
+            if r.adiantamentos:
+                return jsonify(erro='Cancele os adiantamentos vinculados antes de excluir o salário.'), 400
+            if r.adiantamento_de_id:
+                pai = db.session.execute(db.select(Despesa).where(Despesa.id == r.adiantamento_de_id).with_for_update()).scalar_one()
+                if pai.pago:
+                    return jsonify(erro='Reabra o saldo do salário antes de cancelar este adiantamento.'), 400
+                pai.valor_base = valor_base(pai) + r.valor
+                pai.valor += r.valor
             if r.recorrencia: r.recorrencia.ativa = False
             db.session.delete(r); db.session.commit(); return jsonify(ok=True)
+        if r.adiantamento_de_id:
+            return jsonify(erro='Para corrigir um adiantamento, exclua-o e registre novamente no salário.'), 400
         dados = request.get_json(silent=True) or {}
         try:
             p = validar(dados)
+            if ident and r.adiantamentos and any(p[c] != getattr(r,c) for c in ('valor','pago','data_pagamento','categoria','competencia','funcionario_id')):
+                raise ValueError('Use o botão de pagamento para quitar ou reabrir o saldo. Para alterar o salário programado ou funcionário, cancele antes os adiantamentos.')
             repetir = dados.get('repetir_mensal', bool(r.recorrencia and r.recorrencia.ativa) if ident else p['grupo'] == 'Custos fixos')
             if not isinstance(repetir, bool): raise ValueError('Repetição mensal inválida.')
             if p['grupo'] != 'Custos fixos': repetir = False
@@ -364,7 +386,7 @@ def registrar_despesas(app, db, login_required):
         base_anterior = valor_base(r) if ident else p['valor']
         if ident and r.pago and not p['pago'] and p['valor'] == r.valor:
             p['valor'] = base_anterior
-        r.valor_base = base_anterior if ident and p['pago'] else p['valor']
+        r.valor_base = base_anterior if ident and (p['pago'] or r.adiantamentos) else p['valor']
         dia_alterado = not ident or r.vencimento != p['vencimento']
         for c, v in p.items(): setattr(r, c, v)
         if r.recorrencia:
@@ -377,16 +399,48 @@ def registrar_despesas(app, db, login_required):
         db.session.add(r); db.session.commit()
         return jsonify(despesa_dict(r)), 200 if ident else 201
 
+    @app.post('/api/despesas/<int:ident>/adiantamentos')
+    @login_required
+    def adiantar_salario(ident):
+        r = db.session.execute(db.select(Despesa).where(Despesa.id == ident).with_for_update()).scalar_one_or_none()
+        if r is None: return jsonify(erro='Despesa não encontrada.'), 404
+        try:
+            d = request.get_json(silent=True) or {}
+            if not salario(r) or r.pago:
+                raise ValueError('Adiantamento disponível apenas para salários em aberto.')
+            if Decimal(str(d.get('saldo_esperado'))) != r.valor:
+                raise ValueError('O saldo mudou. Atualize as contas antes de registrar o adiantamento.')
+            valor = Decimal(str(d.get('valor')))
+            data = date.fromisoformat(d.get('data_pagamento') or '')
+            if data > hoje(): raise ValueError('A data do pagamento não pode ser futura.')
+            if not valor.is_finite() or valor <= 0 or valor >= r.valor or valor != valor.quantize(Decimal('.01')):
+                raise ValueError('O adiantamento deve ser positivo e menor que o saldo, com até duas casas decimais. Para pagar todo o saldo, escolha Quitação.')
+            campos = {c:getattr(r,c) for c in ('grupo','competencia','vencimento','prioridade','funcionario_id','veiculo_id','fornecedor_id','terceirizado_id')}
+            a = Despesa(**campos, descricao=('Adiantamento — '+r.descricao)[:220], categoria='Adiantamento de salário',
+                        valor=valor, valor_base=valor, pago=True, data_pagamento=data,
+                        documento='', observacoes='Adiantamento vinculado ao salário #'+str(r.id), adiantamento_de_id=r.id)
+            r.valor_base = valor_base(r) - valor
+            r.valor -= valor
+            db.session.add(a); db.session.commit()
+            return jsonify(despesa_dict(r)), 201
+        except (ValueError, TypeError, InvalidOperation):
+            db.session.rollback()
+            return jsonify(erro='Confira o adiantamento: salário em aberto, data não futura, saldo atualizado e valor positivo menor que o saldo (até duas casas decimais).'), 400
+
     @app.patch('/api/despesas/<int:ident>/status')
     @login_required
     def status_despesa(ident):
-        r = db.session.get(Despesa, ident)
+        r = db.session.execute(db.select(Despesa).where(Despesa.id == ident).with_for_update()).scalar_one_or_none()
         if r is None: return jsonify(erro='Despesa não encontrada.'), 404
+        if r.adiantamento_de_id:
+            return jsonify(erro='Para cancelar um adiantamento, use a lixeira. O valor retorna ao saldo do salário.'), 400
         d = request.get_json(silent=True) or {}
         if not isinstance(d.get('pago'), bool): return jsonify(erro='Informe Pago ou Em aberto.'), 400
         try: data = date.fromisoformat(d.get('data_pagamento') or '') if d['pago'] else None
         except (ValueError, TypeError): return jsonify(erro='Informe a data de pagamento.'), 400
         try:
+            if salario(r) and d['pago'] and Decimal(str(d.get('saldo_esperado'))) != r.valor:
+                raise ValueError('O saldo mudou. Atualize as contas e tente novamente.')
             base = valor_base(r)
             valor = Decimal(str(d.get('valor', r.valor))) if d['pago'] else base
             if not valor.is_finite() or valor <= 0 or valor >= Decimal('1000000000000') or valor != valor.quantize(Decimal('.01')):
@@ -404,10 +458,10 @@ def registrar_despesas(app, db, login_required):
         try: registros = consultar()
         except (ValueError, TypeError): return jsonify(erro='Filtro inválido.'), 400
         out = io.StringIO(); writer = csv.writer(out, delimiter=';')
-        writer.writerow(['Competência','Descrição','Grupo','Categoria','Fornecedor','Funcionário','Veículo','Terceirizado','Prioridade','Vencimento','Valor','Situação','Pagamento','Documento','Observações','Valor base','Juros / acréscimos','Repetição mensal','Desconto / redução'])
+        writer.writerow(['Competência','Descrição','Grupo','Categoria','Fornecedor','Funcionário','Veículo','Terceirizado','Prioridade','Vencimento','Valor','Situação','Pagamento','Documento','Observações','Valor base','Juros / acréscimos','Repetição mensal','Desconto / redução','Salário vinculado','Total adiantado'])
         for r in registros:
             d = despesa_dict(r)
-            row = [r.competencia,r.descricao,r.grupo,r.categoria,d['fornecedor_nome'],d['funcionario_nome'],d['veiculo_nome'],d['terceirizado_nome'],d['prioridade'],r.vencimento.isoformat(),f'{r.valor:.2f}',d['status'],d['data_pagamento'] or '',r.documento or '',r.observacoes or '',f'{valor_base(r):.2f}',f"{d['juros']:.2f}",'Sim' if d['repetir_mensal'] else 'Não',f"{d['desconto']:.2f}"]
+            row = [r.competencia,r.descricao,r.grupo,r.categoria,d['fornecedor_nome'],d['funcionario_nome'],d['veiculo_nome'],d['terceirizado_nome'],d['prioridade'],r.vencimento.isoformat(),f'{r.valor:.2f}',d['status'],d['data_pagamento'] or '',r.documento or '',r.observacoes or '',f'{valor_base(r):.2f}',f"{d['juros']:.2f}",'Sim' if d['repetir_mensal'] else 'Não',f"{d['desconto']:.2f}",r.adiantamento_de_id or '',f"{d['total_adiantado']:.2f}"]
             writer.writerow(["'"+v if isinstance(v,str) and v.startswith(('=','+','-','@')) else v for v in row])
         return send_file(io.BytesIO(out.getvalue().encode('utf-8-sig')), mimetype='text/csv', as_attachment=True, download_name='despesas_mes.csv')
 
@@ -421,6 +475,9 @@ def registrar_despesas(app, db, login_required):
         colunas = {c['name'] for c in inspect(db.engine).get_columns('despesas_mensais')}
         instalar_repeticao = 'recorrencia_id' not in colunas
         with db.engine.begin() as conn:
+            if 'adiantamento_de_id' not in colunas:
+                conn.execute(text('ALTER TABLE despesas_mensais ADD COLUMN adiantamento_de_id INTEGER REFERENCES despesas_mensais(id) ON DELETE RESTRICT'))
+            conn.execute(text('CREATE INDEX IF NOT EXISTS ix_despesas_mensais_adiantamento_de_id ON despesas_mensais (adiantamento_de_id)'))
             if 'valor_base' not in colunas:
                 conn.execute(text('ALTER TABLE despesas_mensais ADD COLUMN valor_base NUMERIC(14, 2)'))
             if instalar_repeticao:
