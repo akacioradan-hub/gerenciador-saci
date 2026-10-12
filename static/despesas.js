@@ -111,8 +111,9 @@ async function carregarCadastrosDespesas(){
 }
 function despAtualizarCategoria(valor){
   const grupo=despEl('despGrupo').value;
-  despEl('despCategoria').innerHTML=despCategorias[grupo].map(c=>`<option>${escaparFinanceiro(c)}</option>`).join('');
+  despEl('despCategoria').innerHTML=despCategorias[grupo].map(c=>`<option>${escaparFinanceiro(c)}</option>`).join('')+'<option value="" data-criar-categoria="true">＋ Criar nova categoria...</option>';
   if(valor&&despCategorias[grupo].includes(valor))despEl('despCategoria').value=valor;
+  despEl('despCategoria').dataset.anterior=despEl('despCategoria').value;
   despEl('despFornecedor').required=grupo==='Fornecedores';
   despEl('despRepetirLabel').classList.toggle('hidden',grupo!=='Custos fixos');
   despEl('despRepetir').checked=grupo==='Custos fixos';
@@ -284,10 +285,19 @@ async function carregarCategoriasDespesas(){
   const valor=despEl('despCategoria').value,repetir=despEl('despRepetir').checked;
   despAtualizarCategoria(valor);despEl('despRepetir').checked=repetir;atualizarFiltroCategoria();
 }
-despEl('despNovaCategoria').addEventListener('click',async()=>{
-  const grupo=despEl('despGrupo').value,nome=prompt('Nome da nova categoria em '+grupo+':','');if(nome===null||!nome.trim())return;
-  const botao=despEl('despNovaCategoria');botao.disabled=true;
-  try{const d=await api('/api/despesas/categorias',{method:'POST',body:JSON.stringify({grupo,nome})});await carregarCategoriasDespesas();if(despEl('despGrupo').value===grupo)despEl('despCategoria').value=d.nome;msg('Categoria disponível para uso.')}catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
+despEl('despCategoria').addEventListener('change',async()=>{
+  const select=despEl('despCategoria');
+  if(!select.selectedOptions[0]?.dataset.criarCategoria){select.dataset.anterior=select.value;return}
+  const grupo=despEl('despGrupo').value;
+  select.value=select.dataset.anterior||despCategorias[grupo][0]||'';
+  const nome=prompt('Nome da nova categoria em '+grupo+':','');if(nome===null||!nome.trim())return;
+  select.disabled=true;
+  try{
+    const d=await api('/api/despesas/categorias',{method:'POST',body:JSON.stringify({grupo,nome})});
+    await carregarCategoriasDespesas();
+    if(despEl('despGrupo').value===grupo){select.value=d.nome;select.dataset.anterior=d.nome}
+    msg('Categoria disponível para uso.');
+  }catch(e){msg(e.message,'erro')}finally{select.disabled=false}
 });
 
 // Juros pagos: valores já incluídos no pagamento, sem somar novamente às despesas.

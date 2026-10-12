@@ -1,0 +1,3 @@
+Em Nova despesa, abra Categoria e selecione Criar nova categoria. Digite o nome: a categoria é cadastrada no grupo atual e selecionada automaticamente. Cancelar mantém a seleção anterior. O botão separado foi removido.
+Arquivos alterados: static/despesas.js e templates/index.html.
+Atualize no GitHub, aguarde o deploy e pressione Ctrl+F5.
