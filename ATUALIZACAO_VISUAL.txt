@@ -1,0 +1,6 @@
+Revisão visual do sistema: fontes do sistema, cores e contrastes, cartões e sombras suaves, campos, botões, tabelas e janelas.
+Menu móvel com fundo escurecido, botão fechar, Escape, foco de teclado e bloqueio de interação com a página atrás.
+Filtros e cartões adaptáveis; campos móveis com fonte de 16px; tabelas com rolagem interna; janelas limitadas à altura disponível.
+Arquivos alterados: static/visual.css, static/app.js, templates/index.html, templates/login.html e templates/consulta_publica.html.
+Verificação local em Chromium: sete páginas nas larguras 320,390,768,1024,1440; janelas de despesas, cadastros, salário e cliente ARCM. 55 verificações sem erros de JavaScript ou vazamento horizontal. Acesso móvel e janela de despesa também conferidos visualmente. Principais combinações de contraste superiores a 4,5:1. Simulação de tamanhos; não teste em aparelhos físicos.
+Atualize no GitHub, aguarde o deploy no Render e pressione Ctrl+F5.

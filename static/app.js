@@ -282,8 +282,32 @@ const hojeFormatado=new Intl.DateTimeFormat('pt-BR',{weekday:'long',day:'2-digit
 const dataHoje=document.getElementById('dataHoje');if(dataHoje)dataHoje.textContent=hojeFormatado.charAt(0).toUpperCase()+hojeFormatado.slice(1);
 const sidebar=document.getElementById('sidebar');
 const menuToggle=document.getElementById('menuToggle');
-if(menuToggle)menuToggle.addEventListener('click',()=>sidebar.classList.toggle('open'));
-document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{if(window.innerWidth<=820)sidebar.classList.remove('open')}));
+function ajustarMenu(aberto,devolverFoco=false){
+  const mobile=window.innerWidth<=820,mostrar=mobile&&aberto;
+  sidebar.classList.toggle('open',mostrar);
+  sidebar.inert=mobile&&!mostrar;
+  document.getElementById('navBackdrop').classList.toggle('open',mostrar);
+  document.querySelector('.main-area').inert=mostrar;
+  menuToggle.setAttribute('aria-expanded',String(mostrar));
+  if(mostrar)document.getElementById('menuClose').focus();
+  else if(devolverFoco)menuToggle.focus();
+}
+if(menuToggle)menuToggle.addEventListener('click',()=>ajustarMenu(!sidebar.classList.contains('open')));
+document.getElementById('menuClose').addEventListener('click',()=>ajustarMenu(false,true));
+document.getElementById('navBackdrop').addEventListener('click',()=>ajustarMenu(false,true));
+document.querySelectorAll('.tab-btn').forEach(btn=>btn.addEventListener('click',()=>{if(window.innerWidth<=820)ajustarMenu(false,true)}));
+window.addEventListener('resize',()=>{if(window.innerWidth>820||!sidebar.classList.contains('open'))ajustarMenu(false)});
+document.addEventListener('keydown',e=>{
+  if(!sidebar.classList.contains('open')||window.innerWidth>820)return;
+  if(e.key==='Escape'){e.preventDefault();ajustarMenu(false,true)}
+  if(e.key==='Tab'){
+    const itens=[...sidebar.querySelectorAll('button,a[href]')].filter(el=>!el.disabled&&el.getClientRects().length),primeiro=itens[0],ultimo=itens.at(-1);
+    if(e.shiftKey&&document.activeElement===primeiro){e.preventDefault();ultimo.focus()}
+    else if(!e.shiftKey&&document.activeElement===ultimo){e.preventDefault();primeiro.focus()}
+  }
+});
+ajustarMenu(false);
+document.querySelectorAll('.table-wrap').forEach(el=>{el.tabIndex=0;el.setAttribute('role','region');el.setAttribute('aria-label','Tabela de dados; role horizontalmente para ver todas as colunas')});
 function abrirAvisos(){document.getElementById('alertPanel').classList.add('open');document.getElementById('alertOverlay').classList.remove('hidden')}
 function fecharAvisos(){document.getElementById('alertPanel').classList.remove('open');document.getElementById('alertOverlay').classList.add('hidden')}
 document.getElementById('alertButton')?.addEventListener('click',abrirAvisos);
