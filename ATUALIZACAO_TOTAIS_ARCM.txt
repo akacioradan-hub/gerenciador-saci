@@ -1,0 +1,2 @@
+Receitas ARCM: Totais dos lançamentos filtrados agora fica sempre visível, sem expandir/recolher. Valores e filtros preservados.
+Atualize os arquivos no GitHub e aguarde o deploy do Render.
