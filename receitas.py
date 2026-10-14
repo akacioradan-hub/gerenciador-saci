@@ -3,6 +3,7 @@ from datetime import date, datetime, timedelta
 from calendar import monthrange
 from zoneinfo import ZoneInfo
 from decimal import Decimal
+from uuid import uuid4
 from flask import request, jsonify, abort
 from sqlalchemy import or_, inspect, text, case
 from sqlalchemy.exc import IntegrityError
@@ -268,7 +269,17 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                 intervalos = {'avista': 0, 'mensal': 1, 'trimestral': 3, 'semestral': 6, 'anual': 12}
                 if not isinstance(tipo, str) or tipo not in intervalos:
                     raise ValueError('Tipo de pagamento inválido.')
-                numero = texto(d, 'numero_contrato', 80, tipo != 'avista').upper()
+                vinculo = d.get('contrato_id')
+                if vinculo is not None:
+                    if type(vinculo) is not int:
+                        raise ValueError('Selecione um contrato válido.')
+                    existente = db.session.get(ContratoReceita, vinculo)
+                    if not existente or existente.cliente_id != cid:
+                        raise ValueError('Selecione um contrato do cliente informado.')
+                    item = Receita(unidade=unidade, contrato_id=existente.id, parcela=None, **campos)
+                    db.session.add(item); db.session.commit()
+                    return jsonify(receita_dict(item)), 201
+                numero = texto(d, 'numero_contrato', 80).upper() or ('SEM NÚMERO · ' + uuid4().hex[:16].upper())
                 if numero:
                     prazo = d.get('prazo_meses')
                     if type(prazo) is not int or not 1 <= prazo <= 600:
@@ -307,6 +318,12 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             db.session.rollback()
             return jsonify(erro=str(e) if isinstance(e, ValueError) else 'Não foi possível salvar. Confira se o número do contrato já existe e atualize os cadastros.'), 400
 
+    @app.get('/api/receitas/arcm/contratos')
+    @login_required
+    def listar_contratos_arcm():
+        contratos = db.session.execute(db.select(ContratoReceita).order_by(ContratoReceita.id.desc())).scalars().all()
+        return jsonify([contrato_dict(c) for c in contratos])
+
     @app.put('/api/receitas/arcm/contratos/<int:ident>')
     @login_required
     def editar_contrato_arcm(ident):
@@ -316,7 +333,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             d = payload()
             if d.get('contrato_esperado') != contrato_dict(contrato):
                 return jsonify(erro='O contrato foi alterado. Atualize a lista e abra a edição novamente.'), 409
-            numero = texto(d, 'numero', 80, True).upper()
+            numero = texto(d, 'numero', 80).upper() or ('SEM NÚMERO · ' + uuid4().hex[:16].upper())
             tipo = d.get('tipo_pagamento')
             intervalos = {'avista':0, 'mensal':1, 'trimestral':3, 'semestral':6, 'anual':12}
             if not isinstance(tipo, str) or tipo not in intervalos: raise ValueError('Tipo de pagamento inválido.')
@@ -333,7 +350,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             if datas[0] < inicio or datas[-1] > fim: raise ValueError('Os vencimentos devem ficar dentro do período do contrato.')
             if db.session.execute(db.select(ContratoReceita.id).where(ContratoReceita.numero == numero, ContratoReceita.id != ident)).first():
                 return jsonify(erro='Já existe um contrato com este número.'), 409
-            linhas = db.session.execute(db.select(Receita).where(Receita.contrato_id == ident).order_by(Receita.parcela).with_for_update()).scalars().all()
+            linhas = db.session.execute(db.select(Receita).where(Receita.contrato_id == ident, Receita.parcela.isnot(None)).order_by(Receita.parcela).with_for_update()).scalars().all()
             if not linhas: raise ValueError('Este contrato não possui receitas para atualizar.')
             recalcular = (tipo, prazo, inicio, primeiro, valor) != (contrato.tipo_pagamento, contrato.prazo_meses, contrato.inicio, contrato.primeiro_vencimento, contrato.valor_parcela)
             criadas = removidas = atualizadas = 0

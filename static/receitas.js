@@ -1,5 +1,5 @@
 const recEstados=Object.fromEntries(['arcm','saci'].map(u=>[u,{clientes:[],registros:[],pagina:1,paginaClientes:1,consulta:0}]));
-let recUnidade='arcm',recSalvando=false;
+let recUnidade='arcm',recSalvando=false,recContratos=[];
 const recEl=id=>document.getElementById(id);
 const recNome=u=>u==='arcm'?'ARCM':'Saci';
 function recHoje(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(k=>p.find(x=>x.type===k).value).join('-')}
@@ -25,7 +25,7 @@ async function recCarregar(u){
 }
 function recRender(u){
   const st=recEstados[u];st.pagina=Math.min(st.pagina,Math.max(1,Math.ceil(st.registros.length/5)));
-  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(u==='saci'?r.descricao:r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(u==='saci'?(r.cliente_nome||'Sem cliente'):r.descricao)}</div>${r.pendencia_anterior?'<div class="table-sub">Pendente de mês anterior</div>':''}${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · Parcela ${r.parcela}/${r.contrato.parcelas}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${u==='arcm'?(r.recebida?dataBR(r.data_recebimento):'—'):dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
+  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(u==='saci'?r.descricao:r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(u==='saci'?(r.cliente_nome||'Sem cliente'):r.descricao)}</div>${r.pendencia_anterior?'<div class="table-sub">Pendente de mês anterior</div>':''}${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · ${r.parcela?'Parcela '+r.parcela+'/'+r.contrato.parcelas:'Receita adicional'}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${u==='arcm'?(r.recebida?dataBR(r.data_recebimento):'—'):dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
   renderPaginacaoTabela('rec-'+u,st.pagina,st.registros.length,n=>{st.pagina=n;recRender(u)});
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-status]').forEach(b=>b.addEventListener('click',()=>recMudarStatus(u,Number(b.dataset.recStatus),b)));
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-edit]').forEach(b=>b.addEventListener('click',()=>recAbrir(u,Number(b.dataset.recEdit))));
@@ -42,7 +42,8 @@ function recRenderClientes(u){
 function recAtualizarSituacao(){const recebido=recEl('recRecebida').value==='true',el=recEl('recDataRecebimento');el.disabled=!recebido;el.required=recebido;el.max=recHoje();if(recebido&&!el.value)el.value=recHoje();if(!recebido)el.value=''}
 const recCampos={cliente_id:'Cliente',descricao:'Descricao',categoria:'Categoria',valor:'Valor',data:'Data',vencimento:'Vencimento',data_recebimento:'DataRecebimento',forma_pagamento:'Forma',documento:'Documento',observacoes:'Observacoes'};
 const recCliCampos={nome:'Nome',documento:'Documento',telefone:'Telefone',email:'Email',endereco:'Endereco',observacoes:'Observacoes'};
-function recAbrir(u,id){
+async function recAbrir(u,id){
+  if(u==='arcm'){try{recContratos=await api('/api/receitas/arcm/contratos')}catch(e){msg(e.message,'erro');return}}
   if(u==='arcm'&&!recEstados[u].clientes.length){msg('Cadastre um cliente para lançar a receita.');recAbrirCliente(u);return}
   const simplificado=u==='saci'&&!id;
   for(const campo of ['Cliente','Vencimento','Documento']){recEl('rec'+campo+'Campo').classList.toggle('hidden',simplificado);recEl('rec'+campo).disabled=simplificado}
@@ -80,6 +81,7 @@ async function recSalvar(e,cliente){
   if(!cliente){dados.cliente_id=dados.cliente_id?Number(dados.cliente_id):null;dados.valor=Number(dados.valor);dados.recebida=recEl('recRecebida').value==='true'}
   if(!cliente&&u==='saci'&&!id){dados.cliente_id=null;dados.documento='';dados.vencimento=dados.data}
   if(!cliente&&u==='arcm'&&!id){
+    if(recEl('recVinculo').value)dados.contrato_id=Number(recEl('recVinculo').value);
     dados.numero_contrato=recEl('recNumeroContrato').value.trim();dados.tipo_pagamento=recEl('recTipoPagamento').value;dados.prazo_meses=Number(recEl('recPrazoMeses').value);dados.inicio_contrato=recEl('recInicioContrato').value;
     const previsao=recPlanejarContrato();
     if(previsao.erro){erro.textContent=previsao.erro;return}
@@ -111,8 +113,7 @@ function recSomarMeses(iso,meses){
 function recPlanejarContrato(){
   const tipo=recEl('recTipoPagamento').value,numero=recEl('recNumeroContrato').value.trim(),prazo=Number(recEl('recPrazoMeses').value),inicio=recEl('recInicioContrato').value,venc=recEl('recVencimento').value;
   const passo={avista:0,mensal:1,trimestral:3,semestral:6,anual:12}[tipo];
-  if(tipo==='avista'&&!numero)return {datas:[]};
-  if(!numero)return {datas:[],erro:'Informe o número do contrato para gerar as parcelas.'};
+  if(recEl('recVinculo').value)return {datas:[]};
   if(!Number.isInteger(prazo)||prazo<1||prazo>600||!inicio||!venc)return {datas:[],erro:'Informe início, prazo de 1 a 600 meses e primeiro vencimento.'};
   const quantidade=passo?Math.ceil(prazo/passo):1;
   const fimDt=new Date(recSomarMeses(inicio,prazo)+'T12:00:00Z');fimDt.setUTCDate(fimDt.getUTCDate()-1);const fim=fimDt.toISOString().slice(0,10);
@@ -121,14 +122,14 @@ function recPlanejarContrato(){
   return {datas,fim};
 }
 function recConfigurarContrato(u,r){
-  recContratoEditando=!!r;const ativo=u==='arcm',c=r?.contrato;
+  recContratoEditando=!!r;recEl('recVinculoCampo').classList.toggle('hidden',!!r);recAtualizarVinculos();const ativo=u==='arcm',c=r?.contrato;
   recEl('recContratoCampos').classList.toggle('hidden',!ativo);
   for(const id of ['recNumeroContrato','recTipoPagamento','recPrazoMeses','recInicioContrato'])recEl(id).disabled=!ativo||!!r;
   recEl('recNumeroContrato').value=c?.numero||'';recEl('recTipoPagamento').value=c?.tipo_pagamento||'avista';recEl('recPrazoMeses').value=c?.prazo_meses||1;recEl('recInicioContrato').value=c?.inicio||recHoje();
   recEl('recCliente').disabled=!!c;
   recEl('recEditarContrato').classList.toggle('hidden',!c);
   if(r&&ativo){
-    recEl('recContratoResumo').textContent=c?`Contrato ${c.numero} · Prazo: ${c.prazo_meses} meses · ${dataBR(c.inicio)} a ${dataBR(c.fim)}. Parcela ${r.parcela}/${c.parcelas}. Use Editar informações para alterar o contrato e suas parcelas em aberto.`:'Receita avulsa existente. Para gerar um contrato parcelado, use Nova receita.';
+    recEl('recContratoResumo').textContent=c?`Contrato ${c.numero} · Prazo: ${c.prazo_meses} meses · ${dataBR(c.inicio)} a ${dataBR(c.fim)}. ${r.parcela?'Parcela '+r.parcela+'/'+c.parcelas:'Receita adicional'}. Use Editar informações para alterar o contrato e suas parcelas em aberto.`:'Receita avulsa existente. Para gerar um contrato parcelado, use Nova receita.';
     recEl('recContratoPreview').innerHTML='';
   }
   recAtualizarContrato();
@@ -138,8 +139,11 @@ function recAtualizarContrato(){
   recEl('recValorLabel').textContent=recorrente?'Valor de cada pagamento (R$) *':'Valor (R$) *';
   recEl('recDataLabel').textContent=novo&&recorrente?'Data do cadastro *':'Data da receita *';
   recEl('recVencimentoLabel').textContent=novo&&recorrente?'Primeiro vencimento *':'Vencimento *';
-  recEl('recNumeroContrato').required=novo&&recorrente;
-  const temContrato=novo&&(recorrente||!!recEl('recNumeroContrato').value.trim());
+  recEl('recNumeroContrato').required=false;
+  const vinculado=novo&&!!recEl('recVinculo').value;
+  if(novo)for(const id of ['recNumeroContrato','recTipoPagamento','recPrazoMeses','recInicioContrato'])recEl(id).disabled=vinculado;
+  if(vinculado){recEl('recPrazoMeses').required=false;recEl('recInicioContrato').required=false;recEl('recValorLabel').textContent='Valor (R$) *';recEl('recVencimentoLabel').textContent='Vencimento *';recEl('recContratoResumo').textContent='Esta receita será vinculada ao contrato selecionado, com valor e vencimento próprios, sem recriar as parcelas existentes.';recEl('recContratoPreview').innerHTML='';return}
+  const temContrato=novo;
   recEl('recPrazoMeses').required=temContrato;recEl('recInicioContrato').required=temContrato;
   if(!novo)return;
   const p=recPlanejarContrato(),valor=Number(recEl('recValor').value||0);
@@ -174,3 +178,10 @@ async function recMudarStatus(u,id,botao){
 }
 
 document.getElementById('arcmFluxoAtualizar').addEventListener('click',()=>recCarregar('arcm'));
+
+function recAtualizarVinculos(){
+  const cid=Number(recEl('recCliente').value);
+  recEl('recVinculo').innerHTML='<option value="">Novo contrato</option>'+recContratos.filter(c=>c.cliente_id===cid).map(c=>`<option value="${c.id}">${escaparFinanceiro(c.numero)} · ${dataBR(c.inicio)}</option>`).join('');
+}
+recEl('recCliente').addEventListener('change',()=>{recAtualizarVinculos();recAtualizarContrato()});
+recEl('recVinculo').addEventListener('change',recAtualizarContrato);
