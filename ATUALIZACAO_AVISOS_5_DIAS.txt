@@ -1,0 +1,7 @@
+Atualize app.py, static/app.js e templates/index.html. Após o deploy, pressione Ctrl + F5.
+
+Avisos de atraso excluídos reaparecem após 5 dias completos se a dívida continuar pendente. Nova exclusão reinicia o prazo. Avisos não excluídos permanecem, sem duplicar.
+Incluídos avisos de receitas ARCM vencidas. Mantido o critério anterior dos órgãos públicos: a partir de 60 dias da data do débito.
+Exclusões continuam individuais por usuário; exclusões antigas usam a data já registrada.
+A lista atualiza ao abrir Avisos, ao voltar à página e a cada 5 minutos com a página visível. Não envia e-mail nem mensagem externa.
+Não precisa alterar o banco manualmente.

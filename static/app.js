@@ -57,11 +57,12 @@ function botaoExcluirAviso(a){
   return `<button type="button" class="danger aviso-excluir" data-aviso="${escaparFinanceiro(a.aviso_chave)}" title="Excluir notificação" aria-label="Excluir notificação">🗑</button>`;
 }
 async function excluirNotificacao(chave){
-  if(!confirm('Excluir esta notificação dos seus avisos? O cadastro e os valores serão mantidos.'))return;
+  const recorrente=/^(atrasado|cliente60|orgao60|arcm):/.test(chave);
+  if(!confirm('Excluir esta notificação dos seus avisos? O cadastro e os valores serão mantidos.'+(recorrente?' Se continuar em atraso, o aviso voltará em 5 dias.':'')))return;
   try{
     await api('/api/avisos/excluir',{method:'POST',body:JSON.stringify({chave})});
     await carregarDashboard();
-    msg('Notificação excluída.');
+    msg(recorrente?'Aviso excluído. Se continuar em atraso, voltará em 5 dias.':'Notificação excluída.');
   }catch(e){msg(e.message,'erro')}
 }
 
@@ -108,6 +109,12 @@ function renderAvisosDashboard(d){
   if(aniversarios.length){
     html+='<div class="alert-section-title">Aniversários de funcionários — amanhã</div>';
     html+=aniversarios.map(a=>`<div class="alert-item today">${botaoExcluirAviso(a)}<strong>${escaparFinanceiro(a.nome)}</strong><span>Aniversário amanhã: ${dataBR(a.data_aniversario)}</span><span>Completa ${Number(a.idade)} anos.</span></div>`).join('');
+  }
+
+  const arcm=d.arcm_atrasadas||[];
+  if(arcm.length){
+    html+='<div class="alert-section-title">Receitas ARCM em atraso</div>';
+    html+=arcm.map(a=>`<div class="alert-item overdue">${botaoExcluirAviso(a)}<strong>${escaparFinanceiro(a.cliente_nome||'ARCM')}</strong><span>${escaparFinanceiro(a.descricao)}</span><span>Vencimento: ${dataBR(a.vencimento)} · ${a.dias_atraso} dias de atraso</span><span class="alert-value">A receber: ${moeda(a.valor)}</span></div>`).join('');
   }
 
   if(clientes60.length){
@@ -309,7 +316,7 @@ document.addEventListener('keydown',e=>{
 });
 ajustarMenu(false);
 document.querySelectorAll('.table-wrap').forEach(el=>{el.tabIndex=0;el.setAttribute('role','region');el.setAttribute('aria-label','Tabela de dados; role horizontalmente para ver todas as colunas')});
-function abrirAvisos(){document.getElementById('alertPanel').classList.add('open');document.getElementById('alertOverlay').classList.remove('hidden')}
+function abrirAvisos(){atualizarAvisosAutomaticamente();document.getElementById('alertPanel').classList.add('open');document.getElementById('alertOverlay').classList.remove('hidden')}
 function fecharAvisos(){document.getElementById('alertPanel').classList.remove('open');document.getElementById('alertOverlay').classList.add('hidden')}
 document.getElementById('alertButton')?.addEventListener('click',abrirAvisos);
 document.getElementById('openDueAlerts')?.addEventListener('click',abrirAvisos);
@@ -546,3 +553,14 @@ async function carregarDespesasDashboard(){await carregarResumoDashboard()}
 document.getElementById('dashPrevisaoMes').addEventListener('change',carregarResumoDashboard);
 document.getElementById('dashResumoAtualizar').addEventListener('click',carregarResumoDashboard);
 document.querySelector('[data-tab="dashboard"]').addEventListener('click',carregarResumoDashboard);
+
+// Consulta somente avisos enquanto a página está visível, sem duplicar cartões.
+let avisosAtualizando=false;
+async function atualizarAvisosAutomaticamente(){
+ if(document.hidden||avisosAtualizando)return;
+ avisosAtualizando=true;
+ try{renderAvisosDashboard(await api('/api/dashboard'))}catch(e){/* Mantém os avisos atuais e tenta na próxima atualização. */}
+ finally{avisosAtualizando=false}
+}
+setInterval(atualizarAvisosAutomaticamente,300000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualizarAvisosAutomaticamente()});

@@ -5,7 +5,7 @@ import csv
 import io
 import json
 from decimal import Decimal, InvalidOperation
-from datetime import date, datetime
+from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from functools import wraps
 from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
@@ -648,17 +648,24 @@ def add_months(year, month, offset):
 def excluir_aviso():
     dados = request.get_json(silent=True)
     chave = dados.get("chave") if isinstance(dados, dict) else None
-    if not isinstance(chave, str) or not re.fullmatch(r"(?:hoje|atrasado|cliente60|orgao60|aniversario):[1-9][0-9]*:[0-9]{4}-[0-9]{2}-[0-9]{2}", chave) or len(chave) > 120:
+    if not isinstance(chave, str) or not re.fullmatch(r"(?:hoje|atrasado|cliente60|orgao60|arcm|aniversario):[1-9][0-9]*:[0-9]{4}-[0-9]{2}-[0-9]{2}", chave) or len(chave) > 120:
         return jsonify({"erro": "Aviso inválido."}), 400
     uid = session["user_id"]
-    if not db.session.get(AvisoExcluido, (uid, chave)):
-        db.session.add(AvisoExcluido(usuario_id=uid, chave=chave))
-        try:
-            db.session.commit()
-        except IntegrityError:
-            db.session.rollback()
-            if not db.session.get(AvisoExcluido, (uid, chave)):
-                raise
+    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    aviso = db.session.get(AvisoExcluido, (uid, chave))
+    if aviso:
+        aviso.criado_em = agora
+    else:
+        db.session.add(AvisoExcluido(usuario_id=uid, chave=chave, criado_em=agora))
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        aviso = db.session.get(AvisoExcluido, (uid, chave))
+        if not aviso:
+            raise
+        aviso.criado_em = agora
+        db.session.commit()
     return jsonify({"ok": True})
 
 
@@ -776,16 +783,43 @@ def dashboard():
     ]
 
     aniversarios_amanha = aniversarios_funcionarios()
-    excluidos = set(db.session.execute(db.select(AvisoExcluido.chave).where(
-        AvisoExcluido.usuario_id == session["user_id"])).scalars())
+    # Uma chave estável por débito: renovar só após excluir, nunca por calendário.
+    def chave_normalizada(chave):
+        tipo, ident, dia = chave.split(':')
+        if tipo in ('atrasado', 'cliente60'):
+            tipo = 'atrasado'
+        return f'{tipo}:{ident}:{dia}'
+
+    limite = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=5)
+    excluidos = set()
+    for aviso in db.session.execute(db.select(AvisoExcluido).where(
+            AvisoExcluido.usuario_id == session["user_id"])).scalars():
+        tipo = aviso.chave.split(':')[0]
+        recorrente = tipo in ('atrasado', 'cliente60', 'orgao60', 'arcm')
+        if not recorrente or aviso.criado_em > limite:
+            excluidos.add(chave_normalizada(aviso.chave))
 
     def avisos_visiveis(registros, tipo, campo_data):
         visiveis = []
         for item in registros:
             item["aviso_chave"] = f"{tipo}:{item['id']}:{item[campo_data]}"
-            if item["aviso_chave"] not in excluidos:
+            if chave_normalizada(item["aviso_chave"]) not in excluidos:
                 visiveis.append(item)
         return visiveis
+
+    receitas = db.metadata.tables['receitas_unidades']
+    clientes_arcm = db.metadata.tables['clientes_receitas']
+    linhas_arcm = db.session.execute(db.select(
+        receitas.c.id, receitas.c.descricao, receitas.c.valor, receitas.c.vencimento,
+        clientes_arcm.c.nome.label('cliente_nome')
+    ).select_from(receitas.outerjoin(clientes_arcm, receitas.c.cliente_id == clientes_arcm.c.id)).where(
+        receitas.c.unidade == 'arcm', receitas.c.recebida.is_(False),
+        receitas.c.vencimento < hoje, receitas.c.valor > 0
+    ).order_by(receitas.c.vencimento, receitas.c.id)).mappings()
+    arcm_atrasadas = [dict(id=r['id'], descricao=r['descricao'], cliente_nome=r['cliente_nome'],
+        valor=float(r['valor']), vencimento=r['vencimento'].isoformat(),
+        dias_atraso=(hoje-r['vencimento']).days) for r in linhas_arcm]
+    arcm_atrasadas = avisos_visiveis(arcm_atrasadas, 'arcm', 'vencimento')
 
     vencem_hoje = avisos_visiveis(vencem_hoje, "hoje", "previsao")
     atrasados = avisos_visiveis(atrasados, "atrasado", "previsao")
@@ -794,6 +828,7 @@ def dashboard():
     aniversarios_amanha = avisos_visiveis(aniversarios_amanha, "aniversario", "data_aniversario")
     return jsonify({
         "aniversarios_amanha": aniversarios_amanha,
+        "arcm_atrasadas": arcm_atrasadas,
         "total_receber": total_receber,
         "total_recebido": total_recebido,
         "total_desconto": sum(i["total_desconto"] for i in itens),
@@ -801,10 +836,10 @@ def dashboard():
         "clientes_atraso": status["ATRASADO"],
         "valor_atrasado": valor_atrasado,
         "vencem_hoje": vencem_hoje,
-        "atrasados": atrasados[:20],
-        "clientes_60_dias": clientes_60_dias[:30],
-        "orgaos_60_dias": orgaos_60_dias[:30],
-        "total_alertas": len(vencem_hoje) + len(atrasados) + len(clientes_60_dias) + len(orgaos_60_dias) + len(aniversarios_amanha),
+        "atrasados": atrasados,
+        "clientes_60_dias": clientes_60_dias,
+        "orgaos_60_dias": orgaos_60_dias,
+        "total_alertas": len(vencem_hoje) + len(atrasados) + len(clientes_60_dias) + len(orgaos_60_dias) + len(aniversarios_amanha) + len(arcm_atrasadas),
         "total_previsto_futuro": total_previsto_futuro,
         "recebimentos_mensais": recebimentos_mensais,
         "previsao_mensal": previsao_mensal,
