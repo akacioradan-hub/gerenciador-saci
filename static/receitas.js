@@ -1,5 +1,6 @@
 const recEstados=Object.fromEntries(['arcm','saci'].map(u=>[u,{clientes:[],registros:[],pagina:1,paginaClientes:1,consulta:0}]));
 let recUnidade='arcm',recSalvando=false,recContratos=[];
+let arcmSelecionadas=new Set(),arcmPagando=false,arcmLote=[];
 const recEl=id=>document.getElementById(id);
 const recNome=u=>u==='arcm'?'ARCM':'Saci';
 function recHoje(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(k=>p.find(x=>x.type===k).value).join('-')}
@@ -10,6 +11,7 @@ function recOpcoes(u){
 }
 async function recCarregar(u){
   const st=recEstados[u],consulta=++st.consulta;
+  if(u==='arcm'){arcmSelecionadas.clear();arcmAtualizarSelecao()}
   const filtros={mes:recEl('rec-'+u+'-mes').value,cliente_id:recEl('rec-'+u+'-cliente').value,status:recEl('rec-'+u+'-status').value,q:recEl('rec-'+u+'-busca').value.trim()};
   if(u==='arcm'){filtros.data_inicio=recEl('rec-arcm-data_inicio').value;filtros.data_fim=recEl('rec-arcm-data_fim').value}
   if(!filtros.mes)return;
@@ -25,7 +27,11 @@ async function recCarregar(u){
 }
 function recRender(u){
   const st=recEstados[u];st.pagina=Math.min(st.pagina,Math.max(1,Math.ceil(st.registros.length/5)));
-  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr><td><strong>${escaparFinanceiro(u==='saci'?r.descricao:r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(u==='saci'?(r.cliente_nome||'Sem cliente'):r.descricao)}</div>${r.pendencia_anterior?'<div class="table-sub">Pendente de mês anterior</div>':''}${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · ${r.parcela?'Parcela '+r.parcela+'/'+r.contrato.parcelas:'Receita adicional'}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${u==='arcm'?(r.recebida?dataBR(r.data_recebimento):'—'):dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||'<tr><td colspan="8" class="empty">Nenhuma receita neste período.</td></tr>';
+  recEl('rec-'+u+'-body').innerHTML=st.registros.slice((st.pagina-1)*5,st.pagina*5).map(r=>`<tr>${u==='arcm'?`<td><input type="checkbox" data-arcm-selecao="${r.id}" ${r.recebida?'disabled':''} ${arcmSelecionadas.has(r.id)?'checked':''} aria-label="Selecionar receita ${r.id}"></td>`:''}<td><strong>${escaparFinanceiro(u==='saci'?r.descricao:r.cliente_nome)}</strong><div class="table-sub">${escaparFinanceiro(u==='saci'?(r.cliente_nome||'Sem cliente'):r.descricao)}</div>${r.pendencia_anterior?'<div class="table-sub">Pendente de mês anterior</div>':''}${r.contrato?`<div class="table-sub">Contrato ${escaparFinanceiro(r.contrato.numero)} · ${r.parcela?'Parcela '+r.parcela+'/'+r.contrato.parcelas:'Receita adicional'}</div>`:''}</td><td>${escaparFinanceiro(r.categoria)}</td><td>${u==='arcm'?(r.recebida?dataBR(r.data_recebimento):'—'):dataBR(r.data)}</td><td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}</td><td><span class="badge ${r.recebida?'QUITADO':r.status==='ATRASADA'?'ATRASADO':'EM_ABERTO'}">${r.status}</span></td><td><div class="rec-status-actions"><button type="button" class="secondary rec-status-icon ${u==='arcm'&&!r.recebida?'arcm-pagar-texto':''} ${r.recebida?'rec-reabrir':'rec-pago'}" data-rec-status="${r.id}" title="${r.recebida?'Reabrir receita':'Marcar como pago'}" aria-label="${r.recebida?'Reabrir receita':'Marcar como pago'}"><span aria-hidden="true">${r.recebida?'↶':u==='arcm'?'Marcar pago':'✓'}</span></button>${r.recebida?`<span class="table-sub">${dataBR(r.data_recebimento)}</span>`:''}</div><div class="table-sub">${escaparFinanceiro(r.forma_pagamento||'')}</div></td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar receita / registrar recebimento" aria-label="Editar receita / registrar recebimento" data-rec-edit="${r.id}">✎</button><button type="button" class="danger icon-btn" title="Excluir receita" aria-label="Excluir receita" data-rec-del="${r.id}">🗑</button></div></td></tr>`).join('')||`<tr><td colspan="${u==='arcm'?9:8}" class="empty">Nenhuma receita neste período.</td></tr>`;
+  if(u==='arcm'){
+    recEl('rec-arcm-body').querySelectorAll('[data-arcm-selecao]').forEach(el=>el.addEventListener('change',()=>{const id=Number(el.dataset.arcmSelecao);if(el.checked)arcmSelecionadas.add(id);else arcmSelecionadas.delete(id);arcmAtualizarSelecao()}));
+    arcmAtualizarSelecao();
+  }
   renderPaginacaoTabela('rec-'+u,st.pagina,st.registros.length,n=>{st.pagina=n;recRender(u)});
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-status]').forEach(b=>b.addEventListener('click',()=>recMudarStatus(u,Number(b.dataset.recStatus),b)));
   recEl('rec-'+u+'-body').querySelectorAll('[data-rec-edit]').forEach(b=>b.addEventListener('click',()=>recAbrir(u,Number(b.dataset.recEdit))));
@@ -163,6 +169,7 @@ async function recCarregarPrevisao(){
 
 async function recMudarStatus(u,id,botao){
   const r=recEstados[u].registros.find(r=>r.id===id);if(!r||botao.disabled)return;
+  if(u==='arcm'&&!r.recebida){arcmAbrirPagamento([r]);return}
   const recebida=!r.recebida;let data=null,valor;
   if(recebida){data=prompt('Data do recebimento (AAAA-MM-DD):',recHoje());if(data===null)return;data=data.trim()}
   else if(!confirm('Reabrir esta receita e remover a data do recebimento? Somente esta parcela será alterada.'))return;
@@ -185,3 +192,38 @@ function recAtualizarVinculos(){
 }
 recEl('recCliente').addEventListener('change',()=>{recAtualizarVinculos();recAtualizarContrato()});
 recEl('recVinculo').addEventListener('change',recAtualizarContrato);
+
+function arcmAtualizarSelecao(){
+ const rows=recEstados.arcm.registros.filter(r=>!r.recebida),sel=rows.filter(r=>arcmSelecionadas.has(r.id));
+ recEl('arcmSelecaoResumo').textContent=sel.length?`${sel.length} receita(s) selecionada(s) · Total: ${moeda(sel.reduce((s,r)=>s+Math.round(r.valor*100),0)/100)}`:'Nenhuma receita selecionada';
+ recEl('arcmPagarSelecao').disabled=!sel.length||arcmPagando;
+ recEl('arcmSelecionarTodas').checked=rows.length>0&&sel.length===rows.length;
+ recEl('arcmSelecionarTodas').indeterminate=sel.length>0&&sel.length<rows.length;
+}
+function arcmTotalPagamento(){
+ const total=[...recEl('arcmPagoItens').querySelectorAll('input')].reduce((s,e)=>s+Math.round(Number(e.value||0)*100),0);
+ recEl('arcmPagoTotal').textContent='Total a receber: '+moeda(total/100);
+}
+function arcmAbrirPagamento(rows){
+ if(arcmPagando||!rows.length)return;
+ if(rows.length>500){msg('Selecione no máximo 500 receitas. Use os filtros para reduzir a seleção.','erro');return}
+ arcmLote=rows.map(r=>({id:r.id,valor_esperado:r.valor}));
+ recEl('arcmPagoData').value=recHoje();recEl('arcmPagoData').max=recHoje();recEl('arcmPagoErro').textContent='';
+ recEl('arcmPagoItens').innerHTML=rows.map(r=>`<label style="display:block;margin-bottom:12px">${escaparFinanceiro(r.cliente_nome)} · ${escaparFinanceiro(r.descricao)} · Vencimento: ${dataBR(r.vencimento)}<br>Valor recebido (R$)<input type="number" min="0.01" max="9999999999.99" step="0.01" required data-pago-id="${r.id}" value="${Number(r.valor).toFixed(2)}" style="width:100%"></label>`).join('');
+ arcmTotalPagamento();recEl('arcmPagoModal').showModal();
+}
+recEl('arcmPagoItens').addEventListener('input',arcmTotalPagamento);
+recEl('arcmSelecionarTodas').addEventListener('change',e=>{arcmSelecionadas=new Set(e.target.checked?recEstados.arcm.registros.filter(r=>!r.recebida).map(r=>r.id):[]);recRender('arcm')});
+recEl('arcmLimparSelecao').addEventListener('click',()=>{arcmSelecionadas.clear();recRender('arcm')});
+recEl('arcmPagarSelecao').addEventListener('click',()=>arcmAbrirPagamento(recEstados.arcm.registros.filter(r=>!r.recebida&&arcmSelecionadas.has(r.id))));
+recEl('arcmPagoCancelar').addEventListener('click',()=>{if(!arcmPagando)recEl('arcmPagoModal').close()});
+recEl('arcmPagoModal').addEventListener('cancel',e=>{if(arcmPagando)e.preventDefault()});
+recEl('arcmPagoForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(arcmPagando)return;
+ const itens=arcmLote.map(r=>({...r,valor:Number(recEl('arcmPagoItens').querySelector('[data-pago-id="'+r.id+'"]').value)}));
+ arcmPagando=true;const b=e.target.querySelector('[type="submit"]');b.disabled=true;recEl('arcmPagoErro').textContent='';
+ try{
+  await api('/api/receitas/arcm/receber-selecionadas',{method:'POST',body:JSON.stringify({itens,data_recebimento:recEl('arcmPagoData').value})});
+  recEl('arcmPagoModal').close();arcmSelecionadas.clear();await recCarregar('arcm');msg(itens.length+' receita(s) marcada(s) como paga(s).');
+ }catch(err){recEl('arcmPagoErro').textContent=err.message}finally{arcmPagando=false;b.disabled=false;arcmAtualizarSelecao()}
+});

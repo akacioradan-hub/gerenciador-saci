@@ -406,6 +406,40 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         except (ValueError, OverflowError):
             return jsonify(erro='Confira o mês e o cliente da previsão.'), 400
 
+    @app.post('/api/receitas/arcm/receber-selecionadas')
+    @login_required
+    def receber_arcm_selecionadas():
+        try:
+            d = payload()
+            itens = d.get('itens')
+            if not isinstance(itens, list) or not 1 <= len(itens) <= 500:
+                raise ValueError('Selecione entre 1 e 500 receitas.')
+            data = data_valida(d.get('data_recebimento'))
+            if data > hoje():
+                raise ValueError('A data do recebimento não pode ser futura.')
+            ids = [i.get('id') for i in itens if isinstance(i, dict)]
+            if len(ids) != len(itens) or any(type(i) is not int for i in ids) or len(set(ids)) != len(ids):
+                raise ValueError('Seleção inválida.')
+            linhas = db.session.execute(db.select(Receita).where(Receita.id.in_(ids), Receita.unidade == 'arcm').order_by(Receita.id).with_for_update()).scalars().all()
+            if len(linhas) != len(ids):
+                raise ValueError('Uma receita não existe mais. Atualize a lista.')
+            por_id = {i['id']: i for i in itens}
+            for r in linhas:
+                i = por_id[r.id]
+                if r.recebida or valor_monetario(i.get('valor_esperado')) != r.valor:
+                    raise ValueError('Uma receita já foi recebida ou alterada. Atualize a lista antes de continuar.')
+                valor = valor_monetario(i.get('valor'))
+                if not valor.is_finite() or valor <= 0 or valor > Decimal('9999999999.99'):
+                    raise ValueError('Informe um valor pago positivo e válido para cada receita.')
+                r.valor = valor
+                r.recebida = True
+                r.data_recebimento = data
+            db.session.commit()
+            return jsonify(quantidade=len(linhas), total=float(sum(r.valor for r in linhas)))
+        except (ValueError, ArithmeticError, TypeError):
+            db.session.rollback()
+            return jsonify(erro='Não foi possível receber a seleção. Confira os valores e a data; atualize a lista caso alguma receita já tenha sido recebida ou alterada.'), 400
+
     @app.patch('/api/receitas/<unidade>/<int:ident>/status')
     @login_required
     def status_receita(unidade, ident):

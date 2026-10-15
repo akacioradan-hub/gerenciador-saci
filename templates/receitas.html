@@ -27,8 +27,11 @@
       {% endif %}
       <label>Pesquisar<input id="rec-{{ unidade }}-busca" placeholder="Cliente, descrição ou documento{% if unidade == 'arcm' %}, contrato{% endif %}"></label>
     </div>
+    {% if unidade == 'arcm' %}
+    <div class="rec-actions"><button type="button" class="primary" id="arcmPagarSelecao" disabled>Marcar selecionadas como pagas</button><button type="button" class="secondary" id="arcmLimparSelecao">Limpar seleção</button><span id="arcmSelecaoResumo" aria-live="polite">Nenhuma receita selecionada</span></div>
+    {% endif %}
     <p id="rec-{{ unidade }}-aviso" class="form-hint" aria-live="polite">Totais conforme os filtros.</p>
-    <div class="table-wrap"><table><thead><tr><th>{% if unidade == 'saci' %}Descrição / cliente{% else %}Cliente / descrição{% endif %}</th><th>{% if unidade == 'saci' %}Fonte da receita{% else %}Categoria{% endif %}</th><th>{% if unidade == 'arcm' %}Recebimento{% else %}Data{% endif %}</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
+    <div class="table-wrap"><table><thead><tr>{% if unidade == 'arcm' %}<th><input type="checkbox" id="arcmSelecionarTodas" aria-label="Selecionar todas as receitas pendentes filtradas" title="Selecionar todas as pendentes dos filtros, incluindo outras páginas"></th>{% endif %}<th>{% if unidade == 'saci' %}Descrição / cliente{% else %}Cliente / descrição{% endif %}</th><th>{% if unidade == 'saci' %}Fonte da receita{% else %}Categoria{% endif %}</th><th>{% if unidade == 'arcm' %}Recebimento{% else %}Data{% endif %}</th><th>Vencimento</th><th>Valor</th><th>Situação</th><th>Status</th><th>Ações</th></tr></thead><tbody id="rec-{{ unidade }}-body"></tbody></table></div>
     <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
   </div>
   {% if unidade == 'arcm' %}
@@ -108,3 +111,14 @@
   <div class="form-actions rec-full"><button type="submit" class="primary">Salvar contrato</button><button type="button" class="secondary" id="contratoEdicaoCancelar">Cancelar</button></div>
  </form>
 </dialog>
+
+<dialog id="arcmPagoModal" class="receita-modal" aria-labelledby="arcmPagoTitulo">
+<form id="arcmPagoForm" class="rec-form">
+<h3 id="arcmPagoTitulo" class="rec-full">Marcar receitas como pagas</h3>
+<p class="form-hint rec-full">Confira o valor recebido de cada receita. A data será aplicada a todas as selecionadas.</p>
+<label class="rec-full">Data do recebimento<input type="date" id="arcmPagoData" required></label>
+<div id="arcmPagoItens" class="rec-full"></div>
+<strong id="arcmPagoTotal" class="rec-full"></strong>
+<p id="arcmPagoErro" class="rec-error rec-full" role="alert"></p>
+<div class="form-actions rec-full"><button type="submit" class="primary">Confirmar pagamento</button><button type="button" class="secondary" id="arcmPagoCancelar">Cancelar</button></div>
+</form></dialog>

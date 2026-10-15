@@ -146,3 +146,5 @@ body:has(dialog[open]){overflow:hidden}.rec-modal-head,.desp-modal-head{padding-
  #despesas .desp-header-actions>button{flex:1}
 }
 .app-shell .check-label{padding-top:0;min-height:42px;align-self:center}
+
+.app-shell .rec-status-icon.arcm-pagar-texto{width:auto;min-width:100px;height:auto;white-space:nowrap;padding:9px 12px}

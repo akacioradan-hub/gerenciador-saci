@@ -1,0 +1,8 @@
+Atualize receitas.py, static/receitas.js, static/visual.css, templates/receitas.html e templates/index.html.
+Após o deploy no Render, pressione Ctrl + F5.
+
+Receitas ARCM: Marcar pago abre uma janela com data e valor do recebimento.
+Selecione várias receitas pelas caixas e clique em Marcar selecionadas como pagas.
+A caixa do cabeçalho seleciona todas as receitas pendentes dos filtros, inclusive de outras páginas.
+A data é comum ao lote e o valor de cada receita pode ser ajustado. Máximo de 500 por operação.
+A seleção é limpa ao atualizar os filtros. Receitas recebidas não podem ser selecionadas.
