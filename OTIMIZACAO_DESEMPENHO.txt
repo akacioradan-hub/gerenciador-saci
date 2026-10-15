@@ -1,0 +1,7 @@
+Atualize app.py, receitas.py, despesas.py, static/app.js, static/receitas.js, templates/index.html e templates/receitas.html. Reinicie com o deploy e pressione Ctrl + F5.
+
+Otimizações: carregamento em lote dos dados relacionados, índices para filtros ARCM, pool PostgreSQL com pre_ping e renovação, busca após 350 ms sem digitação, previsão ARCM carregada ao expandir e remoção do carregamento oculto do fluxo ao consultar ARCM.
+
+Teste local: 30 receitas de clientes e contratos diferentes, 61 consultas SQL antes e 3 depois; resposta JSON idêntica. Não representa medição de tempo no Render.
+Pool: até 5 conexões por processo. Para voltar ao comportamento anterior se necessário, configure DB_DISABLE_POOL=1.
+Plano gratuito do Render pode ter atraso de inicialização após inatividade; não foi alterado nenhum plano ou configuração do serviço online.

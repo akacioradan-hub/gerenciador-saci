@@ -1,3 +1,4 @@
+function aguardarBusca(fn,ms=350){let timer;return (...args)=>{clearTimeout(timer);timer=setTimeout(()=>fn(...args),ms)}}
 const moeda=v=>Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const dataBR=d=>d?new Date(d+'T12:00:00').toLocaleDateString('pt-BR'):'-';
 let clientes=[];
@@ -446,7 +447,7 @@ const orgaoForm=document.getElementById('orgaoForm');
 if(orgaoForm){
   orgaoForm.addEventListener('submit',async e=>{e.preventDefault();const id=document.getElementById('orgaoId').value;const payload={nome_orgao:document.getElementById('orgaoNome').value.trim(),tipo_orgao:document.getElementById('orgaoTipo').value,data_debito:document.getElementById('orgaoData').value,valor_debito:Number(document.getElementById('orgaoValor').value),numero_nota_fiscal:document.getElementById('orgaoNota').value.trim(),numero_ordem:document.getElementById('orgaoOrdem').value.trim(),pago:document.getElementById('orgaoPago').checked,data_recebimento:document.getElementById('orgaoDataRecebimento').value,desconto:Number(document.getElementById('orgaoDesconto').value||0)};try{await api(id?'/api/orgaos-publicos/'+id:'/api/orgaos-publicos',{method:id?'PUT':'POST',body:JSON.stringify(payload)});msg(id?'Débito atualizado.':'Débito cadastrado.');limparOrgaoPublico();await Promise.all([carregarOrgaosPublicos(),carregarDashboard()])}catch(err){msg(err.message,'erro')}});
   document.getElementById('cancelarOrgao').addEventListener('click',limparOrgaoPublico);
-  ['buscaOrgao','filtroAnoOrgao','filtroStatusOrgao','filtroDevedorOrgao'].forEach(id=>document.getElementById(id)?.addEventListener(id==='buscaOrgao'?'input':'change',()=>carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'))));
+  ['buscaOrgao','filtroAnoOrgao','filtroStatusOrgao','filtroDevedorOrgao'].forEach(id=>{const carregar=()=>carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'));document.getElementById(id)?.addEventListener(id==='buscaOrgao'?'input':'change',id==='buscaOrgao'?aguardarBusca(carregar):carregar)});
   carregarOrgaosPublicos().catch(err=>msg(err.message,'erro'));
 }
 

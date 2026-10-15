@@ -35,7 +35,7 @@
     <div class="table-pagination"><span id="rec-{{ unidade }}PaginaResumo" aria-live="polite"></span><nav id="rec-{{ unidade }}Paginas" aria-label="Páginas das receitas {{ nome }}"></nav></div>
   </div>
   {% if unidade == 'arcm' %}
-  <details class="card compact-details mt"><summary>Previsão de receitas — próximos 12 meses</summary>
+  <details id="arcmPrevisaoDetalhes" class="card compact-details mt"><summary>Previsão de receitas — próximos 12 meses</summary>
     <p class="form-hint">Por vencimento, a partir do mês selecionado e para o cliente filtrado. Inclui todas as situações, sem aplicar a pesquisa de texto.</p>
     <p id="recPrevisaoAviso" class="form-hint" aria-live="polite"></p>
     <div class="table-wrap rec-previsao-scroll"><table><thead><tr><th>Mês</th><th>Previsto total</th><th>Recebido</th><th>A receber</th></tr></thead><tbody id="recPrevisaoBody"></tbody></table></div>

@@ -7,6 +7,7 @@ from uuid import uuid4
 from flask import request, jsonify, abort
 from sqlalchemy import or_, inspect, text, case
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 from sqlalchemy.schema import CreateTable, CreateIndex
 
 
@@ -37,6 +38,11 @@ def registrar_receitas(app, db, login_required, valor_monetario):
 
     class Receita(db.Model):
         __tablename__ = 'receitas_unidades'
+        __table_args__ = (
+            db.Index('ix_receitas_unidade_recebida_vencimento', 'unidade', 'recebida', 'vencimento'),
+            db.Index('ix_receitas_unidade_recebida_recebimento', 'unidade', 'recebida', 'data_recebimento'),
+            db.Index('ix_receitas_contrato', 'contrato_id'),
+        )
         id = db.Column(db.Integer, primary_key=True)
         unidade = db.Column(db.String(10), nullable=False, index=True)
         cliente_id = db.Column(db.Integer, db.ForeignKey('clientes_receitas.id'), nullable=True, index=True)
@@ -88,6 +94,10 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                     except Exception:
                         conn.rollback()
                         raise
+
+        for indice in Receita.__table__.indexes:
+            if indice.name in ('ix_receitas_unidade_recebida_vencimento', 'ix_receitas_unidade_recebida_recebimento', 'ix_receitas_contrato'):
+                indice.create(bind=db.engine, checkfirst=True)
 
     def contrato_dict(c):
         return dict(id=c.id, numero=c.numero, cliente_id=c.cliente_id, tipo_pagamento=c.tipo_pagamento,
@@ -213,7 +223,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             busca = (request.args.get('q') or '').strip()
             if busca:
                 stmt = stmt.outerjoin(ClienteReceita).outerjoin(ContratoReceita, Receita.contrato_id == ContratoReceita.id).where(or_(Receita.descricao.ilike('%'+busca+'%'), ClienteReceita.nome.ilike('%'+busca+'%'), Receita.documento.ilike('%'+busca+'%'), ContratoReceita.numero.ilike('%'+busca+'%')))
-            rows = db.session.execute(stmt.order_by((Receita.data_recebimento if unidade == 'arcm' and situacao == 'recebida' else Receita.data).desc(), Receita.id.desc())).scalars().all()
+            rows = db.session.execute(stmt.options(selectinload(Receita.cliente), selectinload(Receita.contrato)).order_by((Receita.data_recebimento if unidade == 'arcm' and situacao == 'recebida' else Receita.data).desc(), Receita.id.desc())).scalars().all()
             total = sum((r.valor for r in rows), Decimal(0))
             recebido = sum((r.valor for r in rows if r.recebida), Decimal(0))
             atraso = sum((r.valor for r in rows if not r.recebida and r.vencimento < hoje()), Decimal(0))

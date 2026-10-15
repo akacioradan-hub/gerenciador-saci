@@ -1,0 +1,6 @@
+Para esta alteração, atualize static/receitas.js e templates/index.html.
+Após o deploy, pressione Ctrl + F5.
+
+Status ARCM agora usa a caixa Pago, igual ao controle de órgãos públicos.
+Marcar abre a confirmação de data e valor; desmarcar permite reabrir a receita com confirmação.
+Cancelar mantém o estado anterior. A seleção de várias receitas permanece disponível.

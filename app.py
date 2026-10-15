@@ -13,6 +13,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, inspect, or_
 from sqlalchemy.exc import OperationalError, IntegrityError
 from sqlalchemy.pool import NullPool
+from sqlalchemy.orm import selectinload
 from werkzeug.security import check_password_hash, generate_password_hash
 
 
@@ -36,12 +37,22 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 if os.getenv("RENDER") or os.getenv("RAILWAY_ENVIRONMENT"):
     app.config["SESSION_COOKIE_SECURE"] = True
 
-# Não reutiliza conexões PostgreSQL entre requisições ou processos.
+# Pool pequeno por processo, com teste e renovação das conexões PostgreSQL.
 if DATABASE_URL.startswith("postgresql"):
     app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        "poolclass": NullPool,
+        "pool_size": 3,
+        "max_overflow": 2,
+        "pool_pre_ping": True,
+        "pool_recycle": 240,
+        "pool_timeout": 15,
         "connect_args": {"connect_timeout": 10},
     }
+
+    # Opção de compatibilidade para ambientes que exigem conexão nova por consulta.
+    if os.getenv("DB_DISABLE_POOL") == "1":
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "poolclass": NullPool, "connect_args": {"connect_timeout": 10}
+        }
 
 db = SQLAlchemy(app)
 
@@ -401,7 +412,7 @@ def consulta_publica(token):
     if not CONSULTA_TOKEN or not hmac.compare_digest(token, CONSULTA_TOKEN):
         abort(404)
 
-    stmt = db.select(Cliente).order_by(Cliente.nome.asc())
+    stmt = db.select(Cliente).options(selectinload(Cliente.pagamentos)).order_by(Cliente.nome.asc())
     registros = db.session.execute(stmt).scalars().all()
     clientes_publicos = []
     for cliente in registros:
@@ -438,7 +449,7 @@ def ready():
 @login_required
 def listar_clientes():
     busca = (request.args.get("q") or "").strip()
-    stmt = db.select(Cliente)
+    stmt = db.select(Cliente).options(selectinload(Cliente.pagamentos))
     if busca:
         termo = f"%{busca}%"
         stmt = stmt.where(or_(
@@ -654,7 +665,7 @@ def excluir_aviso():
 @app.get("/api/dashboard")
 @login_required
 def dashboard():
-    clientes = db.session.execute(db.select(Cliente)).scalars().all()
+    clientes = db.session.execute(db.select(Cliente).options(selectinload(Cliente.pagamentos))).scalars().all()
     pagamentos = db.session.execute(db.select(Pagamento)).scalars().all()
     orgaos = db.session.execute(db.select(DebitoOrgaoPublico)).scalars().all()
     itens = [cliente_dict(c) for c in clientes]
@@ -1096,7 +1107,7 @@ def excluir_usuario(usuario_id):
 @app.get("/api/exportar/clientes.csv")
 @login_required
 def exportar_clientes():
-    clientes = db.session.execute(db.select(Cliente).order_by(Cliente.nome.asc())).scalars().all()
+    clientes = db.session.execute(db.select(Cliente).options(selectinload(Cliente.pagamentos)).order_by(Cliente.nome.asc())).scalars().all()
     output = io.StringIO()
     writer = csv.writer(output, delimiter=";")
     writer.writerow(["ID","Nome completo/Razão social","Tipo","CPF/CNPJ","RG/IE","Nascimento","Telefone","WhatsApp","E-mail","CEP","Endereço","Número","Complemento","Bairro","Cidade","UF","Dívida inicial","Previsão","Total pago","Saldo","Último pagamento","Status","Observações","Total descontos"])
@@ -1110,7 +1121,7 @@ def exportar_clientes():
 @app.get("/api/backup")
 @login_required
 def backup_banco():
-    clientes = db.session.execute(db.select(Cliente)).scalars().all()
+    clientes = db.session.execute(db.select(Cliente).options(selectinload(Cliente.pagamentos))).scalars().all()
     pagamentos = db.session.execute(db.select(Pagamento)).scalars().all()
     orgaos_publicos = db.session.execute(db.select(DebitoOrgaoPublico)).scalars().all()
     payload = {

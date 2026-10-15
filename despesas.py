@@ -1,3 +1,4 @@
+from sqlalchemy.orm import selectinload
 """Contas a pagar e cadastros vinculados; usa o banco central da aplicação."""
 import csv
 import io
@@ -251,7 +252,9 @@ def registrar_despesas(app, db, login_required):
         busca = request.args.get('q', '').strip()
         if busca:
             stmt = stmt.where(or_(Despesa.descricao.ilike(f'%{busca}%'), Despesa.categoria.ilike(f'%{busca}%'), Despesa.documento.ilike(f'%{busca}%')))
-        return db.session.execute(stmt.order_by(Despesa.vencimento, Despesa.id)).scalars().all()
+        return db.session.execute(stmt.options(selectinload(Despesa.funcionario), selectinload(Despesa.veiculo),
+            selectinload(Despesa.fornecedor), selectinload(Despesa.terceirizado),
+            selectinload(Despesa.recorrencia), selectinload(Despesa.adiantamentos)).order_by(Despesa.vencimento, Despesa.id)).scalars().all()
 
     def categorias_disponiveis():
         dados = {g:list(nomes) for g,nomes in categorias_padrao.items()}
