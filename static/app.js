@@ -43,7 +43,7 @@ function renderFinanceiroCliente(){
 }
 
 async function carregarClientes(){paginaClientes=1;clientes=await api('/api/clientes');renderClientes();preencherClientes()}
-async function carregarPagamentos(){pagamentos=await api('/api/pagamentos');renderFinanceiroCliente()}
+async function carregarPagamentos(){pagamentos=await api('/api/pagamentos');renderFinanceiroCliente();if(document.getElementById('clienteFiltroStatus').value==='COM_PAGAMENTOS')renderClientes()}
 
 function graficoBarras(nome,id,labels,datasets,horizontal=false,empilhado=false){
   destroyChart(nome);
@@ -181,6 +181,23 @@ function clientesFiltrados(){
 function atualizarFiltrosClientes(){paginaClientes=1;renderClientes()}
 function renderClientes(){
   const body=document.getElementById('clientesBody'),filtrados=clientesFiltrados();
+  const mostrarHistorico=document.getElementById('clienteFiltroStatus').value==='COM_PAGAMENTOS';
+  const historicos=new Map();
+  if(mostrarHistorico){
+    for(const p of pagamentos){
+      if(Number(p.valor)<=0)continue;
+      const id=Number(p.cliente_id);
+      if(!historicos.has(id))historicos.set(id,[]);
+      historicos.get(id).push(p);
+    }
+    for(const lista of historicos.values())lista.sort((a,b)=>String(b.data).localeCompare(String(a.data))||Number(b.id)-Number(a.id));
+  }
+  const historicoDiscreto=c=>{
+    const lista=historicos.get(Number(c.id))||[];
+    if(!mostrarHistorico||!lista.length)return '';
+    return `<div class="cliente-pagamentos-discreto"><span class="cliente-pagamentos-titulo">Pagamentos recebidos</span><div class="cliente-pagamentos-lista" tabindex="0" role="region" aria-label="Histórico de pagamentos de ${escaparFinanceiro(c.nome)}">${lista.map(p=>`<div><time datetime="${escaparFinanceiro(p.data)}">${dataBR(p.data)}</time><span>${moeda(p.valor)}</span></div>`).join('')}</div></div>`;
+  };
+
   const somar=campo=>filtrados.reduce((total,c)=>total+Math.round(Number(c[campo]||0)*100),0)/100;
   document.getElementById('clientesTotalReceber').textContent=moeda(somar('saldo'));
   document.getElementById('clientesTotalRecebido').textContent=moeda(somar('total_pago'));
@@ -191,7 +208,7 @@ function renderClientes(){
   body.innerHTML=filtrados.length?filtrados.slice((paginaClientes-1)*LINHAS_TABELA,paginaClientes*LINHAS_TABELA).map(c=>`<tr>
     <td><strong>${c.nome}</strong><div class="table-sub">${c.tipo_pessoa==='PJ'?'Pessoa Jurídica':'Pessoa Física'}</div></td>
     <td>${c.whatsapp||c.telefone||'-'}</td>
-    <td>${moeda(c.divida)}</td>
+    <td>${moeda(c.divida)}${historicoDiscreto(c)}</td>
     <td>${dataBR(c.previsao)}</td>
     <td>${moeda(c.saldo)}</td>
     <td><span class="badge ${statusClass(c.status)}">${c.status}</span></td>

@@ -1,0 +1,3 @@
+Atualize static/app.js, static/visual.css e templates/index.html. Após o deploy, pressione Ctrl + F5.
+
+Ao filtrar Situação por Recebidos, a coluna Dívida mostra abaixo do valor um histórico discreto das datas e valores efetivamente recebidos, do mais recente ao mais antigo. Listas longas têm rolagem interna. Nos demais filtros, o histórico fica oculto.
