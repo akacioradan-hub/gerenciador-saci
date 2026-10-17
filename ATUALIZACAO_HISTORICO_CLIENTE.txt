@@ -1,0 +1,5 @@
+Atualize app.py, static/app.js e templates/index.html. Após o deploy no Render, pressione Ctrl + F5.
+
+Histórico do cliente: Editar altera valor recebido e observação, mantendo data, desconto e previsão. O saldo e os totais são recalculados.
+Reverter remove o pagamento do histórico e devolve valor e desconto ao saldo devedor. A previsão atual permanece. A confirmação explica este comportamento.
+Observações aparecem completas, com quebras de linha; pagamentos sem observação mostram Sem observação.

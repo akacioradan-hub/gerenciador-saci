@@ -638,12 +638,55 @@ def criar_pagamento():
     return jsonify({"id": pagamento.id}), 201
 
 
+@app.put("/api/pagamentos/<int:pagamento_id>")
+@login_required
+def editar_pagamento(pagamento_id):
+    dados = request.get_json(silent=True)
+    if not isinstance(dados, dict):
+        return jsonify(erro="Dados inválidos."), 400
+    pagamento = db.session.get(Pagamento, pagamento_id)
+    if not pagamento:
+        return jsonify(erro="Pagamento não encontrado."), 404
+    cliente = db.session.execute(db.select(Cliente).where(
+        Cliente.id == pagamento.cliente_id).with_for_update()).scalar_one()
+    pagamento = db.session.execute(db.select(Pagamento).where(
+        Pagamento.id == pagamento_id).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
+    if not pagamento:
+        return jsonify(erro="Pagamento não encontrado."), 404
+    try:
+        valor = valor_monetario(dados.get("valor"))
+        if valor + (pagamento.desconto or 0) <= 0:
+            raise ValueError("Informe um valor recebido maior que zero.")
+        if valor_monetario(dados.get("valor_esperado")) != pagamento.valor or dados.get("observacao_esperada") != pagamento.observacao:
+            return jsonify(erro="O pagamento foi alterado. Atualize o histórico e tente novamente."), 409
+        observacao = dados.get("observacao", pagamento.observacao) or ""
+        if not isinstance(observacao, str) or len(observacao) > 5000:
+            raise ValueError("A observação deve ter até 5.000 caracteres.")
+        outros = db.session.execute(db.select(
+            func.coalesce(func.sum(Pagamento.valor + func.coalesce(Pagamento.desconto, 0)), 0)
+        ).where(Pagamento.cliente_id == cliente.id, Pagamento.id != pagamento_id)).scalar_one()
+        if outros + valor + (pagamento.desconto or 0) > cliente.divida:
+            raise ValueError("O valor recebido mais os descontos não pode superar a dívida do cliente.")
+        pagamento.valor = valor
+        pagamento.observacao = observacao.strip() or None
+        db.session.commit()
+        return jsonify(ok=True)
+    except (ValueError, TypeError) as exc:
+        db.session.rollback()
+        return jsonify(erro=str(exc)), 400
+
+
 @app.delete("/api/pagamentos/<int:pagamento_id>")
 @login_required
 def excluir_pagamento(pagamento_id):
     pagamento = db.session.get(Pagamento, pagamento_id)
     if not pagamento:
         return jsonify({"erro": "Pagamento não encontrado."}), 404
+    db.session.execute(db.select(Cliente).where(Cliente.id == pagamento.cliente_id).with_for_update()).scalar_one()
+    pagamento = db.session.execute(db.select(Pagamento).where(Pagamento.id == pagamento_id)
+        .with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
+    if not pagamento:
+        return jsonify({"erro": "Pagamento já revertido."}), 404
     db.session.delete(pagamento)
     db.session.commit()
     return jsonify({"ok": True})

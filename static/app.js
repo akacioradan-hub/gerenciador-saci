@@ -39,7 +39,7 @@ function renderFinanceiroCliente(){
   if(!body)return;
   if(!cliente){body.innerHTML='<tr><td colspan="5" class="empty">Selecione um cliente para consultar os pagamentos.</td></tr>';return}
   const historico=pagamentos.filter(p=>Number(p.cliente_id)===id).slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))||Number(b.id)-Number(a.id));
-  body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td>${escaparFinanceiro(p.observacao||'-')}</td><td><button class="danger icon-btn" title="Excluir pagamento" aria-label="Excluir pagamento" onclick="excluirPagamento(${Number(p.id)})">🗑</button></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
+  body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td style="white-space:pre-wrap;min-width:150px;overflow-wrap:anywhere">${escaparFinanceiro(p.observacao||'Sem observação')}</td><td><div class="acoes"><button type="button" class="secondary" onclick="editarPagamentoCliente(${Number(p.id)})">Editar</button><button type="button" class="danger" onclick="excluirPagamento(${Number(p.id)})">Reverter</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
 }
 
 async function carregarClientes(){paginaClientes=1;clientes=await api('/api/clientes');renderClientes();preencherClientes()}
@@ -267,7 +267,7 @@ function mascaraCep(e){let v=e.target.value.replace(/\D/g,'').slice(0,8);if(v.le
 document.getElementById('cpfCnpj')?.addEventListener('input',mascaraDocumento);document.getElementById('cepCliente')?.addEventListener('input',mascaraCep);document.getElementById('ufCliente')?.addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2));
 
 document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();const clienteId=Number(document.getElementById('pagCliente').value||0);if(!clienteId){msg('Selecione um cliente antes de registrar o pagamento.','erro');return}try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:clienteId,data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),desconto:Number(document.getElementById('pagDesconto').value||0),nova_previsao:document.getElementById('pagNovaPrevisao').disabled?null:document.getElementById('pagNovaPrevisao').value||null,observacao:document.getElementById('pagObs').value.trim()})});msg('Pagamento registrado.');document.getElementById('pagNovaPrevisao').value='';document.getElementById('pagValor').value='';document.getElementById('pagDesconto').value='0';document.getElementById('pagObs').value='';if(document.getElementById('pagData'))document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo();document.getElementById('pagCliente').value=String(clienteId);renderFinanceiroCliente()}catch(err){msg(err.message,'erro')}})
-async function excluirPagamento(id){if(!confirm('Excluir este pagamento e estornar também o desconto vinculado?'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento excluído.');await atualizarTudo();if(clienteId){document.getElementById('pagCliente').value=clienteId;renderFinanceiroCliente()}}catch(err){msg(err.message,'erro')}}
+async function excluirPagamento(id){if(!confirm('Reverter este pagamento? O valor recebido e o desconto voltarão ao saldo devedor, e o pagamento será removido do histórico. A previsão atual será mantida.'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento revertido.');await atualizarTudo();if(clienteId){document.getElementById('pagCliente').value=clienteId;renderFinanceiroCliente()}}catch(err){msg(err.message,'erro')}}
 document.getElementById('pagCliente')?.addEventListener('change',renderFinanceiroCliente);
 
 for(const id of ['clienteFiltroStatus','clienteFiltroTipo','clientePrevisaoDe','clientePrevisaoAte'])document.getElementById(id).addEventListener('change',atualizarFiltrosClientes);
@@ -570,3 +570,29 @@ async function atualizarAvisosAutomaticamente(){
 }
 setInterval(atualizarAvisosAutomaticamente,300000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)atualizarAvisosAutomaticamente()});
+
+let pagamentoClienteEditando=null,pagamentoClienteSalvando=false;
+function editarPagamentoCliente(id){
+ const p=pagamentos.find(p=>p.id===id);if(!p)return;
+ pagamentoClienteEditando={...p};
+ document.getElementById('pagEditarValor').value=Number(p.valor).toFixed(2);
+ document.getElementById('pagEditarObs').value=p.observacao||'';
+ document.getElementById('pagEditarInfo').textContent=p.cliente_nome+' · '+dataBR(p.data)+' · Desconto mantido: '+moeda(p.desconto);
+ document.getElementById('pagEditarErro').textContent='';
+ document.getElementById('pagEditarModal').showModal();
+}
+document.getElementById('pagEditarCancelar').addEventListener('click',()=>{if(!pagamentoClienteSalvando)document.getElementById('pagEditarModal').close()});
+document.getElementById('pagEditarModal').addEventListener('cancel',e=>{if(pagamentoClienteSalvando)e.preventDefault()});
+document.getElementById('pagEditarForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(pagamentoClienteSalvando||!pagamentoClienteEditando)return;
+ const p=pagamentoClienteEditando,b=e.target.querySelector('[type="submit"]');
+ pagamentoClienteSalvando=true;b.disabled=true;
+ document.getElementById('pagEditarErro').textContent='';
+ try{
+  await api('/api/pagamentos/'+p.id,{method:'PUT',body:JSON.stringify({valor:Number(document.getElementById('pagEditarValor').value),observacao:document.getElementById('pagEditarObs').value,valor_esperado:p.valor,observacao_esperada:p.observacao})});
+  document.getElementById('pagEditarModal').close();
+  await atualizarTudo();document.getElementById('pagCliente').value=String(p.cliente_id);renderFinanceiroCliente();
+  msg('Pagamento atualizado.');
+ }catch(err){document.getElementById('pagEditarErro').textContent=err.message}
+ finally{pagamentoClienteSalvando=false;b.disabled=false}
+});
