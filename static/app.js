@@ -32,6 +32,8 @@ function renderFinanceiroCliente(){
   const valores={finDivida:moeda(cliente?.divida),finPago:moeda(cliente?.total_pago),finDesconto:'Descontos: '+moeda(cliente?.total_desconto),finSaldo:moeda(cliente?.saldo),finPrevisao:cliente?dataBR(cliente.previsao):'—'};
   Object.entries(valores).forEach(([campo,valor])=>{const el=document.getElementById(campo);if(el)el.textContent=valor});
   document.querySelectorAll('#pagamentoForm input, #pagamentoForm button').forEach(el=>el.disabled=!cliente);
+  const novaPrevisao=document.getElementById('pagNovaPrevisao');
+  if(novaPrevisao.dataset.cliente!==String(id)){novaPrevisao.value='';novaPrevisao.dataset.cliente=String(id)}
   atualizarResumoPagamento();
   const body=document.getElementById('pagamentosBody');
   if(!body)return;
@@ -264,7 +266,7 @@ function mascaraDocumento(e){let v=e.target.value.replace(/\D/g,'').slice(0,14);
 function mascaraCep(e){let v=e.target.value.replace(/\D/g,'').slice(0,8);if(v.length>5)v=v.slice(0,5)+'-'+v.slice(5);e.target.value=v}
 document.getElementById('cpfCnpj')?.addEventListener('input',mascaraDocumento);document.getElementById('cepCliente')?.addEventListener('input',mascaraCep);document.getElementById('ufCliente')?.addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2));
 
-document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();const clienteId=Number(document.getElementById('pagCliente').value||0);if(!clienteId){msg('Selecione um cliente antes de registrar o pagamento.','erro');return}try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:clienteId,data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),desconto:Number(document.getElementById('pagDesconto').value||0),observacao:document.getElementById('pagObs').value.trim()})});msg('Pagamento registrado.');document.getElementById('pagValor').value='';document.getElementById('pagDesconto').value='0';document.getElementById('pagObs').value='';if(document.getElementById('pagData'))document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo();document.getElementById('pagCliente').value=String(clienteId);renderFinanceiroCliente()}catch(err){msg(err.message,'erro')}})
+document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();const clienteId=Number(document.getElementById('pagCliente').value||0);if(!clienteId){msg('Selecione um cliente antes de registrar o pagamento.','erro');return}try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:clienteId,data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),desconto:Number(document.getElementById('pagDesconto').value||0),nova_previsao:document.getElementById('pagNovaPrevisao').disabled?null:document.getElementById('pagNovaPrevisao').value||null,observacao:document.getElementById('pagObs').value.trim()})});msg('Pagamento registrado.');document.getElementById('pagNovaPrevisao').value='';document.getElementById('pagValor').value='';document.getElementById('pagDesconto').value='0';document.getElementById('pagObs').value='';if(document.getElementById('pagData'))document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo();document.getElementById('pagCliente').value=String(clienteId);renderFinanceiroCliente()}catch(err){msg(err.message,'erro')}})
 async function excluirPagamento(id){if(!confirm('Excluir este pagamento e estornar também o desconto vinculado?'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento excluído.');await atualizarTudo();if(clienteId){document.getElementById('pagCliente').value=clienteId;renderFinanceiroCliente()}}catch(err){msg(err.message,'erro')}}
 document.getElementById('pagCliente')?.addEventListener('change',renderFinanceiroCliente);
 
@@ -462,9 +464,13 @@ function atualizarResumoPagamento(){
   const cliente=clientes.find(c=>Number(c.id)===Number(document.getElementById('pagCliente').value));
   const recebido=Number(document.getElementById('pagValor').value||0),desconto=Number(document.getElementById('pagDesconto').value||0);
   const restante=Number(cliente?.saldo||0)-recebido-desconto;
+  const novaPrevisao=document.getElementById('pagNovaPrevisao');
+  novaPrevisao.disabled=!cliente||restante<=0;
+  novaPrevisao.min=document.getElementById('pagData').value||'';
+
   document.getElementById('pagResumo').textContent=!cliente?'Selecione um cliente.':restante<-.001?'O recebimento mais o desconto supera o saldo.':`Abatimento: ${moeda(recebido+desconto)} · Saldo após registro: ${moeda(Math.max(0,restante))}`;
 }
-['pagValor','pagDesconto'].forEach(id=>document.getElementById(id).addEventListener('input',atualizarResumoPagamento));
+['pagValor','pagDesconto','pagData'].forEach(id=>document.getElementById(id).addEventListener('input',atualizarResumoPagamento));
 function atualizarDescontoOrgao(){
   const pago=document.getElementById('orgaoPago').checked,campo=document.getElementById('orgaoDesconto');
   const dataCampo=document.getElementById('orgaoDataRecebimento');dataCampo.disabled=!pago;dataCampo.required=pago;

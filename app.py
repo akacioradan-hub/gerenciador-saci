@@ -620,6 +620,17 @@ def criar_pagamento():
     saldo_atual = (cliente.divida or Decimal("0")) - sum((p.valor or Decimal("0")) + (p.desconto or Decimal("0")) for p in cliente.pagamentos)
     if valor + desconto > saldo_atual:
         return jsonify({"erro": "O valor recebido mais o desconto não pode superar o saldo do cliente."}), 400
+    nova_previsao = None
+    if data.get("nova_previsao"):
+        try:
+            nova_previsao = date.fromisoformat(data["nova_previsao"])
+        except (ValueError, TypeError):
+            return jsonify({"erro": "Informe uma nova previsão de pagamento válida."}), 400
+        if nova_previsao < pagamento_data:
+            return jsonify({"erro": "A nova previsão não pode ser anterior à data do pagamento."}), 400
+    saldo_restante = saldo_atual - valor - desconto
+    if saldo_restante > 0 and nova_previsao is not None:
+        cliente.previsao = nova_previsao
     observacao = (data.get("observacao") or "").strip() or None
     pagamento = Pagamento(cliente_id=cliente_id, data=pagamento_data, valor=valor, desconto=desconto, observacao=observacao)
     db.session.add(pagamento)

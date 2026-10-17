@@ -1,0 +1,5 @@
+Atualize app.py, static/app.js e templates/index.html no GitHub. Após o deploy, pressione Ctrl + F5.
+
+No registro de pagamento de clientes bloqueados, informe opcionalmente Nova previsão para o saldo restante. Em branco, mantém a data atual. Quando quitado, o campo fica desativado.
+O saldo considera valor recebido e desconto. A nova previsão é salva junto com o pagamento e passa a valer nas consultas e avisos.
+A data não pode ser anterior à data do pagamento. Não é necessário alterar o banco manualmente.
