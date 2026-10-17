@@ -1,0 +1,4 @@
+Atualize static/app.js e templates/index.html. Após o deploy, pressione Ctrl + F5.
+
+Histórico: ícone de lápis para editar e seta de retorno para reverter, com identificação ao passar o mouse e para leitores de tela.
+Situação: Já fizeram pagamentos filtra clientes com total recebido maior que zero, incluindo quitados; descontos sem dinheiro recebido não entram. Totais e paginação seguem os filtros.

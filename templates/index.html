@@ -172,7 +172,7 @@
 <div class="card mt">
           <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
           <div class="rec-filtros mt">
-            <label>Situação<select id="clienteFiltroStatus"><option value="">Todas</option><option value="DEVEDOR">Com saldo a receber</option><option value="ATRASADO">Atrasado</option><option value="EM ABERTO">Em aberto (no prazo)</option><option value="SEM PREVISÃO">Sem previsão</option><option value="QUITADO">Quitado</option></select></label>
+            <label>Situação<select id="clienteFiltroStatus"><option value="">Todas</option><option value="DEVEDOR">A receber</option><option value="COM_PAGAMENTOS">Recebidos</option><option value="ATRASADO">Atrasado</option><option value="EM ABERTO">Em aberto</option><option value="SEM PREVISÃO">Sem previsão</option><option value="QUITADO">Quitado</option></select></label>
             <label>Tipo de pessoa<select id="clienteFiltroTipo"><option value="">Todas</option><option value="PF">Pessoa física</option><option value="PJ">Pessoa jurídica</option></select></label>
             <label>Previsão de<input type="date" id="clientePrevisaoDe"></label>
             <label>Previsão até<input type="date" id="clientePrevisaoAte"></label>
@@ -382,7 +382,7 @@
 <p id="pagEditarErro" class="rec-error rec-full" role="alert"></p>
 <div class="form-actions rec-full"><button type="submit" class="primary">Salvar alterações</button><button type="button" class="secondary" id="pagEditarCancelar">Cancelar</button></div>
 </form></dialog>
-<script src="/static/app.js?v=20261017-historico-editar"></script>
+<script src="/static/app.js?v=20261017-icones-filtro-pagos"></script>
 <script src="/static/despesas.js?v=20261012-categoria-selecao"></script>
 <script src="/static/receitas.js?v=20261014-caixa-pago"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>

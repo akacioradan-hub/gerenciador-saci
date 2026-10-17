@@ -1,0 +1,2 @@
+Atualize apenas templates/index.html.
+Situação: A receber, Em aberto e Recebidos. Apenas os nomes foram alterados.

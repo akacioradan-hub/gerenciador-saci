@@ -39,7 +39,7 @@ function renderFinanceiroCliente(){
   if(!body)return;
   if(!cliente){body.innerHTML='<tr><td colspan="5" class="empty">Selecione um cliente para consultar os pagamentos.</td></tr>';return}
   const historico=pagamentos.filter(p=>Number(p.cliente_id)===id).slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))||Number(b.id)-Number(a.id));
-  body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td style="white-space:pre-wrap;min-width:150px;overflow-wrap:anywhere">${escaparFinanceiro(p.observacao||'Sem observação')}</td><td><div class="acoes"><button type="button" class="secondary" onclick="editarPagamentoCliente(${Number(p.id)})">Editar</button><button type="button" class="danger" onclick="excluirPagamento(${Number(p.id)})">Reverter</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
+  body.innerHTML=historico.length?historico.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td style="white-space:pre-wrap;min-width:150px;overflow-wrap:anywhere">${escaparFinanceiro(p.observacao||'Sem observação')}</td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar pagamento" aria-label="Editar pagamento" onclick="editarPagamentoCliente(${Number(p.id)})"><span aria-hidden="true">✎</span></button><button type="button" class="danger icon-btn" title="Reverter pagamento" aria-label="Reverter pagamento" onclick="excluirPagamento(${Number(p.id)})"><span aria-hidden="true">↶</span></button></div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado para este cliente.</td></tr>';
 }
 
 async function carregarClientes(){paginaClientes=1;clientes=await api('/api/clientes');renderClientes();preencherClientes()}
@@ -176,7 +176,7 @@ function clientesFiltrados(){
   const valor=id=>document.getElementById(id).value;
   const busca=valor('buscaCliente').trim().toLocaleLowerCase('pt-BR'),situacao=valor('clienteFiltroStatus'),tipo=valor('clienteFiltroTipo'),de=valor('clientePrevisaoDe'),ate=valor('clientePrevisaoAte');
   if(de&&ate&&de>ate)return [];
-  return clientes.filter(c=>(!busca||[c.nome,c.cpf_cnpj,c.telefone,c.whatsapp,c.email].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(busca)))&&(!tipo||c.tipo_pessoa===tipo)&&(!situacao||(situacao==='DEVEDOR'?Number(c.saldo)>0:c.status===situacao))&&(!de||(c.previsao&&c.previsao>=de))&&(!ate||(c.previsao&&c.previsao<=ate)));
+  return clientes.filter(c=>(!busca||[c.nome,c.cpf_cnpj,c.telefone,c.whatsapp,c.email].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(busca)))&&(!tipo||c.tipo_pessoa===tipo)&&(!situacao||(situacao==='DEVEDOR'?Number(c.saldo)>0:situacao==='COM_PAGAMENTOS'?Number(c.total_pago||0)>0:c.status===situacao))&&(!de||(c.previsao&&c.previsao>=de))&&(!ate||(c.previsao&&c.previsao<=ate)));
 }
 function atualizarFiltrosClientes(){paginaClientes=1;renderClientes()}
 function renderClientes(){
