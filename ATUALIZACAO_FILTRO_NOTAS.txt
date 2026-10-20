@@ -1,0 +1,3 @@
+Atualize receitas.py, static/receitas.js, templates/receitas.html e templates/index.html. Após o deploy, pressione Ctrl + F5.
+
+Coluna Nota fiscal: somente caixa de marcação. Filtro Notas fiscais: Todas, Emitidas, Não emitidas. Combinado com os demais filtros, incluindo mês de consulta e situação. Totais correspondem aos resultados filtrados.

@@ -214,6 +214,11 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             if situacao == 'atrasada':
                 stmt = stmt.where(Receita.vencimento < hoje())
             if unidade == 'arcm':
+                nota = request.args.get('nota_emitida', '')
+                if nota not in ('', 'true', 'false'):
+                    raise ValueError('Filtro de nota fiscal inválido.')
+                if nota:
+                    stmt = stmt.where(Receita.nota_emitida.is_(nota == 'true'))
                 de = data_valida(request.args['data_inicio']) if request.args.get('data_inicio') else None
                 ate = data_valida(request.args['data_fim']) if request.args.get('data_fim') else None
                 if de and ate and de > ate:

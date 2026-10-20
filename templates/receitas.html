@@ -22,6 +22,7 @@
       <label>Cliente<select id="rec-{{ unidade }}-cliente"><option value="">Todos</option></select></label>
       <label>Situação<select id="rec-{{ unidade }}-status"><option value="">Todas</option><option value="recebida">Recebida</option><option value="pendente">Pendente</option><option value="atrasada">Atrasada</option></select></label>
       {% if unidade == 'arcm' %}
+      <label>Notas fiscais<select id="rec-arcm-nota_emitida"><option value="">Todas</option><option value="true">Emitidas</option><option value="false">Não emitidas</option></select></label>
       <label>Data inicial<input type="date" id="rec-arcm-data_inicio"></label>
       <label>Data final<input type="date" id="rec-arcm-data_fim"></label>
       {% endif %}
