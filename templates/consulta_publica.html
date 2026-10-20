@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Consulta de clientes — Saci Casa & Construção</title>
+<title>Consulta de clientes bloqueados — Saci Casa & Construção</title>
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#e10600">
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
@@ -16,14 +16,14 @@
 <link rel="stylesheet" href="/static/visual.css?v=20261012-responsivo">
 </head>
 <body>
-<header class="public-header"><div class="header-inner"><img class="logo" src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção"><div><h1>Consulta de clientes</h1><p>Saci Casa & Construção · consulta somente leitura</p></div></div></header>
+<header class="public-header"><div class="header-inner"><img class="logo" src="{{ url_for('static', filename='logo-saci.png') }}" alt="Saci Casa & Construção"><div><h1>Consulta de clientes bloqueados</h1><p>Saci Casa & Construção · consulta somente leitura</p></div></div></header>
 <main class="wrap">
-  <div class="notice">Esta página exibe somente informações gerais: <strong>nome do cliente, previsão de pagamento e status</strong>. Dados cadastrais e financeiros detalhados não são exibidos.</div>
-  <div class="toolbar"><div><h2>Lista para consulta</h2><span style="font-size:12px;color:#777780">Atualizado em {{ atualizado_em }}</span></div><input id="buscaPublica" class="search" type="search" placeholder="Buscar cliente..." autocomplete="off"></div>
+  <div class="notice">A consulta mostra apenas clientes com saldo em aberto. Clientes quitados são retirados automaticamente. Informações exibidas: <strong>nome do cliente, previsão de pagamento e status</strong>. Dados cadastrais e financeiros detalhados não são exibidos.</div>
+  <div class="toolbar"><div><h2>Clientes com saldo em aberto</h2><span style="font-size:12px;color:#777780">Atualizado em {{ atualizado_em }}</span></div><input id="buscaPublica" class="search" type="search" placeholder="Buscar cliente..." autocomplete="off"></div>
   <div class="card"><table><thead><tr><th>Cliente</th><th>Previsão de pagamento</th><th>Status</th></tr></thead><tbody id="listaPublica">
   {% for cliente in clientes %}
     <tr data-nome="{{ cliente.nome|lower }}"><td>{{ cliente.nome }}</td><td>{% if cliente.previsao %}{{ cliente.previsao[8:10] }}/{{ cliente.previsao[5:7] }}/{{ cliente.previsao[0:4] }}{% else %}—{% endif %}</td><td><span class="badge {{ cliente.status|replace(' ', '_')|replace('Ã','A')|replace('Õ','O') }}">{{ cliente.status }}</span></td></tr>
-  {% else %}<tr><td colspan="3" class="empty">Nenhum cliente cadastrado.</td></tr>{% endfor %}
+  {% else %}<tr><td colspan="3" class="empty">Nenhum cliente bloqueado no momento.</td></tr>{% endfor %}
   </tbody></table></div>
   <div class="footer">Acesso de consulta · sem permissão para alterar dados</div>
 </main>

@@ -8,7 +8,7 @@ from decimal import Decimal, InvalidOperation
 from datetime import date, datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from functools import wraps
-from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort
+from flask import Flask, render_template, request, jsonify, send_file, redirect, url_for, session, abort, make_response
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import func, inspect, or_
 from sqlalchemy.exc import OperationalError, IntegrityError
@@ -417,17 +417,24 @@ def consulta_publica(token):
     clientes_publicos = []
     for cliente in registros:
         dados = cliente_dict(cliente)
+        # A consulta pública mostra apenas clientes com saldo devedor.
+        # O registro quitado permanece preservado no banco para auditoria.
+        if dados["saldo"] <= 0:
+            continue
         clientes_publicos.append({
             "nome": dados["nome"],
             "previsao": dados["previsao"],
             "status": dados["status"],
         })
 
-    return render_template(
+    resposta = make_response(render_template(
         "consulta_publica.html",
         clientes=clientes_publicos,
         atualizado_em=date.today().strftime("%d/%m/%Y"),
-    )
+    ))
+    # Evita que navegadores/proxies mantenham listas desatualizadas de bloqueados.
+    resposta.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    return resposta
 
 
 @app.get("/health")

@@ -77,7 +77,7 @@
 
       <section id="clientes" class="tab">
         <div class="page-head">
-          <div><span class="eyebrow">CADASTRO</span><h2>Controle de Clientes Bloqueados Saci</h2><p>Consulte os clientes cadastrados e abra a ficha somente quando precisar cadastrar ou editar.</p></div>
+          <div><span class="eyebrow">CADASTRO</span><h2>Controle de Clientes Bloqueados Saci</h2><p>Clientes quitados saem automaticamente da lista de bloqueados e da consulta externa. O cadastro e os pagamentos permanecem disponíveis nos filtros de histórico.</p></div>
           <button id="novoClienteBtn" class="primary new-client-btn" type="button">+ Novo cliente</button>
         </div>
         <div id="clienteCadastroCard" class="card client-card hidden">
@@ -170,9 +170,9 @@
         </div>
 
 <div class="card mt">
-          <div class="toolbar"><h3>Clientes cadastrados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
+          <div class="toolbar"><h3 id="clientesListaTitulo">Clientes bloqueados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
           <div class="rec-filtros mt">
-            <label>Situação<select id="clienteFiltroStatus"><option value="">Todas</option><option value="DEVEDOR">A receber</option><option value="COM_PAGAMENTOS">Recebidos</option><option value="ATRASADO">Atrasado</option><option value="EM ABERTO">Em aberto</option><option value="SEM PREVISÃO">Sem previsão</option><option value="QUITADO">Quitado</option></select></label>
+            <label>Situação<select id="clienteFiltroStatus"><option value="">Bloqueados</option><option value="DEVEDOR">A receber</option><option value="COM_PAGAMENTOS">Recebidos</option><option value="ATRASADO">Atrasado</option><option value="EM ABERTO">Em aberto</option><option value="SEM PREVISÃO">Sem previsão</option><option value="QUITADO">Quitados (histórico)</option></select></label>
             <label>Tipo de pessoa<select id="clienteFiltroTipo"><option value="">Todas</option><option value="PF">Pessoa física</option><option value="PJ">Pessoa jurídica</option></select></label>
             <label>Previsão de<input type="date" id="clientePrevisaoDe"></label>
             <label>Previsão até<input type="date" id="clientePrevisaoAte"></label>
@@ -382,7 +382,7 @@
 <p id="pagEditarErro" class="rec-error rec-full" role="alert"></p>
 <div class="form-actions rec-full"><button type="submit" class="primary">Salvar alterações</button><button type="button" class="secondary" id="pagEditarCancelar">Cancelar</button></div>
 </form></dialog>
-<script src="/static/app.js?v=20261017-historico-discreto"></script>
+<script src="/static/app.js?v=20261020-quitar-clientes"></script>
 <script src="/static/despesas.js?v=20261012-categoria-selecao"></script>
 <script src="/static/receitas.js?v=20261020-filtro-notas"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>

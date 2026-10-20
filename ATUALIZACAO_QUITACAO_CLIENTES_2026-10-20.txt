@@ -1,0 +1,9 @@
+ATUALIZAÇÃO — QUITAÇÃO DE CLIENTES BLOQUEADOS SACI (20/10/2026)
+
+1. Após pagamento/desconto que zere o saldo, o cliente deixa automaticamente de aparecer na lista principal "Clientes bloqueados", inclusive em buscas e filtros comuns.
+2. A consulta externa (/consulta/<token>) mostra exclusivamente clientes com saldo devedor positivo. A página impede cache para não exibir dados obsoletos depois de atualizada.
+3. Nenhum cliente é excluído do banco: os cadastros e pagamentos permanecem disponíveis nos filtros internos "Quitados (histórico)" e "Recebidos", e no seletor de histórico do cliente.
+4. Caso um recebimento seja revertido, editado, ou a dívida seja aumentada, o cliente volta a aparecer automaticamente entre os bloqueados quando o saldo ficar positivo.
+5. O cadastro quitado continua disponível para consultas e correções internas, sem permitir novos pagamentos quando não há saldo pendente.
+
+IMPLANTAÇÃO: substitua os arquivos do repositório pelos deste ZIP, faça commit/push e implante no Render. Mantenha o mesmo DATABASE_URL do PostgreSQL existente para preservar dados. Não execute migrações destrutivas.
