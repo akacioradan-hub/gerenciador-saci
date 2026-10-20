@@ -1,0 +1,4 @@
+Atualize receitas.py, static/receitas.js, templates/receitas.html e templates/index.html. Após o deploy, pressione Ctrl + F5.
+
+Receitas ARCM: nova coluna Nota fiscal, com caixa Nota emitida em cada receita. Pode marcar/desmarcar sem alterar recebimentos ou valores. Cada parcela tem marcação independente.
+O banco é atualizado automaticamente na inicialização. Receitas existentes começam desmarcadas. Esta opção é apenas um controle interno de emissão, não emite nota fiscal.

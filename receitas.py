@@ -52,6 +52,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
         data = db.Column(db.Date, nullable=False, index=True)
         vencimento = db.Column(db.Date, nullable=False)
         recebida = db.Column(db.Boolean, nullable=False, default=False)
+        nota_emitida = db.Column(db.Boolean, nullable=False, default=False, server_default=db.false())
         data_recebimento = db.Column(db.Date)
         forma_pagamento = db.Column(db.String(40))
         documento = db.Column(db.String(80))
@@ -67,7 +68,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
 
     def migrar_receitas():
         colunas = {c['name'] for c in inspect(db.engine).get_columns('receitas_unidades')}
-        for nome, tipo in [('contrato_id', 'INTEGER REFERENCES contratos_receitas_arcm(id)'), ('parcela', 'INTEGER')]:
+        for nome, tipo in [('contrato_id', 'INTEGER REFERENCES contratos_receitas_arcm(id)'), ('parcela', 'INTEGER'), ('nota_emitida', 'BOOLEAN NOT NULL DEFAULT FALSE')]:
             if nome not in colunas:
                 db.session.execute(text(f'ALTER TABLE receitas_unidades ADD COLUMN {nome} {tipo}'))
         db.session.commit()
@@ -138,7 +139,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
     def receita_dict(r):
         return dict(id=r.id, unidade=r.unidade, cliente_id=r.cliente_id, cliente_nome=r.cliente.nome if r.cliente else None,
                     descricao=r.descricao, categoria=r.categoria, valor=float(r.valor), data=r.data.isoformat(),
-                    vencimento=r.vencimento.isoformat(), recebida=r.recebida,
+                    vencimento=r.vencimento.isoformat(), recebida=r.recebida, nota_emitida=r.nota_emitida,
                     status='RECEBIDA' if r.recebida else ('ATRASADA' if r.vencimento < hoje() else 'PENDENTE'),
                     data_recebimento=r.data_recebimento.isoformat() if r.data_recebimento else None,
                     forma_pagamento=r.forma_pagamento, documento=r.documento, observacoes=r.observacoes,
@@ -415,6 +416,20 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             return jsonify(meses=meses)
         except (ValueError, OverflowError):
             return jsonify(erro='Confira o mês e o cliente da previsão.'), 400
+
+    @app.patch('/api/receitas/arcm/<int:ident>/nota-emitida')
+    @login_required
+    def marcar_nota_emitida(ident):
+        d = request.get_json(silent=True)
+        if not isinstance(d, dict) or type(d.get('nota_emitida')) is not bool:
+            return jsonify(erro='Informe se a nota foi emitida.'), 400
+        r = db.session.execute(db.select(Receita).where(
+            Receita.id == ident, Receita.unidade == 'arcm').with_for_update()).scalar_one_or_none()
+        if not r:
+            return jsonify(erro='Receita não encontrada.'), 404
+        r.nota_emitida = d['nota_emitida']
+        db.session.commit()
+        return jsonify(id=r.id, nota_emitida=r.nota_emitida)
 
     @app.post('/api/receitas/arcm/receber-selecionadas')
     @login_required
