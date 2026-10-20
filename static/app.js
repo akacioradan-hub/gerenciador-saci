@@ -174,20 +174,24 @@ function documentoFormatado(v){
 }
 function localCliente(c){return [c.cidade,c.uf].filter(Boolean).join('/')||'-'}
 
-function clientesFiltrados(){
+function filtrarClientesNoControle(incluirQuitadosNoResumo=false){
   const valor=id=>document.getElementById(id).value;
   const busca=valor('buscaCliente').trim().toLocaleLowerCase('pt-BR'),situacao=valor('clienteFiltroStatus'),tipo=valor('clienteFiltroTipo'),de=valor('clientePrevisaoDe'),ate=valor('clientePrevisaoAte');
   if(de&&ate&&de>ate)return [];
-  // Lista de bloqueados: apenas saldos pendentes. Quitados e recebimentos
-  // integrais ficam disponíveis somente em filtros históricos explícitos.
   const correspondeSituacao=c=>{
     if(situacao==='QUITADO')return Number(c.saldo)<=0;
     if(situacao==='COM_PAGAMENTOS')return Number(c.total_pago||0)>0;
-    if(Number(c.saldo)<=0)return false;
-    return !situacao||situacao==='DEVEDOR'||c.status===situacao;
+    // O resumo de recebimentos não pode perder o histórico de um cliente
+    // apenas porque a quitação removeu esse cliente da lista de bloqueados.
+    if(Number(c.saldo)<=0 && !incluirQuitadosNoResumo)return false;
+    if(!situacao)return true;
+    if(situacao==='DEVEDOR')return Number(c.saldo)>0;
+    return c.status===situacao;
   };
   return clientes.filter(c=>(!busca||[c.nome,c.cpf_cnpj,c.telefone,c.whatsapp,c.email].some(v=>String(v||'').toLocaleLowerCase('pt-BR').includes(busca)))&&(!tipo||c.tipo_pessoa===tipo)&&correspondeSituacao(c)&&(!de||(c.previsao&&c.previsao>=de))&&(!ate||(c.previsao&&c.previsao<=ate)));
 }
+function clientesFiltrados(){return filtrarClientesNoControle(false)}
+function clientesParaTotalRecebido(){return filtrarClientesNoControle(true)}
 function atualizarFiltrosClientes(){paginaClientes=1;renderClientes()}
 function renderClientes(){
   const body=document.getElementById('clientesBody'),filtrados=clientesFiltrados();
@@ -211,11 +215,15 @@ function renderClientes(){
     return `<div class="cliente-pagamentos-discreto"><span class="cliente-pagamentos-titulo">Pagamentos recebidos</span><div class="cliente-pagamentos-lista" tabindex="0" role="region" aria-label="Histórico de pagamentos de ${escaparFinanceiro(c.nome)}">${lista.map(p=>`<div><time datetime="${escaparFinanceiro(p.data)}">${dataBR(p.data)}</time><span>${moeda(p.valor)}</span></div>`).join('')}</div></div>`;
   };
 
-  const somar=campo=>filtrados.reduce((total,c)=>total+Math.round(Number(c[campo]||0)*100),0)/100;
-  document.getElementById('clientesTotalReceber').textContent=moeda(somar('saldo'));
-  document.getElementById('clientesTotalRecebido').textContent=moeda(somar('total_pago'));
+  // O total a receber é o saldo atual dos clientes listados. Já o total
+  // recebido é histórico: inclui os pagamentos de clientes quitados que
+  // desapareceram da lista principal (sem somar descontos como recebimento).
+  const somarCentavos=(itens,campo)=>itens.reduce((total,c)=>total+Math.round(Number(c[campo]||0)*100),0)/100;
+  const escopoRecebidos=clientesParaTotalRecebido();
+  document.getElementById('clientesTotalReceber').textContent=moeda(somarCentavos(filtrados,'saldo'));
+  document.getElementById('clientesTotalRecebido').textContent=moeda(somarCentavos(escopoRecebidos,'total_pago'));
   const de=document.getElementById('clientePrevisaoDe').value,ate=document.getElementById('clientePrevisaoAte').value;
-  document.getElementById('clientesTotaisAviso').textContent=de&&ate&&de>ate?'A data inicial deve ser anterior ou igual à final.':`${filtrados.length} cliente(s) · Totais de todos os clientes filtrados. Recebido considera todo o histórico, sem descontos. Datas filtram a previsão de pagamento.`;
+  document.getElementById('clientesTotaisAviso').textContent=de&&ate&&de>ate?'A data inicial deve ser anterior ou igual à final.':`${filtrados.length} cliente(s) na lista · Total a receber: saldos exibidos. Total recebido: pagamentos históricos, inclusive de clientes quitados na seleção padrão, sem descontos. Busca e tipo de pessoa se aplicam a ambos; datas filtram pela previsão e situações específicas restringem os totais.`;
   paginaClientes=Math.min(paginaClientes,Math.max(1,Math.ceil(filtrados.length/LINHAS_TABELA)));
   renderPaginacaoTabela('clientes',paginaClientes,filtrados.length,mudarPaginaClientes);
   body.innerHTML=filtrados.length?filtrados.slice((paginaClientes-1)*LINHAS_TABELA,paginaClientes*LINHAS_TABELA).map(c=>`<tr>

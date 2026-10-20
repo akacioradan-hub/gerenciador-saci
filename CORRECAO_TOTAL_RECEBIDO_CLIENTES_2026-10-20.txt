@@ -1,0 +1,28 @@
+CORREÇÃO — TOTAL RECEBIDO EM CONTROLE DE CLIENTES BLOQUEADOS SACI (20/10/2026)
+
+PROBLEMA IDENTIFICADO
+A lista principal passou a ocultar clientes quitados. O indicador "Total recebido" usava a mesma lista filtrada e, por isso, deixou de somar pagamentos de clientes que quitaram suas contas.
+
+REGRA CORRIGIDA
+- Total a receber: soma os saldos pendentes dos clientes atualmente exibidos na lista e filtros selecionados.
+- Total recebido (histórico): soma os valores pagos de todos os clientes do escopo, INCLUINDO QUITADOS na seleção padrão. Descontos não são considerados valores recebidos.
+- Na seleção padrão "Bloqueados", clientes quitados continuam ocultos da tabela e da consulta externa, mas seus pagamentos integram o total recebido.
+- Busca, tipo de pessoa e intervalo de previsão de pagamento se aplicam aos totais. Situações explicitamente filtradas (A receber, Recebidos, Atrasado, Em aberto, Sem previsão, Quitados) restringem os totais aos clientes correspondentes.
+- Quando um pagamento é revertido, o valor deixa de constar do recebido, e o cliente volta à lista de bloqueados se houver saldo.
+- Não há alteração em banco de dados nem apagamento de registros.
+
+ARQUIVOS MODIFICADOS
+static/app.js
+templates/index.html
+
+TESTES
+Execute: node tests/test_total_recebido.cjs
+
+PUBLICAÇÃO
+1. Faça backup do repositório e do banco PostgreSQL.
+2. Atualize os arquivos do projeto com o conteúdo deste ZIP.
+3. Faça commit/push e implante o código atualizado no Render, mantendo DATABASE_URL existente.
+4. Recarregue a página com Ctrl + F5 e confira os valores com os pagamentos armazenados.
+
+OBSERVAÇÃO
+O pacote não contém os dados reais do PostgreSQL da sua loja, portanto o valor exato atual não pode ser auditado aqui; foi corrigida e testada a regra de cálculo.
