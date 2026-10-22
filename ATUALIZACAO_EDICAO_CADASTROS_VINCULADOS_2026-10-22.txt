@@ -1,0 +1,12 @@
+ATUALIZAÇÃO — 22/10/2026 — CADASTROS VINCULADOS
+
+Despesas Gerais > Novo cadastro > Cadastros vinculados:
+- Lista dos registros existentes aparece diretamente ao selecionar Funcionários, Veículos, Fornecedores ou Terceirizados.
+- Cada linha tem uma ação visível “✎ Editar”.
+- Ao editar, os campos existentes são preenchidos e a ação “Salvar alterações” atualiza o mesmo registro.
+- Botão “+ Novo ...” mantém a criação de registros separada da edição.
+- A atualização preserva o ID e todos os vínculos com despesas históricas.
+- Não altera a estrutura do banco de dados PostgreSQL.
+- A versão do JavaScript e CSS foi atualizada para evitar cache antigo.
+
+PUBLICAÇÃO: substitua os arquivos do repositório do sistema pelos arquivos deste pacote, faça commit e deploy no Render. Mantenha o banco atual e faça backup antes de publicar.

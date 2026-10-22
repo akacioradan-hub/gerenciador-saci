@@ -7,6 +7,7 @@ const despCategorias={
 let despesasMes=[],despCadastros={funcionarios:[],veiculos:[],fornecedores:[],terceirizados:[]},despTipoCadastro='funcionarios';
 const despEl=id=>document.getElementById(id);
 const despNomes={funcionarios:'Funcionários',veiculos:'Veículos',fornecedores:'Fornecedores',terceirizados:'Terceirizados'};
+const despNomesSingular={funcionarios:'funcionário',veiculos:'veículo',fornecedores:'fornecedor',terceirizados:'terceirizado'};
 const despHoje=()=>{const partes=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Fortaleza',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());return ['year','month','day'].map(k=>partes.find(p=>p.type===k).value).join('-')};
 function despParametros(){
   const params=new URLSearchParams({mes:despEl('despMes').value});
@@ -173,14 +174,24 @@ async function excluirDespesa(id){
   else if(!confirm(r?.repetir_mensal?'Excluir esta despesa e interromper as próximas repetições? Os outros meses já cadastrados serão mantidos.':'Excluir esta despesa?'))return;
   try{await api('/api/despesas/'+id,{method:'DELETE'});await carregarDespesas();await carregarDespesasDashboard();msg('Despesa excluída.')}catch(e){msg(e.message,'erro')}
 }
-function limparCadastroDespesa(){despEl('despCadForm').reset();despEl('despCadId').value=''}
+function limparCadastroDespesa(){
+  despEl('despCadForm').reset();
+  despEl('despCadId').value='';
+  despEl('despCadFormTitulo').textContent='Novo '+despNomesSingular[despTipoCadastro];
+  despEl('despCadSalvar').textContent='Salvar cadastro';
+}
 function trocarCadastroDespesa(tipo,abrir=false){
-  despTipoCadastro=tipo;limparCadastroDespesa();despEl('despCadTitulo').textContent=despNomes[tipo];
+  if(!Object.prototype.hasOwnProperty.call(despNomes,tipo))return;
+  despTipoCadastro=tipo;
+  limparCadastroDespesa();
+  despEl('despCadTitulo').textContent=despNomes[tipo]+' cadastrados';
+  despEl('despNovoCadastro').textContent='+ Novo '+despNomesSingular[tipo];
+  document.querySelectorAll('[data-desp-catalog]').forEach(botao=>botao.setAttribute('aria-pressed',String(botao.dataset.despCatalog===tipo)));
   document.querySelectorAll('[data-desp-field]').forEach(el=>el.classList.toggle('hidden',!el.dataset.despField.split(' ').includes(tipo)));
   despEl('despCadPlaca').required=tipo==='veiculos';
   despEl('despCadForm').classList.toggle('hidden',!abrir);
-  if(abrir)despEl('despCadForm').scrollIntoView({behavior:'smooth',block:'start'});
   renderCadastrosDespesas();
+  if(abrir){despEl('despCadForm').scrollIntoView({behavior:'smooth',block:'nearest'});despEl('despCadNome').focus()}
 }
 function renderCadastrosDespesas(){
   const campos={
@@ -191,17 +202,24 @@ function renderCadastrosDespesas(){
   }[despTipoCadastro];
   const colunas=[...campos.map(([,titulo])=>titulo),'Ações'];
   despEl('despCadHead').innerHTML='<tr>'+colunas.map(c=>`<th scope="col">${c}</th>`).join('')+'</tr>';
-  const registros=despCadastros[despTipoCadastro];
+  const registros=despCadastros[despTipoCadastro]||[];
+  despEl('despCadContagem').textContent=registros.length
+    ?`${registros.length} cadastro(s) · Clique em Editar para alterar os dados.`
+    :'Nenhum registro nesta categoria. Clique em Novo para cadastrar.';
   despEl('despCadBody').innerHTML=registros.length?registros.map(r=>{
     const celulas=campos.map(([campo])=>`<td>${campo==='data_nascimento'?dataBR(r[campo]):escaparFinanceiro(String(r[campo]??'')||'—')}</td>`).join('');
-    return `<tr>${celulas}<td><div class="acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit icon-btn" title="Editar cadastro" aria-label="Editar cadastro" onclick="editarCadastroDespesa(${r.id})">✎</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir cadastro" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`;
-  }).join(''):`<tr><td colspan="${colunas.length}" class="empty">Nenhum cadastro.</td></tr>`;
+    return `<tr>${celulas}<td><div class="acoes desp-cad-acoes"><button type="button" class="secondary" onclick="verDespesasVinculadas(${r.id})">Ver despesas</button><button type="button" class="edit desp-cad-edit" title="Editar cadastro" aria-label="Editar ${escaparFinanceiro(r.nome)}" onclick="editarCadastroDespesa(${r.id})">✎ Editar</button><button type="button" class="danger icon-btn" title="Excluir cadastro" aria-label="Excluir ${escaparFinanceiro(r.nome)}" onclick="excluirCadastroDespesa(${r.id})">🗑</button></div></td></tr>`;
+  }).join(''):`<tr><td colspan="${colunas.length}" class="empty">Nenhum cadastro nesta categoria.</td></tr>`;
 }
 function editarCadastroDespesa(id){
-  const r=despCadastros[despTipoCadastro].find(x=>x.id===id);if(!r)return;
+  const r=(despCadastros[despTipoCadastro]||[]).find(x=>x.id===id);if(!r)return;
+  limparCadastroDespesa();
   for(const [campo,sufixo] of Object.entries({id:'Id',nome:'Nome',cargo:'Cargo',data_nascimento:'Nascimento',endereco:'Endereco',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}))despEl('despCad'+sufixo).value=r[campo]??'';
+  despEl('despCadFormTitulo').textContent='Editar '+despNomesSingular[despTipoCadastro];
+  despEl('despCadSalvar').textContent='Salvar alterações';
   despEl('despCadForm').classList.remove('hidden');
-  despEl('despCadForm').scrollIntoView({behavior:'smooth',block:'start'});
+  despEl('despCadForm').scrollIntoView({behavior:'smooth',block:'nearest'});
+  despEl('despCadNome').focus();
 }
 async function excluirCadastroDespesa(id){
   if(!confirm('Excluir este cadastro? Cadastros com despesas vinculadas serão preservados.'))return;
@@ -255,19 +273,20 @@ if(despEl('despesas')){
     try{await api(id?'/api/despesas/'+id:'/api/despesas',{method:id?'PUT':'POST',body:JSON.stringify(payload)});despEl('despMes').value=payload.competencia;fecharCadastroDespesa();await carregarDespesas();await carregarDespesasDashboard();msg(id?'Despesa atualizada.':'Despesa cadastrada.')}catch(e){msg(e.message,'erro')}
   });
   ['despPagamentoDe','despPagamentoAte','despMes','despFiltroGrupo','despFiltroCategoria','despFiltroStatus','despFiltroPrioridade','despFiltroFuncionario','despFiltroVeiculo','despFiltroFornecedor','despFiltroTerceirizado'].forEach(id=>despEl(id).addEventListener('change',()=>{if(id==='despFiltroGrupo')atualizarFiltroCategoria();filtrarContasMes().catch(e=>msg(e.message,'erro'))}));
-  document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog,true)));
-  despEl('despExibirCadastros').addEventListener('click',()=>{
-    const lista=despEl('despListaCadastros'),botao=despEl('despExibirCadastros');
-    const mostrar=lista.classList.contains('hidden');
-    lista.classList.toggle('hidden',!mostrar);
-    botao.textContent=mostrar?'Ocultar cadastrados':'Exibir cadastrados';
-    botao.setAttribute('aria-expanded',String(mostrar));
-  });
+  document.querySelectorAll('[data-desp-catalog]').forEach(b=>b.addEventListener('click',()=>trocarCadastroDespesa(b.dataset.despCatalog)));
+  despEl('despNovoCadastro').addEventListener('click',()=>trocarCadastroDespesa(despTipoCadastro,true));
   despEl('despCadCancelar').addEventListener('click',()=>{limparCadastroDespesa();despEl('despCadForm').classList.add('hidden')});
   despEl('despCadForm').addEventListener('submit',async e=>{
     e.preventDefault();const id=despEl('despCadId').value;
     const payload=Object.fromEntries(Object.entries({nome:'Nome',cargo:'Cargo',data_nascimento:'Nascimento',endereco:'Endereco',servico:'Servico',telefone:'Telefone',placa:'Placa',ano:'Ano',documento:'Documento',observacoes:'Observacoes'}).map(([k,v])=>[k,despEl('despCad'+v).value]));
-    try{await api('/api/despesas/cadastros/'+despTipoCadastro+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(payload)});limparCadastroDespesa();despEl('despCadForm').classList.add('hidden');await carregarCadastrosDespesas();await carregarDespesas();await carregarDashboard();msg('Cadastro salvo.')}catch(e){msg(e.message,'erro')}
+    const tipo=despTipoCadastro;
+    const botao=despEl('despCadSalvar');botao.disabled=true;
+    try{
+      await api('/api/despesas/cadastros/'+tipo+(id?'/'+id:''),{method:id?'PUT':'POST',body:JSON.stringify(payload)});
+      limparCadastroDespesa();despEl('despCadForm').classList.add('hidden');
+      await carregarCadastrosDespesas();await carregarDespesas();await carregarDashboard();
+      msg(id?'Cadastro atualizado com sucesso.':'Cadastro criado com sucesso.');
+    }catch(e){msg(e.message,'erro')}finally{botao.disabled=false}
   });
   document.querySelectorAll('.tab-btn[data-tab="despesas"]').forEach(b=>b.addEventListener('click',async()=>{
     try{await carregarCadastrosDespesas();await carregarDespesas()}catch(e){msg(e.message,'erro')}

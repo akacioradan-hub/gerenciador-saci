@@ -9,7 +9,7 @@
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="stylesheet" href="/static/style.css?v=20261005-fluxo-geral">
-<link rel="stylesheet" href="/static/visual.css?v=20261017-historico-discreto">
+<link rel="stylesheet" href="/static/visual.css?v=20261022-editar-cadastros">
 </head>
 <body>
 <div class="app-shell">
@@ -266,10 +266,11 @@
             <div class="form-actions"><button type="submit" class="primary">Salvar</button><button type="button" class="secondary" id="despCancelar">Cancelar</button></div>
           </form>
         </dialog>
-        <dialog class="desp-modal hidden" id="despVinculadosCard" aria-labelledby="despVinculadosTitulo"><div class="desp-modal-head"><h3 id="despVinculadosTitulo">Cadastros vinculados</h3><button id="despVinculadosFechar" type="button" aria-label="Fechar cadastros vinculados">×</button></div><p>Cadastre funcionários, veículos, fornecedores e terceirizados. Use os filtros em Contas do mês para consultar as despesas de cada um.</p>
-          <div class="desp-catalog-nav"><button type="button" class="secondary" data-desp-catalog="funcionarios">+ Cadastrar funcionário</button><button type="button" class="secondary" data-desp-catalog="veiculos">+ Cadastrar veículo</button><button type="button" class="secondary" data-desp-catalog="fornecedores">+ Cadastrar fornecedor</button><button type="button" class="secondary" data-desp-catalog="terceirizados">+ Cadastrar terceirizado</button></div>
-          <h4 id="despCadTitulo">Funcionários</h4>
-          <form id="despCadForm" class="gov-form hidden">
+        <dialog class="desp-modal hidden" id="despVinculadosCard" aria-labelledby="despVinculadosTitulo"><div class="desp-modal-head"><h3 id="despVinculadosTitulo">Cadastros vinculados</h3><button id="despVinculadosFechar" type="button" aria-label="Fechar cadastros vinculados">×</button></div><p>Consulte, edite ou cadastre funcionários, veículos, fornecedores e terceirizados sem perder o vínculo com as despesas registradas.</p>
+          <div class="desp-catalog-nav" role="group" aria-label="Tipo de cadastro"><button type="button" class="secondary desp-catalog-tab" data-desp-catalog="funcionarios" aria-pressed="true">Funcionários</button><button type="button" class="secondary desp-catalog-tab" data-desp-catalog="veiculos" aria-pressed="false">Veículos</button><button type="button" class="secondary desp-catalog-tab" data-desp-catalog="fornecedores" aria-pressed="false">Fornecedores</button><button type="button" class="secondary desp-catalog-tab" data-desp-catalog="terceirizados" aria-pressed="false">Terceirizados</button></div>
+          <div class="desp-catalog-toolbar"><div><h4 id="despCadTitulo">Funcionários cadastrados</h4><p id="despCadContagem" class="form-hint">Selecione um registro para editar.</p></div><button type="button" class="primary" id="despNovoCadastro">+ Novo funcionário</button></div>
+          <form id="despCadForm" class="gov-form hidden" aria-labelledby="despCadFormTitulo">
+            <h4 id="despCadFormTitulo" class="desp-cad-form-titulo">Novo funcionário</h4>
             <input id="despCadId" type="hidden">
             <label>Nome / modelo *<input id="despCadNome" maxlength="180" required></label>
             <label data-desp-field="funcionarios">Data de nascimento<input id="despCadNascimento" type="date"></label>
@@ -281,10 +282,9 @@
             <label data-desp-field="veiculos">Ano<input id="despCadAno" type="number" min="1900" max="2100"></label>
             <label data-desp-field="fornecedores terceirizados">CPF/CNPJ<input id="despCadDocumento" maxlength="30"></label>
             <label>Observações<input id="despCadObservacoes" maxlength="5000"></label>
-            <div class="form-actions"><button class="primary" type="submit">Salvar cadastro</button><button class="secondary" id="despCadCancelar" type="button">Cancelar</button></div>
+            <div class="form-actions"><button class="primary" type="submit" id="despCadSalvar">Salvar cadastro</button><button class="secondary" id="despCadCancelar" type="button">Cancelar</button></div>
           </form>
-          <div class="desp-catalog-nav"><button type="button" class="secondary" id="despExibirCadastros" aria-expanded="false" aria-controls="despListaCadastros">Exibir cadastrados</button></div>
-          <div class="table-wrap mt hidden" id="despListaCadastros"><table><thead id="despCadHead"><tr><th>Nome</th><th>Cargo</th><th>Data de nascimento</th><th>Endereço</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
+          <div class="table-wrap mt" id="despListaCadastros"><table><thead id="despCadHead"><tr><th>Nome</th><th>Cargo</th><th>Data de nascimento</th><th>Endereço</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
         </dialog>
         <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Contas vencidas ficam urgentes. Custos fixos com repetição ativa são criados em aberto ao acessar o sistema no novo mês.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
           <div class="desp-filters desp-main-filters">
@@ -383,7 +383,7 @@
 <div class="form-actions rec-full"><button type="submit" class="primary">Salvar alterações</button><button type="button" class="secondary" id="pagEditarCancelar">Cancelar</button></div>
 </form></dialog>
 <script src="/static/app.js?v=20261020-quitar-clientes"></script>
-<script src="/static/despesas.js?v=20261012-categoria-selecao"></script>
+<script src="/static/despesas.js?v=20261022-editar-cadastros"></script>
 <script src="/static/receitas.js?v=20261020-filtro-notas"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>
 <script src="/static/contrato_edicao.js?v=20261005-edicao-contrato"></script>
