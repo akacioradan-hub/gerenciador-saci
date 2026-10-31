@@ -1,0 +1,21 @@
+ATUALIZAÇÃO — CONTROLE DE CLIENTES BLOQUEADOS SACI — 31/10/2026
+
+ALTERAÇÃO
+- A seleção "Cliente com dívida em aberto" exibe exclusivamente clientes com saldo devedor maior do que zero.
+- Após pagamento que quite 100% da dívida (inclusive abatimentos/descontos), o cliente desaparece imediatamente da seleção e da lista de bloqueados.
+- A consulta externa continua exibindo somente clientes devedores.
+- Clientes quitados continuam na base de dados, no filtro "Quitados (histórico)" da tabela. Clique no ícone ↺ de histórico financeiro na linha do cliente para consultar, editar ou reverter pagamentos anteriores sem recolocar clientes quitados no seletor.
+- Se um pagamento for revertido, e o cliente voltar a ter saldo a pagar, ele reaparece na seleção e na lista de bloqueados.
+- Os totais recebidos continuam incluindo os pagamentos históricos dos clientes quitados; descontos não são contabilizados como recebimento.
+- Nenhuma alteração na estrutura do PostgreSQL ou nos registros existentes.
+
+ARQUIVOS ALTERADOS
+- static/app.js
+- templates/index.html
+- tests/test_selecao_clientes_quitados.cjs (adicionado)
+
+COMO ATUALIZAR NO RENDER
+1. Faça backup do projeto e do banco PostgreSQL.
+2. Substitua os arquivos atuais pelos arquivos deste pacote no repositório GitHub.
+3. Faça commit e push e publique a nova versão no Render sem substituir a DATABASE_URL.
+4. Recarregue a página com Ctrl+F5 para limpar versões anteriores do JavaScript.

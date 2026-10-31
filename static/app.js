@@ -22,9 +22,11 @@ function preencherClientes(){
   const select=document.getElementById('pagCliente');
   if(!select)return;
   const selecionado=select.value;
-  // Quitados aparecem somente neste seletor administrativo para consulta/reversão do histórico.
-  select.innerHTML='<option value="">Selecione...</option>'+clientes.map(c=>`<option value="${c.id}">${escaparFinanceiro(c.nome)}${Number(c.saldo)<=0?' — quitado (histórico)':''}</option>`).join('');
-  select.value=clientes.some(c=>String(c.id)===selecionado)?selecionado:'';
+  // A seleção de recebimentos mostra somente clientes com saldo devedor.
+  // Quitados permanecem no banco e podem ser consultados pelo filtro de histórico da tabela.
+  const devedores=clientes.filter(c=>Number(c.saldo)>0);
+  select.innerHTML='<option value="">Selecione...</option>'+devedores.map(c=>`<option value="${Number(c.id)}">${escaparFinanceiro(c.nome)}</option>`).join('');
+  select.value=devedores.some(c=>String(c.id)===selecionado)?selecionado:'';
   renderFinanceiroCliente();
 }
 function renderFinanceiroCliente(){
@@ -32,7 +34,7 @@ function renderFinanceiroCliente(){
   const cliente=clientes.find(c=>Number(c.id)===id);
   const valores={finDivida:moeda(cliente?.divida),finPago:moeda(cliente?.total_pago),finDesconto:'Descontos: '+moeda(cliente?.total_desconto),finSaldo:moeda(cliente?.saldo),finPrevisao:cliente?dataBR(cliente.previsao):'—'};
   Object.entries(valores).forEach(([campo,valor])=>{const el=document.getElementById(campo);if(el)el.textContent=valor});
-  // Um cliente quitado não pode receber novos pagamentos, mas o histórico continua acessível.
+  // A seleção de pagamentos não deve permitir clientes sem dívida pendente.
   document.querySelectorAll('#pagamentoForm input, #pagamentoForm button').forEach(el=>el.disabled=!cliente||Number(cliente.saldo)<=0);
   const novaPrevisao=document.getElementById('pagNovaPrevisao');
   if(novaPrevisao.dataset.cliente!==String(id)){novaPrevisao.value='';novaPrevisao.dataset.cliente=String(id)}
@@ -236,17 +238,48 @@ function renderClientes(){
     <td>
       <div class="acoes icon-actions">
         <button class="view icon-btn" title="Ver ficha do cliente" aria-label="Ver ficha do cliente" onclick="mostrarCliente(${c.id})">👁</button>
+        <button class="view icon-btn" title="Ver histórico financeiro" aria-label="Ver histórico financeiro de ${escaparFinanceiro(c.nome)}" onclick="verHistoricoCliente(${c.id})">↺</button>
         <button class="edit icon-btn" title="Editar cliente" aria-label="Editar cliente" onclick="editarCliente(${c.id})">✎</button>
         <button class="danger icon-btn" title="Excluir cliente" aria-label="Excluir cliente" onclick="excluirCliente(${c.id})">🗑</button>
       </div>
     </td>
   </tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum cliente para os filtros selecionados.</td></tr>';
 }
+// O histórico de clientes quitados é consultado pela tabela, sem incluí-los
+// novamente na seleção de clientes que ainda devem.
+let clienteHistoricoId=null;
+function renderHistoricoClienteModal(){
+  if(clienteHistoricoId===null)return;
+  const cliente=clientes.find(c=>Number(c.id)===clienteHistoricoId);
+  const modal=document.getElementById('clienteHistoricoModal');
+  if(!cliente){if(modal?.open)modal.close();return}
+  document.getElementById('clienteHistoricoNome').textContent=cliente.nome;
+  document.getElementById('clienteHistoricoResumo').textContent=`Dívida: ${moeda(cliente.divida)} · Recebido: ${moeda(cliente.total_pago)} · Descontos: ${moeda(cliente.total_desconto)} · Saldo atual: ${moeda(cliente.saldo)}`;
+  const lista=pagamentos.filter(p=>Number(p.cliente_id)===clienteHistoricoId)
+    .slice().sort((a,b)=>String(b.data).localeCompare(String(a.data))||Number(b.id)-Number(a.id));
+  const body=document.getElementById('clienteHistoricoBody');
+  body.innerHTML=lista.length?lista.map(p=>`<tr><td>${dataBR(p.data)}</td><td>${moeda(p.valor)}</td><td>${moeda(p.desconto)}</td><td style="white-space:pre-wrap;overflow-wrap:anywhere">${escaparFinanceiro(p.observacao||'Sem observação')}</td><td><div class="acoes"><button type="button" class="edit icon-btn" title="Editar pagamento" aria-label="Editar pagamento" onclick="editarPagamentoCliente(${Number(p.id)})">✎</button><button type="button" class="danger icon-btn" title="Reverter pagamento" aria-label="Reverter pagamento" onclick="excluirPagamento(${Number(p.id)})">↶</button></div></td></tr>`).join(''):'<tr><td colspan="5" class="empty">Nenhum pagamento registrado.</td></tr>';
+}
+function verHistoricoCliente(id){
+  if(!clientes.some(c=>Number(c.id)===Number(id)))return;
+  clienteHistoricoId=Number(id);
+  renderHistoricoClienteModal();
+  document.getElementById('clienteHistoricoModal').showModal();
+}
+// Restabelece a seleção somente se o cliente continuar com saldo a pagar.
+function selecionarClienteSeDevedor(id){
+  const select=document.getElementById('pagCliente');
+  const devedor=clientes.some(c=>Number(c.id)===Number(id)&&Number(c.saldo)>0);
+  select.value=devedor?String(id):'';
+  renderFinanceiroCliente();
+}
 function abrirFinanceiroCliente(id){
   const sel=document.getElementById('pagCliente');if(!sel)return;
-  sel.value=String(id);renderFinanceiroCliente();
+  selecionarClienteSeDevedor(id);
   document.getElementById('clienteFinanceiro')?.scrollIntoView({behavior:'smooth',block:'start'});
 }
+document.getElementById('clienteHistoricoFechar')?.addEventListener('click',()=>document.getElementById('clienteHistoricoModal').close());
+document.getElementById('clienteHistoricoModal')?.addEventListener('close',()=>{clienteHistoricoId=null});
 async function atualizarTudo(){await Promise.all([carregarClientes(),carregarPagamentos(),carregarDashboard()])}
 
 function campo(id){return document.getElementById(id)?.value?.trim()||''}
@@ -304,8 +337,8 @@ function mascaraDocumento(e){let v=e.target.value.replace(/\D/g,'').slice(0,14);
 function mascaraCep(e){let v=e.target.value.replace(/\D/g,'').slice(0,8);if(v.length>5)v=v.slice(0,5)+'-'+v.slice(5);e.target.value=v}
 document.getElementById('cpfCnpj')?.addEventListener('input',mascaraDocumento);document.getElementById('cepCliente')?.addEventListener('input',mascaraCep);document.getElementById('ufCliente')?.addEventListener('input',e=>e.target.value=e.target.value.toUpperCase().replace(/[^A-Z]/g,'').slice(0,2));
 
-document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();const clienteId=Number(document.getElementById('pagCliente').value||0);if(!clienteId){msg('Selecione um cliente antes de registrar o pagamento.','erro');return}try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:clienteId,data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),desconto:Number(document.getElementById('pagDesconto').value||0),nova_previsao:document.getElementById('pagNovaPrevisao').disabled?null:document.getElementById('pagNovaPrevisao').value||null,observacao:document.getElementById('pagObs').value.trim()})});document.getElementById('pagNovaPrevisao').value='';document.getElementById('pagValor').value='';document.getElementById('pagDesconto').value='0';document.getElementById('pagObs').value='';if(document.getElementById('pagData'))document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo();document.getElementById('pagCliente').value=String(clienteId);renderFinanceiroCliente();const atualizado=clientes.find(c=>c.id===clienteId);msg(atualizado&&Number(atualizado.saldo)<=0?'Conta quitada! Cliente removido das listas de bloqueados.':'Pagamento registrado.')}catch(err){msg(err.message,'erro')}})
-async function excluirPagamento(id){if(!confirm('Reverter este pagamento? O valor recebido e o desconto voltarão ao saldo devedor, e o pagamento será removido do histórico. A previsão atual será mantida.'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento revertido.');await atualizarTudo();if(clienteId){document.getElementById('pagCliente').value=clienteId;renderFinanceiroCliente()}}catch(err){msg(err.message,'erro')}}
+document.getElementById('pagamentoForm').addEventListener('submit',async e=>{e.preventDefault();const clienteId=Number(document.getElementById('pagCliente').value||0);if(!clienteId){msg('Selecione um cliente antes de registrar o pagamento.','erro');return}try{await api('/api/pagamentos',{method:'POST',body:JSON.stringify({cliente_id:clienteId,data:document.getElementById('pagData').value,valor:Number(document.getElementById('pagValor').value),desconto:Number(document.getElementById('pagDesconto').value||0),nova_previsao:document.getElementById('pagNovaPrevisao').disabled?null:document.getElementById('pagNovaPrevisao').value||null,observacao:document.getElementById('pagObs').value.trim()})});document.getElementById('pagNovaPrevisao').value='';document.getElementById('pagValor').value='';document.getElementById('pagDesconto').value='0';document.getElementById('pagObs').value='';if(document.getElementById('pagData'))document.getElementById('pagData').valueAsDate=new Date();await atualizarTudo();selecionarClienteSeDevedor(clienteId);renderHistoricoClienteModal();const atualizado=clientes.find(c=>c.id===clienteId);msg(atualizado&&Number(atualizado.saldo)<=0?'Conta quitada! Cliente removido das listas de bloqueados.':'Pagamento registrado.')}catch(err){msg(err.message,'erro')}})
+async function excluirPagamento(id){if(!confirm('Reverter este pagamento? O valor recebido e o desconto voltarão ao saldo devedor, e o pagamento será removido do histórico. A previsão atual será mantida.'))return;const clienteId=document.getElementById('pagCliente')?.value||'';try{await api('/api/pagamentos/'+id,{method:'DELETE'});msg('Pagamento revertido.');await atualizarTudo();if(clienteId)selecionarClienteSeDevedor(clienteId);renderHistoricoClienteModal()}catch(err){msg(err.message,'erro')}}
 document.getElementById('pagCliente')?.addEventListener('change',renderFinanceiroCliente);
 
 for(const id of ['clienteFiltroStatus','clienteFiltroTipo','clientePrevisaoDe','clientePrevisaoAte'])document.getElementById(id).addEventListener('change',atualizarFiltrosClientes);
@@ -506,7 +539,7 @@ function atualizarResumoPagamento(){
   novaPrevisao.disabled=!cliente||restante<=0;
   novaPrevisao.min=document.getElementById('pagData').value||'';
 
-  document.getElementById('pagResumo').textContent=!cliente?'Selecione um cliente.':Number(cliente.saldo)<=0?'Cliente quitado. Histórico disponível para consulta ou reversão.':restante<-.001?'O recebimento mais o desconto supera o saldo.':`Abatimento: ${moeda(recebido+desconto)} · Saldo após registro: ${moeda(Math.max(0,restante))}`;
+  document.getElementById('pagResumo').textContent=!cliente?'Selecione um cliente.':Number(cliente.saldo)<=0?'Cliente quitado. Consulte o filtro Quitados (histórico).':restante<-.001?'O recebimento mais o desconto supera o saldo.':`Abatimento: ${moeda(recebido+desconto)} · Saldo após registro: ${moeda(Math.max(0,restante))}`;
 }
 ['pagValor','pagDesconto','pagData'].forEach(id=>document.getElementById(id).addEventListener('input',atualizarResumoPagamento));
 function atualizarDescontoOrgao(){
@@ -629,7 +662,7 @@ document.getElementById('pagEditarForm').addEventListener('submit',async e=>{
  try{
   await api('/api/pagamentos/'+p.id,{method:'PUT',body:JSON.stringify({valor:Number(document.getElementById('pagEditarValor').value),observacao:document.getElementById('pagEditarObs').value,valor_esperado:p.valor,observacao_esperada:p.observacao})});
   document.getElementById('pagEditarModal').close();
-  await atualizarTudo();document.getElementById('pagCliente').value=String(p.cliente_id);renderFinanceiroCliente();
+  await atualizarTudo();selecionarClienteSeDevedor(p.cliente_id);renderHistoricoClienteModal();
   msg('Pagamento atualizado.');
  }catch(err){document.getElementById('pagEditarErro').textContent=err.message}
  finally{pagamentoClienteSalvando=false;b.disabled=false}
