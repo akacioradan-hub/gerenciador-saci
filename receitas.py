@@ -202,7 +202,12 @@ def registrar_receitas(app, db, login_required, valor_monetario):
                     (Receita.recebida.is_(False)) & (Receita.vencimento < fim),
                     (Receita.recebida.is_(True)) & (Receita.data_recebimento >= inicio) & (Receita.data_recebimento < fim)))
             else:
-                stmt = stmt.where(Receita.data >= inicio, Receita.data < fim)
+                # Saci manual: o mês inclui seus lançamentos e as pendências
+                # antigas ainda não recebidas, sem criar uma segunda receita.
+                stmt = stmt.where(or_(
+                    (Receita.data >= inicio) & (Receita.data < fim),
+                    (Receita.data < inicio) & (Receita.vencimento < fim) & Receita.recebida.is_(False),
+                ))
             cliente_id = request.args.get('cliente_id')
             if cliente_id:
                 stmt = stmt.where(Receita.cliente_id == int(cliente_id))
@@ -233,7 +238,7 @@ def registrar_receitas(app, db, login_required, valor_monetario):
             total = sum((r.valor for r in rows), Decimal(0))
             recebido = sum((r.valor for r in rows if r.recebida), Decimal(0))
             atraso = sum((r.valor for r in rows if not r.recebida and r.vencimento < hoje()), Decimal(0))
-            registros = [dict(receita_dict(r), pendencia_anterior=unidade == 'arcm' and not r.recebida and r.vencimento < inicio) for r in rows]
+            registros = [dict(receita_dict(r), pendencia_anterior=not r.recebida and (r.vencimento if unidade == 'arcm' else r.data) < inicio) for r in rows]
             anteriores = sum((r.valor for r in rows if not r.recebida and r.vencimento < inicio), Decimal(0))
             return jsonify(registros=registros, resumo=dict(total=float(total), recebido=float(recebido), pendente=float(total-recebido), atrasado=float(atraso), pendencias_anteriores=float(anteriores), quantidade=len(rows)))
         except (ValueError, OverflowError) as e:

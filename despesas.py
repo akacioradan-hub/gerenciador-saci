@@ -225,7 +225,14 @@ def registrar_despesas(app, db, login_required):
 
     def consultar():
         competencia = mes(request.args.get('mes') or hoje().strftime('%Y-%m'))
-        stmt = db.select(Despesa).where(Despesa.competencia == competencia)
+        # Visão da competência: lançamentos próprios do mês + contas antigas ainda
+        # não quitadas cujo vencimento já ocorreu até o final do mês consultado.
+        # Não cria outra despesa nem altera a competência original no banco.
+        fim = date.fromisoformat(proximo_mes(competencia) + '-01')
+        stmt = db.select(Despesa).where(or_(
+            Despesa.competencia == competencia,
+            (Despesa.competencia < competencia) & (Despesa.vencimento < fim) & Despesa.pago.is_(False),
+        ))
         pagamento_de = date.fromisoformat(request.args['pagamento_de']) if request.args.get('pagamento_de') else None
         pagamento_ate = date.fromisoformat(request.args['pagamento_ate']) if request.args.get('pagamento_ate') else None
         if pagamento_de and pagamento_ate and pagamento_de > pagamento_ate:
@@ -349,10 +356,13 @@ def registrar_despesas(app, db, login_required):
         total = sum((r.valor for r in registros), Decimal(0))
         pago = sum((r.valor for r in registros if r.pago), Decimal(0))
         atrasado = sum((r.valor for r in registros if not r.pago and r.vencimento < hoje()), Decimal(0))
+        pendencias_anteriores = [r for r in registros if r.competencia < competencia and not r.pago]
         por_grupo = {g: float(sum((r.valor for r in registros if r.grupo == g), Decimal(0))) for g in grupos}
         return jsonify(registros=[despesa_dict(r) for r in registros], resumo={
             'juros_pagos_mes': float(juros_pagos_mes), 'total': float(total), 'pago': float(pago), 'aberto': float(total-pago),
-            'atrasado': float(atrasado), 'quantidade': len(registros), 'por_grupo': por_grupo})
+            'atrasado': float(atrasado), 'pendencias_anteriores': float(sum((r.valor for r in pendencias_anteriores), Decimal(0))),
+            'quantidade_anteriores': len(pendencias_anteriores),
+            'quantidade': len(registros), 'por_grupo': por_grupo})
 
     @app.route('/api/despesas', methods=['POST'])
     @app.route('/api/despesas/<int:ident>', methods=['PUT', 'DELETE'])

@@ -237,7 +237,7 @@
       <section id="despesas" class="tab">
         <div class="page-head"><div><span class="eyebrow">CONTAS A PAGAR</span><h2>Despesas Gerais</h2><p>Organize os custos da loja e acompanhe o que falta pagar.</p></div><div class="desp-header-actions"><label class="desp-month-selector">Mês de competência<input id="despMes" type="month" required></label><button class="primary" id="novaDespesa" type="button">Nova despesa</button><button class="secondary" id="despAbrirVinculados" type="button" aria-expanded="false" aria-controls="despVinculadosCard">Novo cadastro</button></div></div>
         <div class="gov-summary-grid mt">
-          <div class="card gov-kpi"><span>Total do mês</span><strong id="despTotal">R$ 0,00</strong></div>
+          <div class="card gov-kpi"><span>Total exibido no mês</span><strong id="despTotal">R$ 0,00</strong></div>
           <div class="card gov-kpi gov-paid"><span>Pago</span><strong id="despPagoTotal" class="ui-positive">R$ 0,00</strong></div>
           <div class="card gov-kpi gov-open"><span>A pagar</span><strong id="despAberto" class="ui-negative">R$ 0,00</strong></div>
           <div class="card gov-kpi gov-open"><span>Em atraso</span><strong id="despAtrasado" class="ui-negative">R$ 0,00</strong></div>
@@ -286,7 +286,7 @@
           </form>
           <div class="table-wrap mt" id="despListaCadastros"><table><thead id="despCadHead"><tr><th>Nome</th><th>Cargo</th><th>Data de nascimento</th><th>Endereço</th><th>Telefone</th><th>Ações</th></tr></thead><tbody id="despCadBody"></tbody></table></div>
         </dialog>
-        <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês</h3><p id="despContagem">Contas vencidas ficam urgentes. Custos fixos com repetição ativa são criados em aberto ao acessar o sistema no novo mês.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
+        <div class="card mt" id="despContasCard"><div class="toolbar"><div><h3>Contas do mês e pendências anteriores</h3><p id="despContagem">Contas de meses anteriores não pagas continuam aparecendo até a quitação, mantendo competência e vencimento originais. Custos fixos recorrentes são lançamentos novos de cada mês.</p></div><a class="secondary gov-export" id="despExportar" href="/api/exportar/despesas.csv">Exportar CSV</a></div>
           <div class="desp-filters desp-main-filters">
           <label>Grupo<select id="despFiltroGrupo"><option value="">Todos</option><option>Custos fixos</option><option>Fornecedores</option><option>Despesas variáveis</option></select></label>
           <label>Situação<select id="despFiltroStatus"><option value="">Todas</option><option value="aberto">Em aberto</option><option value="atrasado">Atrasadas</option><option value="pago">Pagas</option></select></label>
@@ -295,7 +295,7 @@
           <label>Pagamento de<input type="date" id="despPagamentoDe"></label>
           <label>Pagamento até<input type="date" id="despPagamentoAte"></label>
           </div>
-          <p class="form-hint">As datas de pagamento filtram as contas pagas do mês de competência selecionado.</p>
+          <p class="form-hint">As datas de pagamento filtram apenas contas pagas. Pendências antigas continuam na listagem geral e nos filtros Em aberto e Atrasadas até serem quitadas.</p>
           <div class="desp-filter-tools"><details class="desp-extra-filters"><summary>Mais filtros</summary><div class="desp-filters">
           <label>Categoria<select id="despFiltroCategoria"><option value="">Todas</option></select></label>
           <label>Funcionário<select id="despFiltroFuncionario"></select></label><label>Veículo<select id="despFiltroVeiculo"></select></label><label>Terceirizado<select id="despFiltroTerceirizado"></select></label>
@@ -387,8 +387,8 @@
 <div class="form-actions rec-full"><button type="submit" class="primary">Salvar alterações</button><button type="button" class="secondary" id="pagEditarCancelar">Cancelar</button></div>
 </form></dialog>
 <script src="/static/app.js?v=20261031-ocultar-quitados-selecao"></script>
-<script src="/static/despesas.js?v=20261022-editar-cadastros"></script>
-<script src="/static/receitas.js?v=20261020-filtro-notas"></script>
+<script src="/static/despesas.js?v=20261102-pendencias-anteriores"></script>
+<script src="/static/receitas.js?v=20261102-pendencias-anteriores"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>
 <script src="/static/contrato_edicao.js?v=20261005-edicao-contrato"></script>
 </body>

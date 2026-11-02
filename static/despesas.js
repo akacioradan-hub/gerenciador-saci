@@ -27,7 +27,7 @@ async function carregarDespesas(){
   const r=d.resumo||{};
   for(const [id,campo] of Object.entries({despTotal:'total',despPagoTotal:'pago',despAberto:'aberto',despAtrasado:'atrasado'}))despEl(id).textContent=moeda(r[campo]);
   despEl('despJurosMes').textContent=moeda(r.juros_pagos_mes||0);
-  despEl('despContagem').textContent=`${r.quantidade||0} conta(s) · Totais conforme o mês de competência e os filtros.`;
+  despEl('despContagem').textContent=`${r.quantidade||0} conta(s) · ${r.quantidade_anteriores||0} pendência(s) de meses anteriores (${moeda(r.pendencias_anteriores||0)}) · Sem duplicação de cobranças. Totais conforme os filtros.`;
   despEl('despGrupos').innerHTML=Object.entries(r.por_grupo||{}).map(([g,v])=>`<div><span>${escaparFinanceiro(g)}</span><strong>${moeda(v)}</strong></div>`).join('');
   despEl('despExportar').href='/api/exportar/despesas.csv?'+params;
   renderResumoVinculado(r,params);
@@ -63,7 +63,8 @@ function renderContasMes(){
   const inicio=(despPagina-1)*DESP_POR_PAGINA;
   despEl('despesasBody').innerHTML=despesasMes.length?despesasMes.slice(inicio,inicio+DESP_POR_PAGINA).map(r=>{
     const vinculos=[r.fornecedor_nome,r.funcionario_nome,r.veiculo_nome,r.terceirizado_nome].filter(Boolean);
-    return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong><div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}${r.repetir_mensal?' · Mensal':''}${r.adiantamento_de_id?' · Salário #'+r.adiantamento_de_id:''}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
+    const pendenciaAnterior=!r.pago && r.competencia<despEl('despMes').value;
+    return `<tr><td><strong>${escaparFinanceiro(r.descricao)}</strong>${pendenciaAnterior?`<div class="table-sub">Pendente de ${escaparFinanceiro(r.competencia.slice(5,7)+'/'+r.competencia.slice(0,4))} · competência original</div>`:''}<div class="table-sub">${escaparFinanceiro(r.grupo)} · ${escaparFinanceiro(r.categoria)}${r.repetir_mensal?' · Mensal':''}${r.adiantamento_de_id?' · Salário #'+r.adiantamento_de_id:''}</div>${r.documento?`<div class="table-sub">${escaparFinanceiro(r.documento)}</div>`:''}</td>
       <td>${vinculos.map(v=>`<div class="table-sub">${escaparFinanceiro(v)}</div>`).join('')||'—'}</td>
       <td><span title="${r.urgente_automatico?'Urgente automaticamente: conta vencida':'Prioridade cadastrada'}" class="desp-priority ${escaparFinanceiro(r.prioridade)}">${escaparFinanceiro(r.prioridade)}</span></td>
       <td>${dataBR(r.vencimento)}</td><td>${moeda(r.valor)}${r.total_adiantado>0?`<div class="table-sub">Salário programado: ${moeda(r.salario_programado)}<br>Adiantado: ${moeda(r.total_adiantado)}<br>${r.pago?'Saldo quitado':'Saldo a pagar'}</div>`:''}${r.juros>0?`<div class="table-sub">Base: ${moeda(r.valor_base)}<br>Juros/acréscimos: ${moeda(r.juros)}</div>`:''}${r.desconto>0?`<div class="table-sub">Programado: ${moeda(r.valor_base)}<br>Desconto/redução: ${moeda(r.desconto)}</div>`:''}</td>

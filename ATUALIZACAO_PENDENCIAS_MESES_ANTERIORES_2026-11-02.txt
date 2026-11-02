@@ -1,0 +1,15 @@
+ATUALIZAÇÃO — PENDÊNCIAS DOS MESES ANTERIORES (02/11/2026)
+
+Em Despesas Gerais, o filtro por competência inclui:
+- todas as despesas com competência igual ao mês escolhido;
+- despesas de competências anteriores ainda não pagas, desde que com vencimento anterior ao fim do mês escolhido.
+
+No mês posterior, a pendência aparece com o mês de origem, valor e vencimento originais. Ao registrar a quitação, deixa de aparecer nas listas dos meses posteriores, sem desaparecer do histórico na sua competência original. O sistema não duplica dados, nem gera uma dívida nova. Custos fixos recorrentes permanecem independentes por competência.
+
+A API de despesas devolve pendencias_anteriores e quantidade_anteriores e o CSV acompanha a mesma consulta. Ao usar as datas de pagamento, a listagem mostra somente contas pagas no período, como antes.
+
+Em Receitas Saci (lançamentos manuais), a consulta inclui as receitas do mês e as anteriores ainda pendentes, marcadas como 'Pendente de mês anterior'. Receitas ARCM já suportavam a passagem das pendências não recebidas entre os meses, comportamento preservado.
+
+Os totais da tela Despesas Gerais representam a carteira exibida no mês (incluindo atrasos anteriores), não apenas novas contas originadas naquele mês. O banco PostgreSQL não exige alteração de esquema.
+
+Para publicar: substitua os arquivos pelo conteúdo do ZIP no GitHub e faça deploy da aplicação no Render, preservando DATABASE_URL e o PostgreSQL atual.
