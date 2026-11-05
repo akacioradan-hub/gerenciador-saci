@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
 <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="apple-touch-icon" href="{{ url_for('static', filename='favicon.png') }}">
-<link rel="stylesheet" href="/static/style.css?v=20261005-fluxo-geral">
+<link rel="stylesheet" href="/static/style.css?v=20261104-historico-pagamentos">
 <link rel="stylesheet" href="/static/visual.css?v=20261022-editar-cadastros">
 </head>
 <body>
@@ -169,7 +169,20 @@
           </div>
         </div>
 
-<div class="card mt">
+<div id="clientesHistoricoRecebimentos" class="card mt">
+          <div class="toolbar"><div><h3>Histórico de pagamentos recebidos</h3><p class="form-hint">Consulte os pagamentos registrados de todos os clientes, inclusive os que já quitaram a dívida. Os descontos aparecem separados e não são somados ao valor recebido.</p></div></div>
+          <div class="rec-filtros mt cliente-recebimentos-filtros">
+            <label>Buscar cliente<input type="search" id="historicoPagBusca" placeholder="Nome do cliente..."></label>
+            <label>Pagamento de<input type="date" id="historicoPagDe"></label>
+            <label>Pagamento até<input type="date" id="historicoPagAte"></label>
+            <div class="cliente-historico-filtro-acoes"><button type="button" class="secondary" id="historicoPagLimpar">Limpar filtros</button></div>
+          </div>
+          <div class="cliente-historico-recebidos-resumo" aria-live="polite"><span id="historicoPagResumo">Nenhum pagamento registrado.</span><strong id="historicoPagTotal">R$ 0,00</strong></div>
+          <div class="table-wrap"><table><thead><tr><th>Data</th><th>Cliente</th><th>Valor recebido</th><th>Desconto</th><th>Observação</th><th>Ações</th></tr></thead><tbody id="historicoPagBody"><tr><td colspan="6" class="empty">Carregando histórico...</td></tr></tbody></table></div>
+          <div class="table-pagination"><span id="historicoPagPaginaResumo" aria-live="polite"></span><nav id="historicoPagPaginas" aria-label="Páginas do histórico de pagamentos"></nav></div>
+        </div>
+
+        <div class="card mt">
           <div class="toolbar"><h3 id="clientesListaTitulo">Clientes bloqueados</h3><input id="buscaCliente" placeholder="Buscar por nome, CPF/CNPJ, telefone ou e-mail..."></div>
           <div class="rec-filtros mt">
             <label>Situação<select id="clienteFiltroStatus"><option value="">Bloqueados</option><option value="DEVEDOR">A receber</option><option value="COM_PAGAMENTOS">Recebidos</option><option value="ATRASADO">Atrasado</option><option value="EM ABERTO">Em aberto</option><option value="SEM PREVISÃO">Sem previsão</option><option value="QUITADO">Quitados (histórico)</option></select></label>
@@ -386,7 +399,7 @@
 <p id="pagEditarErro" class="rec-error rec-full" role="alert"></p>
 <div class="form-actions rec-full"><button type="submit" class="primary">Salvar alterações</button><button type="button" class="secondary" id="pagEditarCancelar">Cancelar</button></div>
 </form></dialog>
-<script src="/static/app.js?v=20261031-ocultar-quitados-selecao"></script>
+<script src="/static/app.js?v=20261104-historico-pagamentos"></script>
 <script src="/static/despesas.js?v=20261102-pendencias-anteriores"></script>
 <script src="/static/receitas.js?v=20261102-pendencias-anteriores"></script>
 <script src="/static/fluxo_caixa.js?v=20261005-entradas"></script>

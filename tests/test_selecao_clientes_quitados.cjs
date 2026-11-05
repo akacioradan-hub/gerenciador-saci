@@ -56,5 +56,5 @@ c2.saldo=0;c2.total_pago=80;vm.runInContext('preencherClientes(); selecionarClie
 check(()=>assert.equal(select.value,''),'Não ressuscitar quitado ao restaurar seleção');
 check(()=>{assert.match(html,/id="clienteHistoricoModal"/);assert.match(html,/id="clienteHistoricoBody"/)},'Modal de histórico incluído no HTML');
 assert.match(src,/onclick="verHistoricoCliente\(\$\{c.id\}\)"/);
-assert.match(html,/v=20261031-ocultar-quitados-selecao/);
+assert.match(html,/v=20261104-historico-pagamentos/);
 console.log(`OK: ${n} cenários de seleção, quitação, histórico e reversão.`);

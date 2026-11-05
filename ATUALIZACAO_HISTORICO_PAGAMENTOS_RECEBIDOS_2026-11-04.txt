@@ -1,0 +1,25 @@
+ATUALIZAÇÃO — CONTROLE DE CLIENTES BLOQUEADOS SACI
+Data: 04/11/2026
+
+Foi incluído um quadro próprio de "Histórico de pagamentos recebidos", situado logo abaixo do bloco de registro de pagamentos, dentro do módulo Controle de Clientes Bloqueados Saci.
+
+- Relação geral de recebimentos de todos os clientes, inclusive clientes totalmente quitados.
+- Colunas: data, cliente, valor recebido, desconto, observação e acesso ao histórico completo.
+- Busca pelo nome do cliente e filtros de data efetiva do pagamento (de/até).
+- Total de recebimentos conforme filtros, com a soma monetária calculada em centavos para evitar diferenças de arredondamento.
+- Descontos são exibidos separadamente, sem serem contados como dinheiro recebido; lançamentos só de desconto permanecem no histórico individual, mas não entram na lista de recebimentos financeiros.
+- Paginação e atualização automática depois de registrar, editar ou reverter um pagamento.
+- Sem alterações nas tabelas do banco de dados ou rotas públicas; informação disponível somente na área autenticada.
+- A regra que remove clientes quitados da lista e da seleção de devedores foi preservada.
+
+Arquivos alterados:
+  templates/index.html
+  static/app.js
+  static/style.css
+  tests/test_selecao_clientes_quitados.cjs (atualização de versão do script)
+  tests/test_historico_pagamentos_recebidos.cjs (novos testes)
+
+PUBLICAÇÃO
+Atualize os arquivos do repositório com o conteúdo do ZIP e publique no Render.
+Mantenha o banco PostgreSQL existente e suas variáveis de ambiente.
+Não é necessário executar migração para essa funcionalidade.
